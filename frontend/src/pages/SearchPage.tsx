@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Search, Package, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { searchItems } from '../api/items';
 import type { ItemCondition } from '../types';
-import { CONDITION_LABELS, CONDITION_COLORS } from '../types';
+import { CONDITION_COLORS } from '../types';
 import Spinner from '../components/Spinner';
 
 export default function SearchPage() {
+  const { t } = useTranslation();
   const [q, setQ] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
 
@@ -28,7 +30,7 @@ export default function SearchPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Suche</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('search.title')}</h1>
 
       <div className="relative mb-6">
         <Search
@@ -39,14 +41,14 @@ export default function SearchPage() {
           autoFocus
           value={q}
           onChange={(e) => handleChange(e.target.value)}
-          placeholder="Name, Beschreibung, Seriennummer oder Barcode…"
+          placeholder={t('search.placeholder')}
           className="w-full border border-gray-300 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>
 
       {debouncedQ.length < 2 && (
         <p className="text-center text-gray-400 text-sm py-12">
-          Mindestens 2 Zeichen eingeben…
+          {t('search.min_chars')}
         </p>
       )}
 
@@ -55,11 +57,11 @@ export default function SearchPage() {
       {data && (
         <div>
           <p className="text-sm text-gray-500 mb-3">
-            {data.length} Ergebnis{data.length !== 1 ? 'se' : ''} für „{debouncedQ}"
+            {t('search.results', { count: data.length, query: debouncedQ })}
           </p>
           <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
             {data.length === 0 ? (
-              <p className="py-8 text-center text-gray-400 text-sm">Nichts gefunden.</p>
+              <p className="py-8 text-center text-gray-400 text-sm">{t('search.no_results')}</p>
             ) : (
               data.map((item) => (
                 <Link
@@ -68,7 +70,7 @@ export default function SearchPage() {
                   className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50"
                 >
                   {item.imageUrl ? (
-                    <img src={item.imageUrl} className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
+                    <img src={item.imageUrl} alt={item.name} className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
                   ) : (
                     <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                       <Package size={18} className="text-gray-400" />
@@ -81,11 +83,11 @@ export default function SearchPage() {
                     </div>
                   </div>
                   <span className="text-sm text-gray-500 flex-shrink-0">
-                    {item.quantity} {item.unit ?? 'Stück'}
+                    {item.quantity} {item.unit ?? t('common.piece')}
                   </span>
                   {item.condition && (
                     <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${CONDITION_COLORS[item.condition as ItemCondition]}`}>
-                      {CONDITION_LABELS[item.condition as ItemCondition]}
+                      {t(`condition.${item.condition}`)}
                     </span>
                   )}
                   <ChevronRight size={14} className="text-gray-300" />

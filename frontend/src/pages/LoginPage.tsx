@@ -1,10 +1,12 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginPage() {
   const { login, register } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,7 +27,7 @@ export default function LoginPage() {
       navigate('/dashboard');
     } catch (err: unknown) {
       const msg =
-        err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten';
+        err instanceof Error ? err.message : t('login.error_generic');
       setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? msg);
     } finally {
       setLoading(false);
@@ -35,9 +37,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 w-full max-w-sm p-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">🏠 Home Inventory</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">{t('login.title')}</h1>
         <p className="text-gray-500 text-sm mb-6">
-          {mode === 'login' ? 'Anmelden' : 'Neues Konto erstellen'}
+          {mode === 'login' ? t('login.subtitle_login') : t('login.subtitle_register')}
         </p>
 
         {error && (
@@ -49,18 +51,18 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === 'register' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')}</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Max Mustermann"
+                placeholder={t('login.name_placeholder')}
               />
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">E-Mail</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.email')}</label>
             <input
               type="email"
               value={email}
@@ -71,7 +73,7 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Passwort</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.password')}</label>
             <input
               type="password"
               value={password}
@@ -86,17 +88,17 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-indigo-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Laden…' : mode === 'login' ? 'Anmelden' : 'Registrieren'}
+            {loading ? t('login.loading') : mode === 'login' ? t('login.submit_login') : t('login.submit_register')}
           </button>
         </form>
 
         <p className="mt-4 text-center text-sm text-gray-500">
-          {mode === 'login' ? 'Noch kein Konto?' : 'Bereits registriert?'}{' '}
+          {mode === 'login' ? t('login.no_account') : t('login.already_registered')}{' '}
           <button
             onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
             className="text-indigo-600 hover:underline font-medium"
           >
-            {mode === 'login' ? 'Registrieren' : 'Anmelden'}
+            {mode === 'login' ? t('login.submit_register') : t('login.submit_login')}
           </button>
         </p>
       </div>

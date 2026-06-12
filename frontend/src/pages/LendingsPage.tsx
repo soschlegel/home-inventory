@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowRightLeft, CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { getActiveLendings, returnItem } from '../api/lendings';
 import Spinner from '../components/Spinner';
 
 export default function LendingsPage() {
+  const { t, i18n } = useTranslation();
   const qc = useQueryClient();
   const { data: lendings, isLoading } = useQuery({
     queryKey: ['lendings', 'active'],
@@ -18,14 +20,14 @@ export default function LendingsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Aktuell ausgeliehen</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('lendings.title')}</h1>
 
       {isLoading ? (
         <Spinner />
       ) : !lendings?.length ? (
         <div className="bg-white border border-gray-200 rounded-xl py-16 text-center">
           <ArrowRightLeft size={40} className="mx-auto text-gray-300 mb-3" />
-          <p className="text-gray-500">Nichts ausgeliehen.</p>
+          <p className="text-gray-500">{t('lendings.nothing_lent')}</p>
         </div>
       ) : (
         <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
@@ -44,7 +46,7 @@ export default function LendingsPage() {
               </div>
               <div className="text-sm text-gray-700 font-medium">{l.lentTo}</div>
               <div className="text-xs text-gray-400">
-                seit {new Date(l.lentAt).toLocaleDateString('de-DE')}
+                {t('lendings.since')} {new Date(l.lentAt).toLocaleDateString(i18n.language)}
               </div>
               {l.note && <div className="text-xs text-gray-400 italic truncate max-w-32">{l.note}</div>}
               <button
@@ -52,7 +54,7 @@ export default function LendingsPage() {
                 disabled={returnMut.isPending}
                 className="flex items-center gap-1.5 text-xs text-green-600 hover:text-green-700 font-medium"
               >
-                <CheckCircle size={14} /> Zurück
+                <CheckCircle size={14} /> {t('lendings.return_btn')}
               </button>
             </div>
           ))}

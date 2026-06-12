@@ -2,14 +2,16 @@ import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ExternalLink, Trash2, Upload, ArrowRightLeft, Pencil, X, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { getItem, updateItem, deleteItem, uploadItemImage } from '../api/items';
 import { lendItem, returnItem } from '../api/lendings';
 import { useAuth } from '../contexts/AuthContext';
 import type { ItemCondition } from '../types';
-import { CONDITION_LABELS, CONDITION_COLORS } from '../types';
+import { CONDITION_COLORS } from '../types';
 import Spinner from '../components/Spinner';
 
 export default function ItemDetailPage() {
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -67,8 +69,8 @@ export default function ItemDetailPage() {
       barcode: editBarcode || undefined,
       purchaseUrl: editPurchaseUrl || undefined,
       purchasePrice: editPurchasePrice ? parseFloat(editPurchasePrice) : undefined,
-      purchaseDate: editPurchaseDate ? new Date(editPurchaseDate) as any : undefined,
-      warrantyUntil: editWarrantyUntil ? new Date(editWarrantyUntil) as any : undefined,
+      purchaseDate: editPurchaseDate || undefined,
+      warrantyUntil: editWarrantyUntil || undefined,
       tags: editTags ? editTags.split(',').map((t) => t.trim()).filter(Boolean) : [],
     }),
     onSuccess: () => {
@@ -110,17 +112,17 @@ export default function ItemDetailPage() {
   });
 
   if (isLoading) return <Spinner />;
-  if (!item) return <p className="text-gray-500">Gegenstand nicht gefunden.</p>;
+  if (!item) return <p className="text-gray-500">{t('item.not_found')}</p>;
 
   const activeLending = item.lendings?.find((l) => !l.returnedAt);
   const fmt = (date?: string | null) =>
-    date ? new Date(date).toLocaleDateString('de-DE') : '–';
+    date ? new Date(date).toLocaleDateString(i18n.language) : '–';
 
   return (
     <div>
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-4 flex-wrap">
-        <Link to="/rooms" className="hover:text-indigo-600">Räume</Link>
+        <Link to="/rooms" className="hover:text-indigo-600">{t('nav.rooms')}</Link>
         <ChevronRight size={14} />
         <Link to={`/rooms/${item.location?.room?.id}`} className="hover:text-indigo-600">
           {item.location?.room?.name}
@@ -145,7 +147,7 @@ export default function ItemDetailPage() {
             {isEditor && (
               <label className="flex items-center justify-center gap-2 px-4 py-3 text-sm text-gray-500 hover:bg-gray-50 cursor-pointer border-t border-gray-200">
                 <Upload size={15} />
-                {item.imageUrl ? 'Bild ersetzen' : 'Bild hochladen'}
+                {item.imageUrl ? t('item.image_replace') : t('item.image_upload')}
                 <input
                   type="file"
                   accept="image/*"
@@ -164,74 +166,74 @@ export default function ItemDetailPage() {
             /* ── Edit-Formular ────────────────────────────────────────── */
             <div className="bg-white border border-indigo-300 rounded-xl p-5 space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-gray-900">Gegenstand bearbeiten</h2>
-                <button type="button" onClick={() => setIsEditing(false)} aria-label="Bearbeiten schließen" className="text-gray-400 hover:text-gray-600">
+                <h2 className="font-semibold text-gray-900">{t('item.edit_title')}</h2>
+                <button type="button" onClick={() => setIsEditing(false)} aria-label={t('item.close_edit_label')} className="text-gray-400 hover:text-gray-600">
                   <X size={18} />
                 </button>
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <label className="sm:col-span-2 label-wrap">
-                  <span className="label">Name</span>
+                  <span className="label">{t('item.field_name')}</span>
                   <input value={editName} onChange={(e) => setEditName(e.target.value)} className="input" />
                 </label>
                 <label className="sm:col-span-2 label-wrap">
-                  <span className="label">Beschreibung</span>
+                  <span className="label">{t('item.field_description')}</span>
                   <textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={2} className="input" />
                 </label>
                 <label className="label-wrap">
-                  <span className="label">Menge</span>
+                  <span className="label">{t('item.field_quantity')}</span>
                   <input type="number" min="0" step="0.1" value={editQuantity} onChange={(e) => setEditQuantity(e.target.value)} className="input" />
                 </label>
                 <label className="label-wrap">
-                  <span className="label">Einheit</span>
-                  <input value={editUnit} onChange={(e) => setEditUnit(e.target.value)} placeholder="z.B. Stück, Liter" className="input" />
+                  <span className="label">{t('item.field_unit')}</span>
+                  <input value={editUnit} onChange={(e) => setEditUnit(e.target.value)} placeholder={t('item.field_unit_placeholder')} className="input" />
                 </label>
                 <label className="label-wrap">
-                  <span className="label">Mindestbestand</span>
+                  <span className="label">{t('item.field_min_quantity')}</span>
                   <input type="number" min="0" step="0.1" value={editMinQty} onChange={(e) => setEditMinQty(e.target.value)} placeholder="–" className="input" />
                 </label>
                 <label className="label-wrap">
-                  <span className="label">Zustand</span>
+                  <span className="label">{t('item.field_condition')}</span>
                   <select value={editCondition} onChange={(e) => setEditCondition(e.target.value)} className="input">
                     <option value="">–</option>
                     {(['NEW', 'GOOD', 'WORN', 'BROKEN'] as ItemCondition[]).map((c) => (
-                      <option key={c} value={c}>{CONDITION_LABELS[c]}</option>
+                      <option key={c} value={c}>{t(`condition.${c}`)}</option>
                     ))}
                   </select>
                 </label>
                 <label className="label-wrap">
-                  <span className="label">Seriennummer</span>
+                  <span className="label">{t('item.field_serial')}</span>
                   <input value={editSerialNumber} onChange={(e) => setEditSerialNumber(e.target.value)} className="input" />
                 </label>
                 <label className="label-wrap">
-                  <span className="label">Barcode / EAN</span>
+                  <span className="label">{t('item.field_barcode')}</span>
                   <input value={editBarcode} onChange={(e) => setEditBarcode(e.target.value)} className="input" />
                 </label>
               </div>
 
               <hr className="border-gray-100" />
-              <h3 className="text-sm font-medium text-gray-700">Kaufinformationen</h3>
+              <h3 className="text-sm font-medium text-gray-700">{t('item.purchase_section')}</h3>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <label className="sm:col-span-2 label-wrap">
-                  <span className="label">Kauflink (URL)</span>
+                  <span className="label">{t('item.field_purchase_url')}</span>
                   <input type="url" value={editPurchaseUrl} onChange={(e) => setEditPurchaseUrl(e.target.value)} placeholder="https://…" className="input" />
                 </label>
                 <label className="label-wrap">
-                  <span className="label">Kaufpreis (€)</span>
+                  <span className="label">{t('item.field_purchase_price')}</span>
                   <input type="number" min="0" step="0.01" value={editPurchasePrice} onChange={(e) => setEditPurchasePrice(e.target.value)} placeholder="0.00" className="input" />
                 </label>
                 <label className="label-wrap">
-                  <span className="label">Kaufdatum</span>
+                  <span className="label">{t('item.field_purchase_date')}</span>
                   <input type="date" value={editPurchaseDate} onChange={(e) => setEditPurchaseDate(e.target.value)} className="input" />
                 </label>
                 <label className="label-wrap">
-                  <span className="label">Garantie bis</span>
+                  <span className="label">{t('item.field_warranty')}</span>
                   <input type="date" value={editWarrantyUntil} onChange={(e) => setEditWarrantyUntil(e.target.value)} className="input" />
                 </label>
                 <label className="label-wrap">
-                  <span className="label">Tags (kommagetrennt)</span>
-                  <input value={editTags} onChange={(e) => setEditTags(e.target.value)} placeholder="Elektronik, Werkzeug" className="input" />
+                  <span className="label">{t('item.field_tags')}</span>
+                  <input value={editTags} onChange={(e) => setEditTags(e.target.value)} placeholder={t('item.tags_placeholder')} className="input" />
                 </label>
               </div>
 
@@ -242,10 +244,10 @@ export default function ItemDetailPage() {
                   disabled={!editName || updateMut.isPending}
                   className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
                 >
-                  <Check size={15} /> {updateMut.isPending ? 'Speichern…' : 'Speichern'}
+                  <Check size={15} /> {updateMut.isPending ? t('common.saving') : t('common.save')}
                 </button>
                 <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 rounded-lg text-sm border border-gray-300 hover:bg-gray-50">
-                  Abbrechen
+                  {t('common.cancel')}
                 </button>
               </div>
             </div>
@@ -260,11 +262,11 @@ export default function ItemDetailPage() {
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {item.condition && (
                     <span className={`text-xs px-2.5 py-1 rounded-full ${CONDITION_COLORS[item.condition as ItemCondition]}`}>
-                      {CONDITION_LABELS[item.condition as ItemCondition]}
+                      {t(`condition.${item.condition}`)}
                     </span>
                   )}
                   {isEditor && (
-                    <button type="button" onClick={startEditing} className="p-1.5 text-gray-400 hover:text-indigo-600 rounded transition-colors" title="Bearbeiten">
+                    <button type="button" onClick={startEditing} className="p-1.5 text-gray-400 hover:text-indigo-600 rounded transition-colors" title={t('item.edit_btn_title')}>
                       <Pencil size={15} />
                     </button>
                   )}
@@ -272,16 +274,16 @@ export default function ItemDetailPage() {
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <Field label="Menge">{item.quantity} {item.unit ?? 'Stück'}</Field>
+                <Field label={t('item.field_quantity')}>{item.quantity} {item.unit ?? t('common.piece')}</Field>
                 {item.minQuantity != null && (
-                  <Field label="Mindestbestand">
+                  <Field label={t('item.field_min_quantity')}>
                     <span className={item.quantity < (item.minQuantity ?? Infinity) ? 'text-red-600 font-medium' : ''}>
-                      {item.minQuantity} {item.unit ?? 'Stück'}
+                      {item.minQuantity} {item.unit ?? t('common.piece')}
                     </span>
                   </Field>
                 )}
-                {item.serialNumber && <Field label="Seriennummer">{item.serialNumber}</Field>}
-                {item.barcode && <Field label="Barcode / EAN">{item.barcode}</Field>}
+                {item.serialNumber && <Field label={t('item.field_serial')}>{item.serialNumber}</Field>}
+                {item.barcode && <Field label={t('item.field_barcode')}>{item.barcode}</Field>}
               </div>
 
               {item.tags && item.tags.length > 0 && (
@@ -299,12 +301,12 @@ export default function ItemDetailPage() {
           {/* Kaufinfos (nur im Anzeigemodus) */}
           {!isEditing && (item.purchaseUrl || item.purchasePrice || item.purchaseDate || item.warrantyUntil) && (
             <div className="bg-white border border-gray-200 rounded-xl p-5">
-              <h2 className="font-medium text-gray-800 mb-3">Kaufinformationen</h2>
+              <h2 className="font-medium text-gray-800 mb-3">{t('item.purchase_section')}</h2>
               <div className="grid grid-cols-2 gap-3 text-sm">
-                {item.purchasePrice && <Field label="Kaufpreis">{item.purchasePrice.toFixed(2)} €</Field>}
-                {item.purchaseDate && <Field label="Kaufdatum">{fmt(item.purchaseDate)}</Field>}
+                {item.purchasePrice && <Field label={t('item.field_purchase_price')}>{item.purchasePrice.toFixed(2)} €</Field>}
+                {item.purchaseDate && <Field label={t('item.field_purchase_date')}>{fmt(item.purchaseDate)}</Field>}
                 {item.warrantyUntil && (
-                  <Field label="Garantie bis">
+                  <Field label={t('item.field_warranty')}>
                     <span className={new Date(item.warrantyUntil) < new Date() ? 'text-red-500' : ''}>
                       {fmt(item.warrantyUntil)}
                     </span>
@@ -318,7 +320,7 @@ export default function ItemDetailPage() {
                   rel="noopener noreferrer"
                   className="mt-3 flex items-center gap-1.5 text-sm text-indigo-600 hover:underline"
                 >
-                  <ExternalLink size={14} /> Kauflink öffnen
+                  <ExternalLink size={14} /> {t('item.purchase_link')}
                 </a>
               )}
             </div>
@@ -327,23 +329,23 @@ export default function ItemDetailPage() {
           {/* Ausleihen */}
           <div className="bg-white border border-gray-200 rounded-xl p-5">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-medium text-gray-800">Ausleihen</h2>
+              <h2 className="font-medium text-gray-800">{t('item.lend_section')}</h2>
               {isEditor && !activeLending && (
                 <button
                   type="button"
                   onClick={() => setShowLendForm(!showLendForm)}
                   className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-700"
                 >
-                  <ArrowRightLeft size={14} /> Verleihen
+                  <ArrowRightLeft size={14} /> {t('item.lend_btn')}
                 </button>
               )}
             </div>
 
             {activeLending && (
               <div className="mb-3 p-3 bg-orange-50 border border-orange-200 rounded-lg text-sm">
-                <div className="font-medium text-orange-800">Ausgeliehen an {activeLending.lentTo}</div>
+                <div className="font-medium text-orange-800">{t('item.lent_to', { name: activeLending.lentTo })}</div>
                 <div className="text-orange-600 text-xs mt-0.5">
-                  seit {fmt(activeLending.lentAt)}
+                  {t('item.lent_since', { date: fmt(activeLending.lentAt) })}
                   {activeLending.note && ` · ${activeLending.note}`}
                 </div>
                 {isEditor && (
@@ -353,7 +355,7 @@ export default function ItemDetailPage() {
                     disabled={returnMut.isPending}
                     className="mt-2 text-xs text-orange-700 hover:text-orange-900 underline"
                   >
-                    Als zurückgegeben markieren
+                    {t('item.mark_returned')}
                   </button>
                 )}
               </div>
@@ -364,13 +366,13 @@ export default function ItemDetailPage() {
                 <input
                   value={lentTo}
                   onChange={(e) => setLentTo(e.target.value)}
-                  placeholder="Name der Person"
+                  placeholder={t('item.lent_to_placeholder')}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <input
                   value={lentNote}
                   onChange={(e) => setLentNote(e.target.value)}
-                  placeholder="Notiz (optional)"
+                  placeholder={t('item.note_placeholder')}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <button
@@ -379,20 +381,20 @@ export default function ItemDetailPage() {
                   disabled={!lentTo || lendMut.isPending}
                   className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
                 >
-                  Verleihen
+                  {t('item.lend_btn')}
                 </button>
               </div>
             )}
 
             {item.lendings && item.lendings.length > 0 && (
               <div className="space-y-1">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Historie</p>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('item.history_title')}</p>
                 {item.lendings.map((l) => (
                   <div key={l.id} className="flex items-center gap-2 text-sm py-1">
                     <span className={`w-2 h-2 rounded-full flex-shrink-0 ${l.returnedAt ? 'bg-green-400' : 'bg-orange-400'}`} />
                     <span className="text-gray-700">{l.lentTo}</span>
                     <span className="text-gray-400 text-xs">
-                      {fmt(l.lentAt)} → {l.returnedAt ? fmt(l.returnedAt) : 'noch ausgeliehen'}
+                      {fmt(l.lentAt)} → {l.returnedAt ? fmt(l.returnedAt) : t('item.still_lent')}
                     </span>
                   </div>
                 ))}
@@ -406,11 +408,11 @@ export default function ItemDetailPage() {
               <button
                 type="button"
                 onClick={() => {
-                  if (confirm(`"${item.name}" wirklich löschen?`)) deleteMut.mutate();
+                  if (confirm(t('item.confirm_delete', { name: item.name }))) deleteMut.mutate();
                 }}
                 className="flex items-center gap-2 text-sm text-red-500 hover:text-red-700"
               >
-                <Trash2 size={15} /> Gegenstand löschen
+                <Trash2 size={15} /> {t('item.delete_btn')}
               </button>
             </div>
           )}

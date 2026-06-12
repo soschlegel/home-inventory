@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, Pencil, Check, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import {
   getContainerTypes,
   createContainerType,
@@ -10,6 +11,7 @@ import {
 import Spinner from '../components/Spinner';
 
 export default function ContainerTypesPage() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const { data: types, isLoading } = useQuery({
     queryKey: ['container-types'],
@@ -51,16 +53,16 @@ export default function ContainerTypesPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Container-Typen</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('containerTypes.title')}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Definiere eigene Typen für deine Container (Schrank, Schublade, Karton…)
+            {t('containerTypes.subtitle')}
           </p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700"
         >
-          <Plus size={16} /> Neuer Typ
+          <Plus size={16} /> {t('containerTypes.add_btn')}
         </button>
       </div>
 
@@ -70,13 +72,13 @@ export default function ContainerTypesPage() {
             <input
               value={newIcon}
               onChange={(e) => setNewIcon(e.target.value)}
-              placeholder="Emoji"
+              placeholder={t('common.emoji_placeholder')}
               className="w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Name (z.B. Schublade)"
+              placeholder={t('containerTypes.name_placeholder')}
               className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <button
@@ -84,7 +86,7 @@ export default function ContainerTypesPage() {
               disabled={!newName || createMut.isPending}
               className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
             >
-              Speichern
+              {t('common.save')}
             </button>
           </div>
         </div>
@@ -96,50 +98,57 @@ export default function ContainerTypesPage() {
         <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
           {!types?.length ? (
             <p className="py-8 text-center text-gray-400 text-sm">
-              Noch keine Typen. Leg einen an!
+              {t('containerTypes.no_types')}
             </p>
           ) : (
-            types.map((t) => (
-              <div key={t.id} className="flex items-center gap-3 px-4 py-3">
-                {editId === t.id ? (
+            types.map((ct) => (
+              <div key={ct.id} className="flex items-center gap-3 px-4 py-3">
+                {editId === ct.id ? (
                   <>
                     <input
                       value={editIcon}
                       onChange={(e) => setEditIcon(e.target.value)}
-                      placeholder="Emoji"
+                      placeholder={t('common.emoji_placeholder')}
                       className="w-16 border border-gray-300 rounded-lg px-2 py-1 text-sm"
                     />
                     <input
+                      aria-label={t('containerTypes.edit_name_label')}
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
                       className="flex-1 border border-gray-300 rounded-lg px-3 py-1 text-sm"
                     />
                     <button
+                      type="button"
+                      aria-label={t('containerTypes.save_label')}
                       onClick={() => updateMut.mutate()}
                       disabled={!editName}
                       className="p-1.5 text-green-600 hover:text-green-700"
                     >
                       <Check size={16} />
                     </button>
-                    <button onClick={() => setEditId(null)} className="p-1.5 text-gray-400 hover:text-gray-600">
+                    <button type="button" aria-label={t('containerTypes.cancel_label')} onClick={() => setEditId(null)} className="p-1.5 text-gray-400 hover:text-gray-600">
                       <X size={16} />
                     </button>
                   </>
                 ) : (
                   <>
-                    <span className="text-xl w-8">{t.icon ?? '📦'}</span>
-                    <span className="flex-1 font-medium text-gray-800 text-sm">{t.name}</span>
-                    <span className="text-xs text-gray-400">{t._count?.locations ?? 0} Container</span>
+                    <span className="text-xl w-8">{ct.icon ?? '📦'}</span>
+                    <span className="flex-1 font-medium text-gray-800 text-sm">{ct.name}</span>
+                    <span className="text-xs text-gray-400">{t('common.container_count', { count: ct._count?.locations ?? 0 })}</span>
                     <button
-                      onClick={() => { setEditId(t.id); setEditName(t.name); setEditIcon(t.icon ?? ''); }}
+                      type="button"
+                      aria-label={t('containerTypes.edit_label')}
+                      onClick={() => { setEditId(ct.id); setEditName(ct.name); setEditIcon(ct.icon ?? ''); }}
                       className="p-1.5 text-gray-400 hover:text-indigo-600"
                     >
                       <Pencil size={15} />
                     </button>
                     <button
+                      type="button"
+                      aria-label={t('containerTypes.delete_label')}
                       onClick={() => {
-                        if (confirm(`Typ "${t.name}" löschen? Container behalten ihren Typ nicht mehr.`))
-                          deleteMut.mutate(t.id);
+                        if (confirm(t('containerTypes.confirm_delete', { name: ct.name })))
+                          deleteMut.mutate(ct.id);
                       }}
                       className="p-1.5 text-gray-400 hover:text-red-500"
                     >

@@ -256,7 +256,7 @@ cd frontend && npm test
 
 ## Projektstruktur
 
-```
+```text
 home-inventory/
 ├── .env.example                  Vorlage für Umgebungsvariablen
 ├── .gitignore
@@ -339,7 +339,7 @@ home-inventory/
 
 ### Systemarchitektur
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │                        Browser                          │
 └──────────────────────────┬──────────────────────────────┘
@@ -456,7 +456,7 @@ Repräsentiert einen Container innerhalb eines Raums. Unterstützt beliebige Ver
 
 #### Beziehungsdiagramm
 
-```
+```text
 User (EDITOR/VIEWER)
                  │ verwaltet
 Room ────────────< Location >──── ContainerType
@@ -471,13 +471,13 @@ Room ────────────< Location >──── ContainerType
 
 Die vollständige, interaktive API-Dokumentation ist per **Swagger UI** erreichbar:
 
-```
+```text
 http://localhost:4000/api/docs/
 ```
 
 Das rohe OpenAPI-JSON (für Client-Generatoren wie OpenAPI Generator, Speakeasy, etc.):
 
-```
+```text
 http://localhost:4000/api/docs.json
 ```
 
@@ -539,7 +539,7 @@ Validierungsfehler (HTTP 400) enthalten zusätzlich `details` mit dem Zod-Fehler
 
 #### Token-Mechanismus
 
-```
+```text
 Login
   │
   ├── Access Token  (JWT, 15 min)   → Authorization: Bearer <token>
@@ -598,6 +598,7 @@ npm run db:seed
 ```
 
 Erstellt:
+
 - **EDITOR:** `test@home.local` / `test1234`
 - **VIEWER:** `viewer@home.local` / `test1234`
 - 5 Räume, 5 Container-Typen, 12 Container, 15 Gegenstände, 6 Tags, 2 Ausleihen

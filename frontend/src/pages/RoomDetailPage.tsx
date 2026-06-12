@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, Plus, Folder } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { getRoom, createLocation } from '../api/rooms';
 import { getContainerTypes } from '../api/containerTypes';
 import type { Location } from '../types';
 import Spinner from '../components/Spinner';
 
 function LocationNode({ loc, depth = 0 }: { loc: Location; depth?: number }) {
+  const { t } = useTranslation();
   return (
     <div style={{ paddingLeft: depth * 20 }}>
       <Link
@@ -21,7 +23,7 @@ function LocationNode({ loc, depth = 0 }: { loc: Location; depth?: number }) {
             {loc.containerType.icon} {loc.containerType.name}
           </span>
         )}
-        <span className="text-xs text-gray-400">{loc._count?.items ?? 0} Items</span>
+        <span className="text-xs text-gray-400">{t('common.items_count', { count: loc._count?.items ?? 0 })}</span>
         <ChevronRight size={14} className="text-gray-300 group-hover:text-gray-500" />
       </Link>
       {loc.children?.map((child) => (
@@ -32,6 +34,7 @@ function LocationNode({ loc, depth = 0 }: { loc: Location; depth?: number }) {
 }
 
 export default function RoomDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
 
@@ -59,12 +62,12 @@ export default function RoomDetailPage() {
   });
 
   if (isLoading) return <Spinner />;
-  if (!room) return <p className="text-gray-500">Raum nicht gefunden.</p>;
+  if (!room) return <p className="text-gray-500">{t('rooms.not_found')}</p>;
 
   return (
     <div>
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-        <Link to="/rooms" className="hover:text-indigo-600">Räume</Link>
+        <Link to="/rooms" className="hover:text-indigo-600">{t('nav.rooms')}</Link>
         <ChevronRight size={14} />
         <span className="text-gray-900 font-medium">{room.name}</span>
       </div>
@@ -77,26 +80,27 @@ export default function RoomDetailPage() {
           onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
         >
-          <Plus size={16} /> Container hinzufügen
+          <Plus size={16} /> {t('roomDetail.add_container')}
         </button>
       </div>
 
       {showForm && (
         <div className="mb-6 bg-white border border-gray-200 rounded-xl p-4">
-          <h2 className="font-medium text-gray-800 mb-3">Neuer Container</h2>
+          <h2 className="font-medium text-gray-800 mb-3">{t('roomDetail.new_container')}</h2>
           <div className="flex gap-3 flex-wrap">
             <input
               value={locName}
               onChange={(e) => setLocName(e.target.value)}
-              placeholder="Name (z.B. Kühlschrank)"
+              placeholder={t('roomDetail.name_placeholder')}
               className="flex-1 min-w-40 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <select
+              aria-label="Container-Typ"
               value={locType}
               onChange={(e) => setLocType(e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              <option value="">Typ wählen…</option>
+              <option value="">{t('common.type_select')}</option>
               {containerTypes?.map((ct) => (
                 <option key={ct.id} value={ct.id}>
                   {ct.icon} {ct.name}
@@ -108,7 +112,7 @@ export default function RoomDetailPage() {
               disabled={!locName || create.isPending}
               className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
             >
-              {create.isPending ? 'Speichern…' : 'Speichern'}
+              {create.isPending ? t('common.saving') : t('common.save')}
             </button>
           </div>
         </div>
@@ -117,7 +121,7 @@ export default function RoomDetailPage() {
       <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
         {!room.locations?.length ? (
           <p className="py-8 text-center text-gray-400 text-sm">
-            Noch keine Container. Füge den ersten hinzu!
+            {t('roomDetail.no_containers')}
           </p>
         ) : (
           room.locations.map((loc) => <LocationNode key={loc.id} loc={loc} />)

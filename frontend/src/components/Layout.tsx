@@ -8,11 +8,13 @@ import {
   Users,
   LogOut,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const isEditor = user?.role === 'EDITOR';
 
   const handleLogout = () => {
@@ -20,13 +22,19 @@ export default function Layout() {
     navigate('/login');
   };
 
+  const toggleLang = () => {
+    const next = i18n.language === 'de' ? 'en' : 'de';
+    i18n.changeLanguage(next);
+    localStorage.setItem('lang', next);
+  };
+
   const navItems = [
-    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', show: true },
-    { to: '/rooms', icon: Home, label: 'Räume', show: true },
-    { to: '/search', icon: Search, label: 'Suche', show: true },
-    { to: '/lendings', icon: ArrowRightLeft, label: 'Ausleihen', show: true },
-    { to: '/container-types', icon: Box, label: 'Container-Typen', show: isEditor },
-    { to: '/users', icon: Users, label: 'Nutzer', show: isEditor },
+    { to: '/dashboard', icon: LayoutDashboard, label: t('nav.dashboard'), show: true },
+    { to: '/rooms', icon: Home, label: t('nav.rooms'), show: true },
+    { to: '/search', icon: Search, label: t('nav.search'), show: true },
+    { to: '/lendings', icon: ArrowRightLeft, label: t('nav.lendings'), show: true },
+    { to: '/container-types', icon: Box, label: t('nav.container_types'), show: isEditor },
+    { to: '/users', icon: Users, label: t('nav.users'), show: isEditor },
   ];
 
   return (
@@ -57,11 +65,21 @@ export default function Layout() {
         </nav>
 
         <div className="px-3 py-4 border-t border-gray-700">
-          <div className="px-3 py-1.5">
-            <div className="text-gray-200 text-sm truncate">{user?.name ?? user?.email}</div>
-            <div className="text-gray-500 text-xs mt-0.5">
-              {user?.role === 'EDITOR' ? '✏️ Editor' : '👁 Betrachter'}
+          <div className="px-3 py-1.5 flex items-center justify-between">
+            <div>
+              <div className="text-gray-200 text-sm truncate">{user?.name ?? user?.email}</div>
+              <div className="text-gray-500 text-xs mt-0.5">
+                {user?.role === 'EDITOR' ? t('nav.role_editor') : t('nav.role_viewer')}
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={toggleLang}
+              className="text-xs text-gray-400 hover:text-gray-200 border border-gray-600 hover:border-gray-400 rounded px-1.5 py-0.5 transition-colors"
+              title={i18n.language === 'de' ? 'Switch to English' : 'Auf Deutsch wechseln'}
+            >
+              {t('nav.lang_toggle')}
+            </button>
           </div>
           <button
             type="button"
@@ -69,7 +87,7 @@ export default function Layout() {
             className="mt-1 w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
           >
             <LogOut size={18} />
-            Abmelden
+            {t('nav.logout')}
           </button>
         </div>
       </aside>

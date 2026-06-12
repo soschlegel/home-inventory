@@ -1,12 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Home, ArrowRightLeft, AlertTriangle, Package } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { getRooms } from '../api/rooms';
 import { getActiveLendings } from '../api/lendings';
 import { getLowStockItems } from '../api/items';
 import Spinner from '../components/Spinner';
 
 export default function DashboardPage() {
+  const { t, i18n } = useTranslation();
   const rooms = useQuery({ queryKey: ['rooms'], queryFn: getRooms });
   const lendings = useQuery({ queryKey: ['lendings', 'active'], queryFn: getActiveLendings });
   const lowStock = useQuery({ queryKey: ['items', 'low-stock'], queryFn: getLowStockItems });
@@ -15,22 +17,22 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('dashboard.title')}</h1>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-4 mb-8 sm:grid-cols-4">
-        <StatCard icon={<Home size={20} />} label="Räume" value={rooms.data?.length ?? '…'} color="indigo" />
-        <StatCard icon={<Package size={20} />} label="Container" value={totalLocations} color="blue" />
+        <StatCard icon={<Home size={20} />} label={t('dashboard.stat_rooms')} value={rooms.data?.length ?? '…'} color="indigo" />
+        <StatCard icon={<Package size={20} />} label={t('dashboard.stat_container')} value={totalLocations} color="blue" />
         <StatCard
           icon={<ArrowRightLeft size={20} />}
-          label="Ausgeliehen"
+          label={t('dashboard.stat_lent')}
           value={lendings.data?.length ?? '…'}
           color="orange"
           href="/lendings"
         />
         <StatCard
           icon={<AlertTriangle size={20} />}
-          label="Mindestbestand"
+          label={t('dashboard.stat_low_stock')}
           value={lowStock.data?.length ?? '…'}
           color="red"
         />
@@ -40,7 +42,7 @@ export default function DashboardPage() {
       {(lowStock.data?.length ?? 0) > 0 && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
           <h2 className="font-medium text-red-800 mb-2 flex items-center gap-2">
-            <AlertTriangle size={16} /> Mindestbestand unterschritten
+            <AlertTriangle size={16} /> {t('dashboard.low_stock_title')}
           </h2>
           <ul className="space-y-1">
             {lowStock.data?.map((item) => (
@@ -48,7 +50,7 @@ export default function DashboardPage() {
                 <Link to={`/items/${item.id}`} className="hover:underline font-medium">
                   {item.name}
                 </Link>{' '}
-                — {item.quantity} {item.unit ?? 'Stück'} (min. {item.minQuantity})
+                — {item.quantity} {item.unit ?? t('common.piece')} (min. {item.minQuantity})
               </li>
             ))}
           </ul>
@@ -59,7 +61,7 @@ export default function DashboardPage() {
       {(lendings.data?.length ?? 0) > 0 && (
         <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
           <h2 className="font-medium text-orange-800 mb-2 flex items-center gap-2">
-            <ArrowRightLeft size={16} /> Aktuell ausgeliehen
+            <ArrowRightLeft size={16} /> {t('dashboard.lent_title')}
           </h2>
           <ul className="space-y-1">
             {lendings.data?.map((l) => (
@@ -69,7 +71,7 @@ export default function DashboardPage() {
                 </Link>{' '}
                 → <span className="font-medium">{l.lentTo}</span>
                 {' · '}
-                {new Date(l.lentAt).toLocaleDateString('de-DE')}
+                {new Date(l.lentAt).toLocaleDateString(i18n.language)}
               </li>
             ))}
           </ul>
@@ -77,7 +79,7 @@ export default function DashboardPage() {
       )}
 
       {/* Rooms overview */}
-      <h2 className="text-lg font-semibold text-gray-800 mb-3">Räume</h2>
+      <h2 className="text-lg font-semibold text-gray-800 mb-3">{t('dashboard.rooms_section')}</h2>
       {rooms.isLoading ? (
         <Spinner />
       ) : (
@@ -91,7 +93,7 @@ export default function DashboardPage() {
               <div className="text-2xl mb-1">{room.icon ?? '🏠'}</div>
               <div className="font-medium text-gray-900">{room.name}</div>
               <div className="text-xs text-gray-500 mt-0.5">
-                {room._count?.locations ?? 0} Container
+                {t('common.container_count', { count: room._count?.locations ?? 0 })}
               </div>
             </Link>
           ))}
