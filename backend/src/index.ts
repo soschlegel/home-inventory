@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import swaggerUi from 'swagger-ui-express';
 import authRouter from './routes/auth';
 import roomsRouter from './routes/rooms';
 import locationsRouter from './routes/locations';
@@ -10,6 +11,7 @@ import lendingsRouter from './routes/lendings';
 import containerTypesRouter from './routes/containerTypes';
 import usersRouter from './routes/users';
 import { errorHandler } from './middleware/errorHandler';
+import openapiSpec from './openapi';
 
 const app = express();
 const PORT = process.env.PORT ?? 4000;
@@ -20,6 +22,9 @@ app.use(express.json());
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
+
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));
+app.get('/api/docs.json', (_req, res) => res.json(openapiSpec));
 
 app.use('/api/auth', authRouter);
 app.use('/api/rooms', roomsRouter);

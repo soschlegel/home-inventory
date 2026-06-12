@@ -9,17 +9,18 @@ Webanwendung zur vollständigen Verwaltung von Haushaltsgegenständen — was li
 1. [Features](#features)
 2. [Quickstart](#quickstart)
 3. [Lokale Entwicklung](#lokale-entwicklung)
-4. [Umgebungsvariablen](#umgebungsvariablen)
-5. [Projektstruktur](#projektstruktur)
-6. [Technische Dokumentation](#technische-dokumentation)
+4. [Tests](#tests)
+5. [Umgebungsvariablen](#umgebungsvariablen)
+6. [Projektstruktur](#projektstruktur)
+7. [Technische Dokumentation](#technische-dokumentation)
    - [Systemarchitektur](#systemarchitektur)
    - [Datenmodell](#datenmodell)
-   - [API-Referenz](#api-referenz)
-   - [Authentifizierung](#authentifizierung)
+   - [API-Dokumentation](#api-dokumentation)
+   - [Authentifizierung & Rollen](#authentifizierung--rollen)
    - [Datei-Upload](#datei-upload)
-   - [Prisma & Migrationen](#prisma--migrationen)
-7. [Docker-Deployment](#docker-deployment)
-8. [Code-Qualität](#code-qualität)
+   - [Prisma & Schema](#prisma--schema)
+8. [Docker-Deployment](#docker-deployment)
+9. [Code-Qualität](#code-qualität)
 
 ---
 
@@ -32,6 +33,7 @@ Webanwendung zur vollständigen Verwaltung von Haushaltsgegenständen — was li
 - Benutzerdefinierte **Container-Typen** mit Emoji und Farbe
 - Volltextsuche über Name, Beschreibung, Seriennummer und Barcode
 - Mindestbestand-Warnung auf dem Dashboard
+- **Gemeinsames Inventar** für alle Nutzer — Räume und Gegenstände sind nicht benutzerspezifisch
 
 ### Gegenstände
 
@@ -40,6 +42,7 @@ Webanwendung zur vollständigen Verwaltung von Haushaltsgegenständen — was li
 - Zustand: Neu / Gut / Abgenutzt / Defekt
 - Tags zur freien Kategorisierung (Mehrfachzuordnung)
 - Mindestbestand-Schwellwert
+- Vollständig bearbeitbar inkl. Kaufinformationen und Tags
 
 ### Kaufinformationen pro Gegenstand
 
@@ -50,15 +53,31 @@ Webanwendung zur vollständigen Verwaltung von Haushaltsgegenständen — was li
 - Barcode / EAN (Vorbereitung für spätere Scan-Funktion)
 
 ### Verleihistorie
+
 - Gegenstände an Personen verleihen (Name + optionale Notiz)
 - Rückgabe mit Datum eintragen
 - Vollständige Verleihistorie pro Gegenstand
 - Übersicht aller aktuell ausgeliehenen Gegenstände
 
-### Authentifizierung
-- Registrierung und Login per E-Mail + Passwort
-- JWT Access Token (15 min) + Refresh Token (7 Tage)
-- Automatische Token-Erneuerung im Frontend
+### Benutzerverwaltung & Rollen
+
+Zwei Rollen steuern, wer Änderungen vornehmen darf:
+
+| Rolle | Lesen | Schreiben / Löschen |
+|-------|-------|---------------------|
+| **EDITOR** | ✓ | ✓ |
+| **VIEWER** | ✓ | — |
+
+- Nutzer anlegen, Rollen ändern und Nutzer löschen (nur für EDITOR)
+- Rollenbadge in der Navigation sichtbar
+- Registrierung per E-Mail + Passwort; JWT Access Token (15 min) + Refresh Token (7 Tage)
+
+### API-Dokumentation (OpenAPI / Swagger)
+
+Die komplette REST-API ist als OpenAPI 3.0.3-Spec dokumentiert und per Swagger UI interaktiv erreichbar:
+
+- **Swagger UI:** `http://localhost:4000/api/docs/`
+- **OpenAPI JSON** (für Code-Generatoren): `http://localhost:4000/api/docs.json`
 
 ---
 
@@ -77,18 +96,26 @@ cd home-inventory
 
 # 2. Umgebungsvariablen anlegen und anpassen
 cp .env.example .env
+# DB_PASSWORD, JWT_SECRET und JWT_REFRESH_SECRET setzen!
 
-# 3. Sichere Werte in .env setzen (Pflicht!)
-#    DB_PASSWORD, JWT_SECRET, JWT_REFRESH_SECRET
+# 3. Container bauen und starten
+docker compose up -d --build
 
-# 4. Container starten (baut Images beim ersten Mal automatisch)
-docker compose up -d
+# 4. Testdaten einspielen (erstellt zwei Demo-Nutzer)
+docker compose exec backend sh -c "npx prisma db seed"
 
 # 5. App aufrufen
 open http://localhost:3000
 ```
 
-> Beim ersten Start führt der Backend-Container automatisch alle Prisma-Migrationen aus (`prisma migrate deploy`).
+**Demo-Zugänge nach dem Seed:**
+
+| Rolle | E-Mail | Passwort |
+|-------|--------|----------|
+| EDITOR | `test@home.local` | `test1234` |
+| VIEWER | `viewer@home.local` | `test1234` |
+
+> Das Backend führt beim Start automatisch `prisma db push` aus und synchronisiert das Schema mit der Datenbank.
 
 ---
 
@@ -106,38 +133,31 @@ docker compose up postgres -d
 
 ```bash
 cd backend
-
-# Abhängigkeiten installieren
 npm install
-
-# .env anlegen (Vorlage liegt unter backend/.env.example)
-cp .env.example .env
+cp .env.example .env   # Werte anpassen
 
 # Datenbank-Schema anwenden
-npm run db:migrate
+npx prisma db push
 
 # Testdaten einspielen
 npm run db:seed
 
-# Entwicklungsserver starten (Hot-Reload via tsx watch)
+# Entwicklungsserver starten (Hot-Reload)
 npm run dev
 # → http://localhost:4000
+# → Swagger UI: http://localhost:4000/api/docs/
 ```
 
 ### 3. Frontend
 
 ```bash
 cd frontend
-
-# Abhängigkeiten installieren
 npm install
-
-# Entwicklungsserver starten (Vite mit Proxy zu localhost:4000)
 npm run dev
 # → http://localhost:5173
 ```
 
-> Im Dev-Modus proxied Vite `/api/*` und `/uploads/*` automatisch an `localhost:4000`. Es ist keine weitere Konfiguration nötig.
+> Im Dev-Modus proxied Vite `/api/*` und `/uploads/*` automatisch an `localhost:4000`.
 
 ### Nützliche Backend-Befehle
 
@@ -145,10 +165,12 @@ npm run dev
 |--------|--------------|
 | `npm run dev` | Entwicklungsserver mit Hot-Reload |
 | `npm run build` | TypeScript kompilieren |
+| `npm test` | Unit-Tests einmalig ausführen |
+| `npm run test:watch` | Tests im Watch-Modus |
+| `npm run test:coverage` | Tests mit Coverage-Report |
 | `npm run lint` | ESLint ausführen |
 | `npm run format` | Prettier auf `src/` anwenden |
-| `npm run db:migrate` | Neue Migration erstellen und anwenden |
-| `npm run db:seed` | Testdaten einspielen (löscht vorhandene Daten) |
+| `npm run db:seed` | Testdaten einspielen |
 | `npm run db:studio` | Prisma Studio im Browser öffnen |
 
 ### Nützliche Frontend-Befehle
@@ -157,21 +179,64 @@ npm run dev
 |--------|--------------|
 | `npm run dev` | Vite Dev-Server |
 | `npm run build` | Produktions-Build erstellen |
+| `npm test` | Unit-Tests einmalig ausführen |
+| `npm run test:watch` | Tests im Watch-Modus |
+| `npm run test:coverage` | Tests mit Coverage-Report |
 | `npm run lint` | ESLint ausführen |
 | `npm run format` | Prettier auf `src/` anwenden |
 
 ---
 
-## Umgebungsvariablen
+## Tests
 
-Die Datei `.env.example` enthält alle verfügbaren Variablen. Für den Start muss `.env` im Projektstamm existieren.
+Das Projekt verwendet **Vitest** für Backend (Node-Umgebung) und Frontend (jsdom-Umgebung).
+
+### Alle Tests ausführen
+
+```bash
+# Einmalig (Backend + Frontend)
+bash scripts/test.sh
+
+# Mit Coverage-Reports
+bash scripts/test.sh --coverage
+```
+
+### Separat
+
+```bash
+cd backend && npm test
+cd frontend && npm test
+```
+
+### Übersicht Test-Abdeckung
+
+| Bereich | Test-Datei | Was wird getestet |
+|---------|-----------|-------------------|
+| Backend | `jwt.test.ts` | Token signieren & verifizieren, Rollen-Roundtrip |
+| Backend | `auth.middleware.test.ts` | `authenticate` + `requireEditor` Middleware |
+| Backend | `errorHandler.test.ts` | ZodError → 400, generische Fehler → 500 |
+| Backend | `auth.routes.test.ts` | Register, Login, Refresh-Token |
+| Backend | `rooms.routes.test.ts` | CRUD Räume |
+| Backend | `users.routes.test.ts` | CRUD Nutzer, Rollen-Management |
+| Backend | `items.routes.test.ts` | Suche, Low-Stock, CRUD, purchaseUrl-Clearing |
+| Backend | `containerTypes.routes.test.ts` | CRUD Container-Typen, Farbvalidierung |
+| Backend | `lendings.routes.test.ts` | Verleihen, Rückgabe, Doppelrückgabe (409), Historie |
+| Backend | `tags.routes.test.ts` | Tags auflisten |
+| Backend | `openapi.test.ts` | Spec-Struktur, alle Pfade und Schemas vorhanden |
+| Frontend | `AuthContext.test.tsx` | Login, Logout, Register, localStorage |
+| Frontend | `PrivateRoute.test.tsx` | Redirect ohne Session, Inhalt mit Session |
+| Frontend | `types.test.ts` | `CONDITION_LABELS` und `CONDITION_COLORS` |
+
+---
+
+## Umgebungsvariablen
 
 ### Stamm `.env` (Docker Compose)
 
 | Variable | Standard | Beschreibung |
 |----------|----------|--------------|
 | `DB_PASSWORD` | `changeme` | PostgreSQL-Passwort. **In Produktion unbedingt ändern.** |
-| `JWT_SECRET` | `changeme_jwt_secret_please` | Secret für Access Tokens (min. 32 zufällige Zeichen empfohlen). |
+| `JWT_SECRET` | `changeme_jwt_secret_please` | Secret für Access Tokens (min. 32 Zeichen empfohlen). |
 | `JWT_REFRESH_SECRET` | `changeme_refresh_secret_please` | Secret für Refresh Tokens. **Muss sich von `JWT_SECRET` unterscheiden.** |
 | `PORT` | `3000` | Öffentlicher Port, auf dem Nginx lauscht. |
 
@@ -179,13 +244,13 @@ Die Datei `.env.example` enthält alle verfügbaren Variablen. Für den Start mu
 
 | Variable | Beispiel | Beschreibung |
 |----------|---------|--------------|
-| `DATABASE_URL` | `postgresql://inventory:pw@localhost:5432/home_inventory` | Vollständige Prisma-Connection-URL. |
-| `JWT_SECRET` | — | Wie oben. |
-| `JWT_REFRESH_SECRET` | — | Wie oben. |
-| `UPLOAD_DIR` | `./uploads` | Verzeichnis für hochgeladene Bilder. |
-| `PORT` | `4000` | Port des Express-Servers. |
+| `DATABASE_URL` | `postgresql://inventory:pw@localhost:5432/home_inventory` | Prisma-Connection-URL |
+| `JWT_SECRET` | — | Wie oben |
+| `JWT_REFRESH_SECRET` | — | Wie oben |
+| `UPLOAD_DIR` | `./uploads` | Verzeichnis für hochgeladene Bilder |
+| `PORT` | `4000` | Port des Express-Servers |
 
-> **Sicherheitshinweis:** Die `.env`-Datei ist in `.gitignore` eingetragen und wird nie ins Repository eingecheckt.
+> **Sicherheitshinweis:** `.env` ist in `.gitignore` eingetragen und wird nie ins Repository eingecheckt.
 
 ---
 
@@ -198,75 +263,74 @@ home-inventory/
 ├── docker-compose.yml            Orchestrierung aller Services
 ├── nginx/
 │   └── nginx.conf                Reverse-Proxy-Konfiguration
+├── scripts/
+│   └── test.sh                   Test-Runner für Backend + Frontend
 │
 ├── backend/
-│   ├── Dockerfile                Multi-Stage Build (Builder + Runtime)
+│   ├── Dockerfile                Multi-Stage Build
 │   ├── package.json
+│   ├── vitest.config.ts          Test-Konfiguration (Node-Umgebung)
 │   ├── tsconfig.json
-│   ├── eslint.config.mjs
-│   ├── .prettierrc
-│   ├── .env.example
 │   ├── prisma/
-│   │   ├── schema.prisma         Datenmodell (single source of truth)
-│   │   ├── migrations/           Versionierte SQL-Migrationen
-│   │   └── seed.ts               Testdaten-Skript
+│   │   ├── schema.prisma         Datenmodell
+│   │   └── seed.ts               Demo-Daten (EDITOR + VIEWER)
 │   └── src/
-│       ├── index.ts              Express-App + Router-Registrierung
+│       ├── index.ts              Express-App, Router-Registrierung, Swagger UI
+│       ├── openapi.ts            OpenAPI 3.0.3-Spezifikation
 │       ├── lib/
 │       │   └── prisma.ts         Prisma-Client Singleton
 │       ├── middleware/
-│       │   ├── auth.ts           JWT-Verifikation (Bearer Token)
-│       │   └── errorHandler.ts   Globaler Fehler-Handler (Zod + 500er)
+│       │   ├── auth.ts           JWT-Verifikation + requireEditor
+│       │   └── errorHandler.ts   Globaler Fehler-Handler
 │       ├── routes/
 │       │   ├── auth.ts           POST /register, /login, /refresh
-│       │   ├── rooms.ts          CRUD Räume + Locations anlegen
+│       │   ├── rooms.ts          CRUD Räume
 │       │   ├── locations.ts      CRUD Locations + Items anlegen
 │       │   ├── items.ts          CRUD Items + Bildupload + Suche
 │       │   ├── lendings.ts       Verleihen, Rückgabe, Historie
 │       │   ├── tags.ts           Tags auflisten
-│       │   └── containerTypes.ts CRUD Container-Typen
-│       └── utils/
-│           ├── jwt.ts            Token signieren & verifizieren
-│           └── upload.ts         Multer-Konfiguration
+│       │   ├── containerTypes.ts CRUD Container-Typen
+│       │   └── users.ts          CRUD Nutzer + Rollen
+│       ├── utils/
+│       │   ├── jwt.ts            Token signieren & verifizieren
+│       │   └── upload.ts         Multer-Konfiguration
+│       └── __tests__/            Unit-Tests (11 Dateien)
 │
 └── frontend/
     ├── Dockerfile                Multi-Stage Build (Vite + Nginx)
-    ├── nginx.conf                SPA-Routing (try_files)
+    ├── vite.config.ts            Dev-Proxy + Vitest-Konfiguration
     ├── package.json
-    ├── vite.config.ts            Dev-Proxy zu Backend
-    ├── tsconfig.json
-    ├── tailwind.config.js
-    ├── eslint.config.mjs
-    ├── .prettierrc
     └── src/
-        ├── main.tsx              Root: QueryClient + Router + AuthProvider
+        ├── main.tsx
         ├── App.tsx               Route-Definitionen
-        ├── index.css             Tailwind-Imports
-        ├── types.ts              Gemeinsame TypeScript-Interfaces
+        ├── types.ts              TypeScript-Interfaces
         ├── api/                  API-Funktionen (axios)
-        │   ├── client.ts         Axios-Instanz mit Token-Refresh-Interceptor
+        │   ├── client.ts         Axios + Token-Refresh-Interceptor
         │   ├── auth.ts
         │   ├── rooms.ts
         │   ├── locations.ts
         │   ├── items.ts
         │   ├── lendings.ts
-        │   └── containerTypes.ts
+        │   ├── containerTypes.ts
+        │   └── users.ts
         ├── contexts/
-        │   └── AuthContext.tsx   User-State, Login/Logout
+        │   └── AuthContext.tsx   User-State, Login/Logout/Register
         ├── components/
-        │   ├── Layout.tsx        Sidebar-Navigation
+        │   ├── Layout.tsx        Navigation + Rollenbadge
         │   ├── PrivateRoute.tsx  Auth-Guard
-        │   └── Spinner.tsx       Lade-Indikator
-        └── pages/
-            ├── LoginPage.tsx
-            ├── DashboardPage.tsx
-            ├── RoomsPage.tsx
-            ├── RoomDetailPage.tsx
-            ├── LocationDetailPage.tsx
-            ├── ItemDetailPage.tsx
-            ├── SearchPage.tsx
-            ├── LendingsPage.tsx
-            └── ContainerTypesPage.tsx
+        │   └── Spinner.tsx
+        ├── pages/
+        │   ├── LoginPage.tsx
+        │   ├── DashboardPage.tsx
+        │   ├── RoomsPage.tsx
+        │   ├── RoomDetailPage.tsx
+        │   ├── LocationDetailPage.tsx
+        │   ├── ItemDetailPage.tsx  (inkl. Bearbeitungsformular)
+        │   ├── SearchPage.tsx
+        │   ├── LendingsPage.tsx
+        │   ├── ContainerTypesPage.tsx
+        │   └── UsersPage.tsx       Benutzerverwaltung
+        └── __tests__/            Unit-Tests (3 Dateien)
 ```
 
 ---
@@ -282,7 +346,6 @@ home-inventory/
                            │ HTTP :3000
 ┌──────────────────────────▼──────────────────────────────┐
 │                    Nginx (Alpine)                        │
-│                                                         │
 │  /api/*      → proxy  backend:4000                      │
 │  /uploads/*  → alias  /app/uploads  (Cache 30d)         │
 │  /*          → proxy  frontend:80                       │
@@ -291,16 +354,15 @@ home-inventory/
 ┌───────▼──────────┐              ┌────────▼─────────────┐
 │  Backend         │              │  Frontend             │
 │  Node.js/Express │              │  React SPA (Vite)     │
-│                  │              │  Tailwind CSS         │
-│  JWT Auth        │              │  TanStack Query       │
-│  Prisma ORM      │              │  React Router v6      │
-│  Multer Upload   │              └──────────────────────┘
+│  JWT Auth        │              │  Tailwind CSS         │
+│  Prisma ORM      │              │  TanStack Query       │
+│  Multer Upload   │              │  React Router v6      │
+│  Swagger UI      │              └──────────────────────┘
 └───────┬──────────┘
         │
 ┌───────▼──────────┐
 │  PostgreSQL 16   │
-│  (persistentes   │
-│   Docker Volume) │
+│  (Docker Volume) │
 └──────────────────┘
 ```
 
@@ -318,24 +380,26 @@ Das vollständige Schema liegt in [`backend/prisma/schema.prisma`](backend/prism
 | `email` | `String` | Eindeutig, Login-Identifier |
 | `passwordHash` | `String` | bcrypt-Hash (Rounds: 12) |
 | `name` | `String?` | Anzeigename (optional) |
+| `role` | `UserRole` | `EDITOR` oder `VIEWER` (Standard: `EDITOR`) |
 | `createdAt` | `DateTime` | |
 | `updatedAt` | `DateTime` | |
 
 #### ContainerType
 
-Benutzerdefinierter Typ für Container (z. B. Schublade, Karton).
+Benutzerdefinierter Typ für Container (z. B. Schublade, Karton). Wird von allen Nutzern geteilt.
 
 | Feld | Typ | Beschreibung |
 |------|-----|--------------|
 | `id` | `String` (cuid) | Primärschlüssel |
-| `name` | `String` | Name (eindeutig pro User) |
+| `name` | `String` | Name (global eindeutig) |
 | `icon` | `String?` | Emoji oder Icon-Name |
-| `color` | `String?` | Hex-Farbe (z. B. `#FF5733`) |
-| `userId` | `String` | Fremdschlüssel → User |
+| `color` | `String?` | Hex-Farbe (z. B. `#3B82F6`) |
 
 > Wird ein Typ gelöscht, verlieren zugeordnete Locations ihren Typ (`onDelete: SetNull`).
 
 #### Room
+
+Geteilt zwischen allen Nutzern.
 
 | Feld | Typ | Beschreibung |
 |------|-----|--------------|
@@ -343,13 +407,12 @@ Benutzerdefinierter Typ für Container (z. B. Schublade, Karton).
 | `name` | `String` | z. B. „Küche", „Keller" |
 | `description` | `String?` | |
 | `icon` | `String?` | Emoji |
-| `userId` | `String` | Fremdschlüssel → User |
 
 Löschen eines Raums kaskadiert zu allen Locations und deren Items.
 
 #### Location
 
-Repräsentiert einen Container innerhalb eines Raums (Schrank, Regal, Box, ...). Unterstützt beliebige Verschachtelung über `parentId`.
+Repräsentiert einen Container innerhalb eines Raums. Unterstützt beliebige Verschachtelung über `parentId`.
 
 | Feld | Typ | Beschreibung |
 |------|-----|--------------|
@@ -391,194 +454,136 @@ Repräsentiert einen Container innerhalb eines Raums (Schrank, Regal, Box, ...).
 | `returnedAt` | `DateTime?` | Rückgabe-Datum; `null` = noch ausgeliehen |
 | `note` | `String?` | Freie Notiz |
 
-#### Beziehungsdiagramm (vereinfacht)
+#### Beziehungsdiagramm
 
 ```
-User ──< Room ──< Location >──── ContainerType
-               Location ──< Location   (Verschachtelung)
-               Location ──< Item ──< Lending
-                            Item ──< ItemTag >── Tag
+User (EDITOR/VIEWER)
+                 │ verwaltet
+Room ────────────< Location >──── ContainerType
+                  Location ──< Location   (Verschachtelung)
+                  Location ──< Item ──< Lending
+                               Item ──< ItemTag >── Tag
 ```
 
 ---
 
-### API-Referenz
+### API-Dokumentation
 
-Alle Endpunkte unterhalb von `/api/auth/` sind öffentlich. Alle anderen erfordern einen gültigen **Bearer Token** im `Authorization`-Header.
+Die vollständige, interaktive API-Dokumentation ist per **Swagger UI** erreichbar:
 
-#### Authentifizierung
-
-| Methode | Pfad | Body | Antwort |
-|---------|------|------|---------|
-| `POST` | `/api/auth/register` | `{ email, password, name? }` | `{ user, accessToken, refreshToken }` |
-| `POST` | `/api/auth/login` | `{ email, password }` | `{ user, accessToken, refreshToken }` |
-| `POST` | `/api/auth/refresh` | `{ refreshToken }` | `{ accessToken }` |
-
-#### Räume
-
-| Methode | Pfad | Beschreibung |
-|---------|------|--------------|
-| `GET` | `/api/rooms` | Alle Räume des eingeloggten Users |
-| `POST` | `/api/rooms` | Raum erstellen |
-| `GET` | `/api/rooms/:id` | Raum mit Location-Baum |
-| `PUT` | `/api/rooms/:id` | Raum aktualisieren |
-| `DELETE` | `/api/rooms/:id` | Raum löschen (kaskadierend) |
-| `GET` | `/api/rooms/:roomId/locations` | Top-Level Locations eines Raums |
-| `POST` | `/api/rooms/:roomId/locations` | Location in Raum erstellen |
-
-**POST `/api/rooms`**
-```json
-{ "name": "Küche", "icon": "🍳", "description": "..." }
+```
+http://localhost:4000/api/docs/
 ```
 
-**POST `/api/rooms/:roomId/locations`**
-```json
-{ "name": "Kühlschrank", "containerTypeId": "...", "parentId": "..." }
+Das rohe OpenAPI-JSON (für Client-Generatoren wie OpenAPI Generator, Speakeasy, etc.):
+
+```
+http://localhost:4000/api/docs.json
 ```
 
-#### Locations
+#### Schnellübersicht aller Endpunkte
 
-| Methode | Pfad | Beschreibung |
-|---------|------|--------------|
-| `GET` | `/api/locations/:id` | Location mit Kindern und Items |
-| `PUT` | `/api/locations/:id` | Location aktualisieren |
-| `DELETE` | `/api/locations/:id` | Location löschen (kaskadierend) |
-| `GET` | `/api/locations/:locationId/items` | Alle Items einer Location |
-| `POST` | `/api/locations/:locationId/items` | Item in Location erstellen |
+Alle Endpunkte außer den Auth-Endpunkten erfordern `Authorization: Bearer <accessToken>`.  
+Mit `🔒` markierte Endpunkte erfordern zusätzlich die Rolle **EDITOR**.
 
-**POST `/api/locations/:locationId/items`**
-```json
-{
-  "name": "Tomatendosen",
-  "quantity": 6,
-  "unit": "Dose",
-  "minQuantity": 3,
-  "condition": "NEW",
-  "purchaseUrl": "https://...",
-  "purchasePrice": 1.49,
-  "warrantyUntil": "2026-12-31",
-  "serialNumber": "...",
-  "barcode": "4000539012121",
-  "tags": ["Lebensmittel"]
-}
-```
-
-#### Items
-
-| Methode | Pfad | Beschreibung |
-|---------|------|--------------|
-| `GET` | `/api/items/search?q=...` | Volltext-Suche (max. 50 Ergebnisse) |
-| `GET` | `/api/items/low-stock` | Items unter Mindestbestand |
-| `GET` | `/api/items/:id` | Item mit Tags, Lendings und Location |
-| `PUT` | `/api/items/:id` | Item aktualisieren (inkl. Tags ersetzen) |
-| `DELETE` | `/api/items/:id` | Item löschen (Bild wird mitgelöscht) |
-| `POST` | `/api/items/:id/image` | Bild hochladen (`multipart/form-data`, Feld: `image`) |
-
-Suche durchsucht: `name`, `description`, `serialNumber` (contains) und `barcode` (exact match).
-
-#### Ausleihen (Lendings)
-
-| Methode | Pfad | Beschreibung |
-|---------|------|--------------|
-| `GET` | `/api/lendings/active` | Alle aktuell ausgeliehenen Items |
-| `GET` | `/api/lendings/:id` | Einzelne Ausleihe |
-| `POST` | `/api/lendings/items/:itemId/lend` | Item verleihen |
-| `PUT` | `/api/lendings/:id/return` | Rückgabe eintragen (setzt `returnedAt = now`) |
-| `GET` | `/api/lendings/items/:itemId/lendings` | Verleihistorie eines Items |
-
-**POST `/api/lendings/items/:itemId/lend`**
-```json
-{ "lentTo": "Peter Müller", "note": "Für Renovierung", "lentAt": "2026-06-01" }
-```
-
-#### Container-Typen
-
-| Methode | Pfad | Beschreibung |
-|---------|------|--------------|
-| `GET` | `/api/container-types` | Alle Typen des Users |
-| `POST` | `/api/container-types` | Typ erstellen |
-| `PUT` | `/api/container-types/:id` | Typ aktualisieren |
-| `DELETE` | `/api/container-types/:id` | Typ löschen |
-
-**POST `/api/container-types`**
-```json
-{ "name": "Schublade", "icon": "🗄️", "color": "#4F46E5" }
-```
-
-#### Tags
-
-| Methode | Pfad | Beschreibung |
-|---------|------|--------------|
-| `GET` | `/api/tags` | Alle Tags des Users (mit Item-Anzahl) |
-
-Tags werden automatisch erstellt, wenn sie beim Anlegen/Aktualisieren eines Items übergeben werden.
+| Methode | Pfad | Auth | Beschreibung |
+|---------|------|------|--------------|
+| `GET` | `/api/health` | — | Server-Status |
+| `POST` | `/api/auth/register` | — | Account registrieren |
+| `POST` | `/api/auth/login` | — | Login |
+| `POST` | `/api/auth/refresh` | — | Access Token erneuern |
+| `GET` | `/api/users` | 🔒 | Alle Nutzer |
+| `POST` | `/api/users` | 🔒 | Nutzer anlegen |
+| `PUT` | `/api/users/:id/role` | 🔒 | Rolle ändern |
+| `DELETE` | `/api/users/:id` | 🔒 | Nutzer löschen |
+| `GET` | `/api/rooms` | ✓ | Alle Räume |
+| `POST` | `/api/rooms` | 🔒 | Raum erstellen |
+| `GET` | `/api/rooms/:id` | ✓ | Raum mit Locations |
+| `PUT` | `/api/rooms/:id` | 🔒 | Raum bearbeiten |
+| `DELETE` | `/api/rooms/:id` | 🔒 | Raum löschen |
+| `GET` | `/api/rooms/:roomId/locations` | ✓ | Locations eines Raums |
+| `POST` | `/api/rooms/:roomId/locations` | 🔒 | Location anlegen |
+| `GET` | `/api/locations/:id` | ✓ | Location mit Items |
+| `PUT` | `/api/locations/:id` | 🔒 | Location bearbeiten |
+| `DELETE` | `/api/locations/:id` | 🔒 | Location löschen |
+| `GET` | `/api/locations/:id/items` | ✓ | Items einer Location |
+| `POST` | `/api/locations/:id/items` | 🔒 | Item anlegen |
+| `GET` | `/api/items/search?q=` | ✓ | Volltextsuche (max. 50) |
+| `GET` | `/api/items/low-stock` | ✓ | Items unter Mindestbestand |
+| `GET` | `/api/items/:id` | ✓ | Item-Detail |
+| `PUT` | `/api/items/:id` | 🔒 | Item bearbeiten |
+| `DELETE` | `/api/items/:id` | 🔒 | Item löschen |
+| `POST` | `/api/items/:id/image` | 🔒 | Bild hochladen |
+| `GET` | `/api/tags` | ✓ | Alle Tags |
+| `GET` | `/api/container-types` | ✓ | Alle Container-Typen |
+| `POST` | `/api/container-types` | 🔒 | Typ anlegen |
+| `PUT` | `/api/container-types/:id` | 🔒 | Typ bearbeiten |
+| `DELETE` | `/api/container-types/:id` | 🔒 | Typ löschen |
+| `GET` | `/api/lendings/active` | ✓ | Aktive Ausleihen |
+| `GET` | `/api/lendings/:id` | ✓ | Einzelne Ausleihe |
+| `PUT` | `/api/lendings/:id/return` | 🔒 | Rückgabe eintragen |
+| `POST` | `/api/items/:id/lend` | 🔒 | Item verleihen |
+| `GET` | `/api/items/:id/lendings` | ✓ | Verleihistorie |
 
 #### Fehlerformat
 
-Alle Fehlerantworten folgen diesem Schema:
-
 ```json
-{ "error": "Fehlerbeschreibung auf Deutsch" }
+{ "error": "Fehlerbeschreibung" }
 ```
 
 Validierungsfehler (HTTP 400) enthalten zusätzlich `details` mit dem Zod-Fehler-Array.
 
 ---
 
-### Authentifizierung
+### Authentifizierung & Rollen
 
-Das System verwendet ein **Dual-Token-Verfahren**:
+#### Token-Mechanismus
 
 ```
 Login
   │
-  ├── Access Token  (JWT, 15 min)   → wird bei jedem API-Request mitgesendet
-  └── Refresh Token (JWT, 7 Tage)   → wird nur zum Erneuern des Access Tokens genutzt
+  ├── Access Token  (JWT, 15 min)   → Authorization: Bearer <token>
+  └── Refresh Token (JWT, 7 Tage)   → POST /api/auth/refresh
 
 Token abgelaufen?
   │
-  ├── Frontend erkennt 401-Antwort via Axios-Interceptor
-  ├── Sendet Refresh Token an POST /api/auth/refresh
-  ├── Erhält neuen Access Token
-  └── Wiederholt den ursprünglichen Request automatisch
+  ├── Frontend erkennt 401 via Axios-Interceptor
+  ├── POST /api/auth/refresh → neuer Access Token
+  └── Ursprünglicher Request wird automatisch wiederholt
 ```
 
-**Speicherung:** Beide Tokens werden im `localStorage` gespeichert. Für ein persönliches Heimnetzwerk-Tool ist das ein akzeptabler Kompromiss gegenüber httpOnly-Cookies.
+#### Rollen
 
-**Passwort-Hashing:** bcrypt mit Cost-Factor 12 (`bcryptjs`).
+Die Rolle `EDITOR` oder `VIEWER` ist im Access Token eingebettet und wird bei jedem Request aus dem Token gelesen (kein DB-Lookup). Beim Refresh wird die aktuelle Rolle aus der DB geholt, damit Rollenänderungen sofort wirksam werden.
+
+**Speicherung:** Tokens im `localStorage`. Für ein persönliches Heimnetzwerk-Tool akzeptabler Kompromiss.  
+**Passwort-Hashing:** bcrypt mit Cost-Factor 12.
 
 ---
 
 ### Datei-Upload
 
-Bilder werden über `POST /api/items/:id/image` hochgeladen (`multipart/form-data`, Feld-Name: `image`).
+Bilder werden über `POST /api/items/:id/image` hochgeladen (`multipart/form-data`, Feld: `image`).
 
-- **Maximale Dateigröße:** 10 MB (Multer-Limit)
+- **Max. Dateigröße:** 10 MB
 - **Erlaubte MIME-Types:** `image/*`
-- **Dateinamen:** 16 zufällige Hex-Bytes + Original-Erweiterung (z. B. `a3f8c1...d2.jpg`)
+- **Dateiname:** 16 zufällige Hex-Bytes + Original-Erweiterung
 - **Speicherort:** `UPLOAD_DIR` (Standard: `./uploads`, in Docker: `/app/uploads`)
 - **Nginx:** Serviert Uploads direkt unter `/uploads/*` mit `Cache-Control: public, immutable, max-age=30d`
 
-Wird ein Item gelöscht oder ein neues Bild hochgeladen, wird die alte Datei automatisch vom Dateisystem entfernt.
+Wird ein Item gelöscht oder ein neues Bild hochgeladen, wird die alte Datei automatisch entfernt.
 
 ---
 
-### Prisma & Migrationen
+### Prisma & Schema
 
-#### Was sind Migrationen?
-
-Jede Änderung am Schema (`schema.prisma`) erzeugt ein SQL-Skript unter `backend/prisma/migrations/`. Diese Skripte werden versioniert (Git) und auf jedem Environment exakt in der gleichen Reihenfolge eingespielt — damit ist die Datenbankstruktur jederzeit reproduzierbar.
-
-#### Wichtige Befehle
+Das Schema liegt in [`backend/prisma/schema.prisma`](backend/prisma/schema.prisma) und ist die **single source of truth** für das Datenbankschema.
 
 ```bash
-# Neue Migration erstellen (Entwicklung)
-npx prisma migrate dev --name beschreibung_der_aenderung
+# Schema auf Datenbank anwenden (development, kein Migrations-File)
+npx prisma db push
 
-# Migrationen auf Produktion anwenden (kein Schema-Diff, nur bestehende Migrationen ausführen)
-npx prisma migrate deploy
-
-# Prisma Client nach Schema-Änderung neu generieren
+# Prisma Client nach Schema-Änderung regenerieren
 npx prisma generate
 
 # Datenbank interaktiv anschauen
@@ -587,22 +592,17 @@ npx prisma studio
 
 #### Seed-Daten
 
-Das Seed-Skript (`backend/prisma/seed.ts`) legt einen Demo-Nutzer mit vollständigen Beispieldaten an:
-
-- **Login:** `test@home.local` / `test1234`
-- 5 Räume (Küche, Wohnzimmer, Keller, Badezimmer, Schlafzimmer)
-- 5 Container-Typen (Schublade, Schrank, Regal, Box, Karton)
-- 12 Container (mit Verschachtelung im Keller)
-- 15 Gegenstände (Lebensmittel, Elektronik, Werkzeug, Kleidung, Medizin)
-- 6 Tags
-- 2 Ausleihen (1 aktiv, 1 zurückgegeben)
-
-> **Achtung:** Der Seed löscht alle vorhandenen Daten vor dem Einspielen.
-
 ```bash
 cd backend
 npm run db:seed
 ```
+
+Erstellt:
+- **EDITOR:** `test@home.local` / `test1234`
+- **VIEWER:** `viewer@home.local` / `test1234`
+- 5 Räume, 5 Container-Typen, 12 Container, 15 Gegenstände, 6 Tags, 2 Ausleihen
+
+> **Achtung:** Der Seed löscht alle vorhandenen Daten.
 
 ---
 
@@ -613,7 +613,7 @@ npm run db:seed
 | Service | Image | Port (intern) | Beschreibung |
 |---------|-------|---------------|--------------|
 | `postgres` | `postgres:16-alpine` | 5432 | Datenbank mit persistentem Volume |
-| `backend` | Lokaler Build | 4000 | Express API + Prisma |
+| `backend` | Lokaler Build | 4000 | Express API + Swagger UI |
 | `frontend` | Lokaler Build | 80 | React SPA (Nginx) |
 | `nginx` | `nginx:alpine` | **3000** (öffentlich) | Reverse Proxy |
 
@@ -622,9 +622,9 @@ npm run db:seed
 | Volume | Inhalt |
 |--------|--------|
 | `postgres_data` | PostgreSQL-Datenbankdateien |
-| `uploads` | Hochgeladene Bilder (shared zwischen Backend und Nginx) |
+| `uploads` | Hochgeladene Bilder |
 
-### Deployment-Ablauf
+### Deployment-Befehle
 
 ```bash
 # Images neu bauen und starten
@@ -639,23 +639,8 @@ docker compose restart backend
 # Alles stoppen
 docker compose down
 
-# Alles stoppen + Volumes löschen (Achtung: löscht alle Daten!)
+# Alles stoppen inkl. Volumes (löscht alle Daten!)
 docker compose down -v
-```
-
-### Backend-Dockerfile (Multi-Stage)
-
-```
-Stage 1 (builder):  npm ci → prisma generate → tsc
-Stage 2 (runtime):  Node.js Alpine + dist/ + node_modules + prisma/
-                    CMD: prisma migrate deploy && node dist/index.js
-```
-
-### Frontend-Dockerfile (Multi-Stage)
-
-```
-Stage 1 (builder):  npm ci → vite build → dist/
-Stage 2 (runtime):  Nginx Alpine + dist/ + nginx.conf (SPA-Routing)
 ```
 
 ---
@@ -663,8 +648,6 @@ Stage 2 (runtime):  Nginx Alpine + dist/ + nginx.conf (SPA-Routing)
 ## Code-Qualität
 
 ### Linting & Formatting
-
-Beide Teilprojekte verwenden **ESLint** (Flat Config, v9) und **Prettier**.
 
 ```bash
 # Backend
@@ -674,22 +657,13 @@ cd backend && npm run lint && npm run format
 cd frontend && npm run lint && npm run format
 ```
 
-### Konfigurationsdateien
-
-| Datei | Zweck |
-|-------|-------|
-| `eslint.config.mjs` | ESLint-Regeln (TypeScript + Prettier-Kompatibilität) |
-| `.prettierrc` | `singleQuote: true`, `trailingComma: all`, `printWidth: 100` |
-
 ### Validierung
 
-Das Backend verwendet **Zod** für alle eingehenden Requests. Validierungsfehler werden vom globalen Error-Handler als strukturiertes JSON zurückgegeben:
+Das Backend verwendet **Zod** für alle eingehenden Requests:
 
 ```json
 {
   "error": "Validierungsfehler",
-  "details": [
-    { "path": ["email"], "message": "Invalid email" }
-  ]
+  "details": [{ "path": ["email"], "message": "Invalid email" }]
 }
 ```
