@@ -3,7 +3,7 @@ import { z } from 'zod';
 import fs from 'fs';
 import path from 'path';
 import { prisma } from '../lib/prisma';
-import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 import { upload } from '../utils/upload';
 
 const router = Router();
@@ -42,7 +42,7 @@ function deleteImageFile(imageUrl: string) {
 // GET /api/items/search?q=...
 router.get('/search', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const q = z.string().min(1).parse(req.query.q);
     const items = await prisma.item.findMany({
       where: {
@@ -70,7 +70,7 @@ router.get('/search', async (req, res, next) => {
 // GET /api/items/low-stock — Items unter Mindestbestand
 router.get('/low-stock', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const items = await prisma.item.findMany({
       where: {
         location: { room: { userId } },
@@ -93,7 +93,7 @@ router.get('/low-stock', async (req, res, next) => {
 // GET /api/items/:id
 router.get('/:id', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const item = await prisma.item.findFirst({
       where: { id: req.params.id, location: { room: { userId } } },
       include: {
@@ -117,7 +117,7 @@ router.get('/:id', async (req, res, next) => {
 // PUT /api/items/:id
 router.put('/:id', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const existing = await prisma.item.findFirst({
       where: { id: req.params.id, location: { room: { userId } } },
     });
@@ -146,7 +146,7 @@ router.put('/:id', async (req, res, next) => {
 // DELETE /api/items/:id
 router.delete('/:id', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const existing = await prisma.item.findFirst({
       where: { id: req.params.id, location: { room: { userId } } },
     });
@@ -162,7 +162,7 @@ router.delete('/:id', async (req, res, next) => {
 // POST /api/items/:id/image
 router.post('/:id/image', upload.single('image'), async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const existing = await prisma.item.findFirst({
       where: { id: req.params.id, location: { room: { userId } } },
     });

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
-import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 
 const router = Router();
 router.use(authenticate);
@@ -15,7 +15,7 @@ const LendBody = z.object({
 // GET /api/lendings/active — alle aktuell ausgeliehenen Gegenstände
 router.get('/active', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const lendings = await prisma.lending.findMany({
       where: {
         returnedAt: null,
@@ -42,7 +42,7 @@ router.get('/active', async (req, res, next) => {
 // GET /api/lendings/:id
 router.get('/:id', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const lending = await prisma.lending.findFirst({
       where: {
         id: req.params.id,
@@ -60,7 +60,7 @@ router.get('/:id', async (req, res, next) => {
 // POST /api/items/:itemId/lend — Gegenstand verleihen
 router.post('/items/:itemId/lend', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const item = await prisma.item.findFirst({
       where: { id: req.params.itemId, location: { room: { userId } } },
     });
@@ -78,7 +78,7 @@ router.post('/items/:itemId/lend', async (req, res, next) => {
 // PUT /api/lendings/:id/return — Rückgabe eintragen
 router.put('/:id/return', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const existing = await prisma.lending.findFirst({
       where: {
         id: req.params.id,
@@ -103,7 +103,7 @@ router.put('/:id/return', async (req, res, next) => {
 // GET /api/items/:itemId/lendings — Verleihistorie eines Gegenstands
 router.get('/items/:itemId/lendings', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const item = await prisma.item.findFirst({
       where: { id: req.params.itemId, location: { room: { userId } } },
     });

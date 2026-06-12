@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
-import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 
 const router = Router();
 router.use(authenticate);
@@ -22,7 +22,7 @@ const LocationBody = z.object({
 // GET /api/rooms
 router.get('/', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const rooms = await prisma.room.findMany({
       where: { userId },
       include: { _count: { select: { locations: true } } },
@@ -37,7 +37,7 @@ router.get('/', async (req, res, next) => {
 // POST /api/rooms
 router.post('/', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const data = RoomBody.parse(req.body);
     const room = await prisma.room.create({ data: { ...data, userId } });
     res.status(201).json(room);
@@ -49,7 +49,7 @@ router.post('/', async (req, res, next) => {
 // GET /api/rooms/:id
 router.get('/:id', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const room = await prisma.room.findFirst({
       where: { id: req.params.id, userId },
       include: {
@@ -73,7 +73,7 @@ router.get('/:id', async (req, res, next) => {
 // PUT /api/rooms/:id
 router.put('/:id', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const existing = await prisma.room.findFirst({ where: { id: req.params.id, userId } });
     if (!existing) { res.status(404).json({ error: 'Raum nicht gefunden' }); return; }
     const data = RoomBody.partial().parse(req.body);
@@ -87,7 +87,7 @@ router.put('/:id', async (req, res, next) => {
 // DELETE /api/rooms/:id
 router.delete('/:id', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const existing = await prisma.room.findFirst({ where: { id: req.params.id, userId } });
     if (!existing) { res.status(404).json({ error: 'Raum nicht gefunden' }); return; }
     await prisma.room.delete({ where: { id: req.params.id } });
@@ -100,7 +100,7 @@ router.delete('/:id', async (req, res, next) => {
 // GET /api/rooms/:roomId/locations
 router.get('/:roomId/locations', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const room = await prisma.room.findFirst({ where: { id: req.params.roomId, userId } });
     if (!room) { res.status(404).json({ error: 'Raum nicht gefunden' }); return; }
     const locations = await prisma.location.findMany({
@@ -120,7 +120,7 @@ router.get('/:roomId/locations', async (req, res, next) => {
 // POST /api/rooms/:roomId/locations
 router.post('/:roomId/locations', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const room = await prisma.room.findFirst({ where: { id: req.params.roomId, userId } });
     if (!room) { res.status(404).json({ error: 'Raum nicht gefunden' }); return; }
     const data = LocationBody.parse(req.body);

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
-import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 
 const router = Router();
 router.use(authenticate);
@@ -40,7 +40,7 @@ async function upsertTags(tagNames: string[]) {
 // GET /api/locations/:locationId/items
 router.get('/:locationId/items', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const location = await prisma.location.findFirst({
       where: { id: req.params.locationId, room: { userId } },
     });
@@ -59,7 +59,7 @@ router.get('/:locationId/items', async (req, res, next) => {
 // POST /api/locations/:locationId/items
 router.post('/:locationId/items', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const location = await prisma.location.findFirst({
       where: { id: req.params.locationId, room: { userId } },
     });
@@ -83,7 +83,7 @@ router.post('/:locationId/items', async (req, res, next) => {
 // GET /api/locations/:id
 router.get('/:id', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const location = await prisma.location.findFirst({
       where: { id: req.params.id, room: { userId } },
       include: {
@@ -106,7 +106,7 @@ router.get('/:id', async (req, res, next) => {
 // PUT /api/locations/:id
 router.put('/:id', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const existing = await prisma.location.findFirst({
       where: { id: req.params.id, room: { userId } },
     });
@@ -122,7 +122,7 @@ router.put('/:id', async (req, res, next) => {
 // DELETE /api/locations/:id
 router.delete('/:id', async (req, res, next) => {
   try {
-    const userId = (req as AuthRequest).userId;
+    const userId = req.userId;
     const existing = await prisma.location.findFirst({
       where: { id: req.params.id, room: { userId } },
     });

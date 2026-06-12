@@ -26,6 +26,7 @@ Webanwendung zur vollständigen Verwaltung von Haushaltsgegenständen — was li
 ## Features
 
 ### Inventarverwaltung
+
 - Hierarchische Struktur: **Raum → Container → Gegenstand**
 - Container beliebig tief verschachtelbar (Schrank → Schublade → Box)
 - Benutzerdefinierte **Container-Typen** mit Emoji und Farbe
@@ -33,6 +34,7 @@ Webanwendung zur vollständigen Verwaltung von Haushaltsgegenständen — was li
 - Mindestbestand-Warnung auf dem Dashboard
 
 ### Gegenstände
+
 - Name, Beschreibung, Menge und Einheit
 - Foto-Upload (JPEG, PNG, WebP — max. 10 MB)
 - Zustand: Neu / Gut / Abgenutzt / Defekt
@@ -40,6 +42,7 @@ Webanwendung zur vollständigen Verwaltung von Haushaltsgegenständen — was li
 - Mindestbestand-Schwellwert
 
 ### Kaufinformationen pro Gegenstand
+
 - Kauflink (Amazon, Online-Shop o. ä.)
 - Kaufpreis und Kaufdatum
 - Garantie-Ablaufdatum
