@@ -29,11 +29,11 @@ router.post('/register', async (req, res, next) => {
     const passwordHash = await bcrypt.hash(password, 12);
     const user = await prisma.user.create({
       data: { email, passwordHash, name },
-      select: { id: true, email: true, name: true },
+      select: { id: true, email: true, name: true, role: true },
     });
     res.status(201).json({
       user,
-      accessToken: signAccess(user.id),
+      accessToken: signAccess(user.id, user.role),
       refreshToken: signRefresh(user.id),
     });
   } catch (err) {
@@ -51,8 +51,8 @@ router.post('/login', async (req, res, next) => {
       return;
     }
     res.json({
-      user: { id: user.id, email: user.email, name: user.name },
-      accessToken: signAccess(user.id),
+      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+      accessToken: signAccess(user.id, user.role),
       refreshToken: signRefresh(user.id),
     });
   } catch (err) {
@@ -60,12 +60,20 @@ router.post('/login', async (req, res, next) => {
   }
 });
 
-// POST /api/auth/refresh
-router.post('/refresh', (req, res, next) => {
+// POST /api/auth/refresh — liest aktuelle Rolle aus DB, damit Rollenänderungen wirksam werden
+router.post('/refresh', async (req, res, next) => {
   try {
     const { refreshToken } = z.object({ refreshToken: z.string() }).parse(req.body);
     const payload = verifyRefresh(refreshToken);
-    res.json({ accessToken: signAccess(payload.sub) });
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { id: true, role: true },
+    });
+    if (!user) {
+      res.status(401).json({ error: 'Nutzer nicht gefunden' });
+      return;
+    }
+    res.json({ accessToken: signAccess(user.id, user.role) });
   } catch (err) {
     next(err);
   }

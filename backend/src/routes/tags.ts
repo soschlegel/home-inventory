@@ -5,14 +5,11 @@ import { authenticate } from '../middleware/auth';
 const router = Router();
 router.use(authenticate);
 
-// GET /api/tags — nur Tags, die dem eingeloggten User gehören
-router.get('/', async (req, res, next) => {
+// GET /api/tags — alle verwendeten Tags
+router.get('/', async (_req, res, next) => {
   try {
-    const userId = req.userId;
     const tags = await prisma.tag.findMany({
-      where: {
-        items: { some: { item: { location: { room: { userId } } } } },
-      },
+      where: { items: { some: {} } },
       include: { _count: { select: { items: true } } },
       orderBy: { name: 'asc' },
     });

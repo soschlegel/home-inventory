@@ -1,20 +1,30 @@
 import { describe, it, expect } from 'vitest';
 import { signAccess, signRefresh, verifyAccess, verifyRefresh } from '../utils/jwt';
 
-// env vars sind in vitest.config.ts gesetzt — module-load-time constants werden korrekt befüllt
-
 describe('signAccess / verifyAccess', () => {
   const userId = 'user-abc-123';
 
   it('gibt einen JWT-String zurück', () => {
-    const token = signAccess(userId);
+    const token = signAccess(userId, 'EDITOR');
     expect(typeof token).toBe('string');
     expect(token.split('.')).toHaveLength(3);
   });
 
-  it('round-trip: userId bleibt erhalten', () => {
+  it('round-trip: userId und Rolle bleiben erhalten', () => {
+    const token = signAccess(userId, 'EDITOR');
+    const payload = verifyAccess(token);
+    expect(payload.sub).toBe(userId);
+    expect(payload.role).toBe('EDITOR');
+  });
+
+  it('VIEWER-Rolle wird korrekt gespeichert', () => {
+    const token = signAccess(userId, 'VIEWER');
+    expect(verifyAccess(token).role).toBe('VIEWER');
+  });
+
+  it('Standard-Rolle ist EDITOR wenn kein Parameter', () => {
     const token = signAccess(userId);
-    expect(verifyAccess(token).sub).toBe(userId);
+    expect(verifyAccess(token).role).toBe('EDITOR');
   });
 
   it('wirft bei ungültigem Token', () => {
@@ -46,8 +56,6 @@ describe('signRefresh / verifyRefresh', () => {
   });
 
   it('access- und refresh-tokens sind unterschiedlich', () => {
-    const access = signAccess(userId);
-    const refresh = signRefresh(userId);
-    expect(access).not.toBe(refresh);
+    expect(signAccess(userId)).not.toBe(signRefresh(userId));
   });
 });

@@ -23,8 +23,10 @@ vi.mock('../lib/prisma', () => ({
 vi.mock('../middleware/auth', () => ({
   authenticate: (req: any, _res: any, next: any) => {
     req.userId = 'test-user-id';
+    req.userRole = 'EDITOR';
     next();
   },
+  requireEditor: (_req: any, _res: any, next: any) => next(),
 }));
 
 import roomsRouter from '../routes/rooms';
@@ -67,7 +69,7 @@ describe('POST /api/rooms', () => {
     expect(res.status).toBe(201);
     expect(res.body.name).toBe('Wohnzimmer');
     expect(prisma.room.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ userId: 'test-user-id' }) }),
+      expect.objectContaining({ data: expect.objectContaining({ name: 'Wohnzimmer' }) }),
     );
   });
 

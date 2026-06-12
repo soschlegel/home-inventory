@@ -8,52 +8,49 @@ datasource db {
 }
 
 enum ItemCondition {
-  NEW    // Neu
-  GOOD   // Gut
-  WORN   // Abgenutzt
-  BROKEN // Defekt
+  NEW
+  GOOD
+  WORN
+  BROKEN
+}
+
+enum UserRole {
+  EDITOR
+  VIEWER
 }
 
 model User {
-  id             String          @id @default(cuid())
-  email          String          @unique
-  passwordHash   String
-  name           String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  rooms          Room[]
-  containerTypes ContainerType[]
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  role         UserRole @default(EDITOR)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
-// Benutzerdefinierter Container-Typ (z.B. Schublade, Karton, Box, Regal)
+// Benutzerdefinierter Container-Typ – geteilt zwischen allen Nutzern
 model ContainerType {
   id        String     @id @default(cuid())
-  name      String
-  icon      String?    // Emoji oder Icon-Name für die UI
-  color     String?    // Farbe für die UI (z.B. "#FF5733")
-  userId    String
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String     @unique
+  icon      String?
+  color     String?
   locations Location[]
   createdAt DateTime   @default(now())
-
-  @@unique([name, userId])
 }
 
-// Raum im Haus (Küche, Wohnzimmer, Keller, ...)
+// Raum im Haus – geteilt zwischen allen Nutzern
 model Room {
   id          String     @id @default(cuid())
   name        String
   description String?
   icon        String?
-  userId      String
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   locations   Location[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }
 
-// Aufbewahrungsort / Container innerhalb eines Raums
-// Unterstützt beliebige Verschachtelung: Schrank → Schublade → Box
+// Aufbewahrungsort / Container (beliebig verschachtelbar)
 model Location {
   id              String         @id @default(cuid())
   name            String
@@ -76,19 +73,16 @@ model Item {
   name          String
   description   String?
   quantity      Float          @default(1)
-  unit          String?        // "Stück", "Liter", "kg", "Packung"
-  minQuantity   Float?         // Warnung wenn quantity < minQuantity
+  unit          String?
+  minQuantity   Float?
   condition     ItemCondition?
   imageUrl      String?
-
-  // Kauf & Herkunft
-  purchaseUrl   String?        // Amazon-Link, Shop-URL o.ä.
+  purchaseUrl   String?
   purchasePrice Float?
   purchaseDate  DateTime?
   warrantyUntil DateTime?
   serialNumber  String?
-  barcode       String?        // EAN / QR-Code
-
+  barcode       String?
   locationId    String
   location      Location       @relation(fields: [locationId], references: [id], onDelete: Cascade)
   tags          ItemTag[]
@@ -97,7 +91,6 @@ model Item {
   updatedAt     DateTime       @updatedAt
 }
 
-// Verleihistorie
 model Lending {
   id         String    @id @default(cuid())
   itemId     String

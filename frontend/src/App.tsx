@@ -12,6 +12,7 @@ import ItemDetailPage from './pages/ItemDetailPage';
 import SearchPage from './pages/SearchPage';
 import ContainerTypesPage from './pages/ContainerTypesPage';
 import LendingsPage from './pages/LendingsPage';
+import UsersPage from './pages/UsersPage';
 
 export default function App() {
   const { isLoading } = useAuth();
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/search" element={<SearchPage />} />
           <Route path="/lendings" element={<LendingsPage />} />
           <Route path="/container-types" element={<ContainerTypesPage />} />
+          <Route path="/users" element={<UsersPage />} />
         </Route>
       </Route>
     </Routes>

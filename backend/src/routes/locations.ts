@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
-import { authenticate } from '../middleware/auth';
+import { authenticate, requireEditor } from '../middleware/auth';
 
 const router = Router();
 router.use(authenticate);
@@ -20,7 +20,7 @@ const ItemBody = z.object({
   unit: z.string().optional(),
   minQuantity: z.coerce.number().positive().optional(),
   condition: z.enum(['NEW', 'GOOD', 'WORN', 'BROKEN']).optional(),
-  purchaseUrl: z.string().url().optional(),
+  purchaseUrl: z.string().url().optional().or(z.literal('')),
   purchasePrice: z.coerce.number().nonnegative().optional(),
   purchaseDate: z.coerce.date().optional(),
   warrantyUntil: z.coerce.date().optional(),
@@ -40,10 +40,7 @@ async function upsertTags(tagNames: string[]) {
 // GET /api/locations/:locationId/items
 router.get('/:locationId/items', async (req, res, next) => {
   try {
-    const userId = req.userId;
-    const location = await prisma.location.findFirst({
-      where: { id: req.params.locationId, room: { userId } },
-    });
+    const location = await prisma.location.findFirst({ where: { id: req.params.locationId } });
     if (!location) { res.status(404).json({ error: 'Ort nicht gefunden' }); return; }
     const items = await prisma.item.findMany({
       where: { locationId: req.params.locationId },
@@ -57,18 +54,16 @@ router.get('/:locationId/items', async (req, res, next) => {
 });
 
 // POST /api/locations/:locationId/items
-router.post('/:locationId/items', async (req, res, next) => {
+router.post('/:locationId/items', requireEditor, async (req, res, next) => {
   try {
-    const userId = req.userId;
-    const location = await prisma.location.findFirst({
-      where: { id: req.params.locationId, room: { userId } },
-    });
+    const location = await prisma.location.findFirst({ where: { id: req.params.locationId } });
     if (!location) { res.status(404).json({ error: 'Ort nicht gefunden' }); return; }
     const { tags: tagNames, ...data } = ItemBody.parse(req.body);
     const tags = tagNames?.length ? await upsertTags(tagNames) : [];
     const item = await prisma.item.create({
       data: {
         ...data,
+        purchaseUrl: data.purchaseUrl || undefined,
         locationId: req.params.locationId,
         tags: { create: tags.map((t) => ({ tagId: t.id })) },
       },
@@ -83,9 +78,8 @@ router.post('/:locationId/items', async (req, res, next) => {
 // GET /api/locations/:id
 router.get('/:id', async (req, res, next) => {
   try {
-    const userId = req.userId;
     const location = await prisma.location.findFirst({
-      where: { id: req.params.id, room: { userId } },
+      where: { id: req.params.id },
       include: {
         room: { select: { id: true, name: true } },
         parent: { select: { id: true, name: true } },
@@ -104,12 +98,9 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // PUT /api/locations/:id
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', requireEditor, async (req, res, next) => {
   try {
-    const userId = req.userId;
-    const existing = await prisma.location.findFirst({
-      where: { id: req.params.id, room: { userId } },
-    });
+    const existing = await prisma.location.findFirst({ where: { id: req.params.id } });
     if (!existing) { res.status(404).json({ error: 'Ort nicht gefunden' }); return; }
     const data = LocationBody.partial().parse(req.body);
     const location = await prisma.location.update({ where: { id: req.params.id }, data });
@@ -120,12 +111,9 @@ router.put('/:id', async (req, res, next) => {
 });
 
 // DELETE /api/locations/:id
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', requireEditor, async (req, res, next) => {
   try {
-    const userId = req.userId;
-    const existing = await prisma.location.findFirst({
-      where: { id: req.params.id, room: { userId } },
-    });
+    const existing = await prisma.location.findFirst({ where: { id: req.params.id } });
     if (!existing) { res.status(404).json({ error: 'Ort nicht gefunden' }); return; }
     await prisma.location.delete({ where: { id: req.params.id } });
     res.status(204).send();

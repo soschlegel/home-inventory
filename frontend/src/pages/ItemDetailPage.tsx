@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, ExternalLink, Trash2, Upload, ArrowRightLeft } from 'lucide-react';
-import { getItem, deleteItem, uploadItemImage } from '../api/items';
+import { ChevronRight, ExternalLink, Trash2, Upload, ArrowRightLeft, Pencil, X, Check } from 'lucide-react';
+import { getItem, updateItem, deleteItem, uploadItemImage } from '../api/items';
 import { lendItem, returnItem } from '../api/lendings';
+import { useAuth } from '../contexts/AuthContext';
 import type { ItemCondition } from '../types';
 import { CONDITION_LABELS, CONDITION_COLORS } from '../types';
 import Spinner from '../components/Spinner';
@@ -12,12 +13,71 @@ export default function ItemDetailPage() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isEditor = user?.role === 'EDITOR';
 
   const { data: item, isLoading } = useQuery({
     queryKey: ['items', id],
     queryFn: () => getItem(id!),
   });
 
+  // ── Edit state ──────────────────────────────────────────────────────
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editQuantity, setEditQuantity] = useState('');
+  const [editUnit, setEditUnit] = useState('');
+  const [editMinQty, setEditMinQty] = useState('');
+  const [editCondition, setEditCondition] = useState('');
+  const [editSerialNumber, setEditSerialNumber] = useState('');
+  const [editBarcode, setEditBarcode] = useState('');
+  const [editPurchaseUrl, setEditPurchaseUrl] = useState('');
+  const [editPurchasePrice, setEditPurchasePrice] = useState('');
+  const [editPurchaseDate, setEditPurchaseDate] = useState('');
+  const [editWarrantyUntil, setEditWarrantyUntil] = useState('');
+  const [editTags, setEditTags] = useState('');
+
+  function startEditing() {
+    if (!item) return;
+    setEditName(item.name);
+    setEditDescription(item.description ?? '');
+    setEditQuantity(String(item.quantity));
+    setEditUnit(item.unit ?? '');
+    setEditMinQty(item.minQuantity != null ? String(item.minQuantity) : '');
+    setEditCondition(item.condition ?? '');
+    setEditSerialNumber(item.serialNumber ?? '');
+    setEditBarcode(item.barcode ?? '');
+    setEditPurchaseUrl(item.purchaseUrl ?? '');
+    setEditPurchasePrice(item.purchasePrice != null ? String(item.purchasePrice) : '');
+    setEditPurchaseDate(item.purchaseDate ? item.purchaseDate.slice(0, 10) : '');
+    setEditWarrantyUntil(item.warrantyUntil ? item.warrantyUntil.slice(0, 10) : '');
+    setEditTags(item.tags?.map(({ tag }) => tag.name).join(', ') ?? '');
+    setIsEditing(true);
+  }
+
+  const updateMut = useMutation({
+    mutationFn: () => updateItem(id!, {
+      name: editName,
+      description: editDescription || undefined,
+      quantity: parseFloat(editQuantity) || 1,
+      unit: editUnit || undefined,
+      minQuantity: editMinQty ? parseFloat(editMinQty) : undefined,
+      condition: (editCondition as ItemCondition) || undefined,
+      serialNumber: editSerialNumber || undefined,
+      barcode: editBarcode || undefined,
+      purchaseUrl: editPurchaseUrl || undefined,
+      purchasePrice: editPurchasePrice ? parseFloat(editPurchasePrice) : undefined,
+      purchaseDate: editPurchaseDate ? new Date(editPurchaseDate) as any : undefined,
+      warrantyUntil: editWarrantyUntil ? new Date(editWarrantyUntil) as any : undefined,
+      tags: editTags ? editTags.split(',').map((t) => t.trim()).filter(Boolean) : [],
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['items', id] });
+      setIsEditing(false);
+    },
+  });
+
+  // ── Lending state ───────────────────────────────────────────────────
   const [showLendForm, setShowLendForm] = useState(false);
   const [lentTo, setLentTo] = useState('');
   const [lentNote, setLentNote] = useState('');
@@ -27,9 +87,7 @@ export default function ItemDetailPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['items', id] });
       qc.invalidateQueries({ queryKey: ['lendings'] });
-      setLentTo('');
-      setLentNote('');
-      setShowLendForm(false);
+      setLentTo(''); setLentNote(''); setShowLendForm(false);
     },
   });
 
@@ -55,7 +113,6 @@ export default function ItemDetailPage() {
   if (!item) return <p className="text-gray-500">Gegenstand nicht gefunden.</p>;
 
   const activeLending = item.lendings?.find((l) => !l.returnedAt);
-
   const fmt = (date?: string | null) =>
     date ? new Date(date).toLocaleDateString('de-DE') : '–';
 
@@ -77,71 +134,170 @@ export default function ItemDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Left: image */}
+        {/* Bild */}
         <div className="lg:col-span-1">
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             {item.imageUrl ? (
               <img src={item.imageUrl} alt={item.name} className="w-full aspect-square object-cover" />
             ) : (
-              <div className="aspect-square bg-gray-100 flex items-center justify-center text-5xl">
-                📦
-              </div>
+              <div className="aspect-square bg-gray-100 flex items-center justify-center text-5xl">📦</div>
             )}
-            <label className="flex items-center justify-center gap-2 px-4 py-3 text-sm text-gray-500 hover:bg-gray-50 cursor-pointer border-t border-gray-200">
-              <Upload size={15} />
-              {item.imageUrl ? 'Bild ersetzen' : 'Bild hochladen'}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => e.target.files?.[0] && uploadMut.mutate(e.target.files[0])}
-              />
-            </label>
+            {isEditor && (
+              <label className="flex items-center justify-center gap-2 px-4 py-3 text-sm text-gray-500 hover:bg-gray-50 cursor-pointer border-t border-gray-200">
+                <Upload size={15} />
+                {item.imageUrl ? 'Bild ersetzen' : 'Bild hochladen'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => e.target.files?.[0] && uploadMut.mutate(e.target.files[0])}
+                />
+              </label>
+            )}
           </div>
         </div>
 
-        {/* Right: details */}
+        {/* Details */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Header */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">{item.name}</h1>
-                {item.description && <p className="text-gray-600 text-sm mt-1">{item.description}</p>}
+
+          {isEditing ? (
+            /* ── Edit-Formular ────────────────────────────────────────── */
+            <div className="bg-white border border-indigo-300 rounded-xl p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-gray-900">Gegenstand bearbeiten</h2>
+                <button type="button" onClick={() => setIsEditing(false)} aria-label="Bearbeiten schließen" className="text-gray-400 hover:text-gray-600">
+                  <X size={18} />
+                </button>
               </div>
-              {item.condition && (
-                <span className={`text-xs px-2.5 py-1 rounded-full flex-shrink-0 ${CONDITION_COLORS[item.condition as ItemCondition]}`}>
-                  {CONDITION_LABELS[item.condition as ItemCondition]}
-                </span>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="sm:col-span-2 label-wrap">
+                  <span className="label">Name</span>
+                  <input value={editName} onChange={(e) => setEditName(e.target.value)} className="input" />
+                </label>
+                <label className="sm:col-span-2 label-wrap">
+                  <span className="label">Beschreibung</span>
+                  <textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={2} className="input" />
+                </label>
+                <label className="label-wrap">
+                  <span className="label">Menge</span>
+                  <input type="number" min="0" step="0.1" value={editQuantity} onChange={(e) => setEditQuantity(e.target.value)} className="input" />
+                </label>
+                <label className="label-wrap">
+                  <span className="label">Einheit</span>
+                  <input value={editUnit} onChange={(e) => setEditUnit(e.target.value)} placeholder="z.B. Stück, Liter" className="input" />
+                </label>
+                <label className="label-wrap">
+                  <span className="label">Mindestbestand</span>
+                  <input type="number" min="0" step="0.1" value={editMinQty} onChange={(e) => setEditMinQty(e.target.value)} placeholder="–" className="input" />
+                </label>
+                <label className="label-wrap">
+                  <span className="label">Zustand</span>
+                  <select value={editCondition} onChange={(e) => setEditCondition(e.target.value)} className="input">
+                    <option value="">–</option>
+                    {(['NEW', 'GOOD', 'WORN', 'BROKEN'] as ItemCondition[]).map((c) => (
+                      <option key={c} value={c}>{CONDITION_LABELS[c]}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="label-wrap">
+                  <span className="label">Seriennummer</span>
+                  <input value={editSerialNumber} onChange={(e) => setEditSerialNumber(e.target.value)} className="input" />
+                </label>
+                <label className="label-wrap">
+                  <span className="label">Barcode / EAN</span>
+                  <input value={editBarcode} onChange={(e) => setEditBarcode(e.target.value)} className="input" />
+                </label>
+              </div>
+
+              <hr className="border-gray-100" />
+              <h3 className="text-sm font-medium text-gray-700">Kaufinformationen</h3>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="sm:col-span-2 label-wrap">
+                  <span className="label">Kauflink (URL)</span>
+                  <input type="url" value={editPurchaseUrl} onChange={(e) => setEditPurchaseUrl(e.target.value)} placeholder="https://…" className="input" />
+                </label>
+                <label className="label-wrap">
+                  <span className="label">Kaufpreis (€)</span>
+                  <input type="number" min="0" step="0.01" value={editPurchasePrice} onChange={(e) => setEditPurchasePrice(e.target.value)} placeholder="0.00" className="input" />
+                </label>
+                <label className="label-wrap">
+                  <span className="label">Kaufdatum</span>
+                  <input type="date" value={editPurchaseDate} onChange={(e) => setEditPurchaseDate(e.target.value)} className="input" />
+                </label>
+                <label className="label-wrap">
+                  <span className="label">Garantie bis</span>
+                  <input type="date" value={editWarrantyUntil} onChange={(e) => setEditWarrantyUntil(e.target.value)} className="input" />
+                </label>
+                <label className="label-wrap">
+                  <span className="label">Tags (kommagetrennt)</span>
+                  <input value={editTags} onChange={(e) => setEditTags(e.target.value)} placeholder="Elektronik, Werkzeug" className="input" />
+                </label>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => updateMut.mutate()}
+                  disabled={!editName || updateMut.isPending}
+                  className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  <Check size={15} /> {updateMut.isPending ? 'Speichern…' : 'Speichern'}
+                </button>
+                <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 rounded-lg text-sm border border-gray-300 hover:bg-gray-50">
+                  Abbrechen
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* ── Anzeige ──────────────────────────────────────────────── */
+            <div className="bg-white border border-gray-200 rounded-xl p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900">{item.name}</h1>
+                  {item.description && <p className="text-gray-600 text-sm mt-1">{item.description}</p>}
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {item.condition && (
+                    <span className={`text-xs px-2.5 py-1 rounded-full ${CONDITION_COLORS[item.condition as ItemCondition]}`}>
+                      {CONDITION_LABELS[item.condition as ItemCondition]}
+                    </span>
+                  )}
+                  {isEditor && (
+                    <button type="button" onClick={startEditing} className="p-1.5 text-gray-400 hover:text-indigo-600 rounded transition-colors" title="Bearbeiten">
+                      <Pencil size={15} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                <Field label="Menge">{item.quantity} {item.unit ?? 'Stück'}</Field>
+                {item.minQuantity != null && (
+                  <Field label="Mindestbestand">
+                    <span className={item.quantity < (item.minQuantity ?? Infinity) ? 'text-red-600 font-medium' : ''}>
+                      {item.minQuantity} {item.unit ?? 'Stück'}
+                    </span>
+                  </Field>
+                )}
+                {item.serialNumber && <Field label="Seriennummer">{item.serialNumber}</Field>}
+                {item.barcode && <Field label="Barcode / EAN">{item.barcode}</Field>}
+              </div>
+
+              {item.tags && item.tags.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {item.tags.map(({ tag }) => (
+                    <span key={tag.id} className="bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1 rounded-full">
+                      {tag.name}
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
+          )}
 
-            <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-              <Field label="Menge">{item.quantity} {item.unit ?? 'Stück'}</Field>
-              {item.minQuantity !== null && (
-                <Field label="Mindestbestand">
-                  <span className={item.quantity < (item.minQuantity ?? Infinity) ? 'text-red-600 font-medium' : ''}>
-                    {item.minQuantity} {item.unit ?? 'Stück'}
-                  </span>
-                </Field>
-              )}
-              {item.serialNumber && <Field label="Seriennummer">{item.serialNumber}</Field>}
-              {item.barcode && <Field label="Barcode / EAN">{item.barcode}</Field>}
-            </div>
-
-            {item.tags && item.tags.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {item.tags.map(({ tag }) => (
-                  <span key={tag.id} className="bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1 rounded-full">
-                    {tag.name}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Kaufinfos */}
-          {(item.purchaseUrl || item.purchasePrice || item.purchaseDate || item.warrantyUntil) && (
+          {/* Kaufinfos (nur im Anzeigemodus) */}
+          {!isEditing && (item.purchaseUrl || item.purchasePrice || item.purchaseDate || item.warrantyUntil) && (
             <div className="bg-white border border-gray-200 rounded-xl p-5">
               <h2 className="font-medium text-gray-800 mb-3">Kaufinformationen</h2>
               <div className="grid grid-cols-2 gap-3 text-sm">
@@ -172,8 +328,9 @@ export default function ItemDetailPage() {
           <div className="bg-white border border-gray-200 rounded-xl p-5">
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-medium text-gray-800">Ausleihen</h2>
-              {!activeLending && (
+              {isEditor && !activeLending && (
                 <button
+                  type="button"
                   onClick={() => setShowLendForm(!showLendForm)}
                   className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-700"
                 >
@@ -184,24 +341,25 @@ export default function ItemDetailPage() {
 
             {activeLending && (
               <div className="mb-3 p-3 bg-orange-50 border border-orange-200 rounded-lg text-sm">
-                <div className="font-medium text-orange-800">
-                  Ausgeliehen an {activeLending.lentTo}
-                </div>
+                <div className="font-medium text-orange-800">Ausgeliehen an {activeLending.lentTo}</div>
                 <div className="text-orange-600 text-xs mt-0.5">
                   seit {fmt(activeLending.lentAt)}
                   {activeLending.note && ` · ${activeLending.note}`}
                 </div>
-                <button
-                  onClick={() => returnMut.mutate(activeLending.id)}
-                  disabled={returnMut.isPending}
-                  className="mt-2 text-xs text-orange-700 hover:text-orange-900 underline"
-                >
-                  Als zurückgegeben markieren
-                </button>
+                {isEditor && (
+                  <button
+                    type="button"
+                    onClick={() => returnMut.mutate(activeLending.id)}
+                    disabled={returnMut.isPending}
+                    className="mt-2 text-xs text-orange-700 hover:text-orange-900 underline"
+                  >
+                    Als zurückgegeben markieren
+                  </button>
+                )}
               </div>
             )}
 
-            {showLendForm && (
+            {showLendForm && isEditor && (
               <div className="space-y-2 mb-3">
                 <input
                   value={lentTo}
@@ -216,6 +374,7 @@ export default function ItemDetailPage() {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <button
+                  type="button"
                   onClick={() => lendMut.mutate()}
                   disabled={!lentTo || lendMut.isPending}
                   className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
@@ -225,7 +384,6 @@ export default function ItemDetailPage() {
               </div>
             )}
 
-            {/* Historie */}
             {item.lendings && item.lendings.length > 0 && (
               <div className="space-y-1">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Historie</p>
@@ -242,17 +400,20 @@ export default function ItemDetailPage() {
             )}
           </div>
 
-          {/* Delete */}
-          <div className="flex justify-end">
-            <button
-              onClick={() => {
-                if (confirm(`"${item.name}" wirklich löschen?`)) deleteMut.mutate();
-              }}
-              className="flex items-center gap-2 text-sm text-red-500 hover:text-red-700"
-            >
-              <Trash2 size={15} /> Gegenstand löschen
-            </button>
-          </div>
+          {/* Löschen */}
+          {isEditor && (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm(`"${item.name}" wirklich löschen?`)) deleteMut.mutate();
+                }}
+                className="flex items-center gap-2 text-sm text-red-500 hover:text-red-700"
+              >
+                <Trash2 size={15} /> Gegenstand löschen
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -262,8 +423,8 @@ export default function ItemDetailPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs text-gray-400 uppercase tracking-wide">{label}</dt>
-      <dd className="text-gray-800 mt-0.5">{children}</dd>
+      <span className="block text-xs text-gray-400 uppercase tracking-wide">{label}</span>
+      <span className="block text-gray-800 mt-0.5">{children}</span>
     </div>
   );
 }

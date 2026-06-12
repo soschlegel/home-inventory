@@ -34,6 +34,7 @@ const mockUser = {
   email: 'test@example.com',
   passwordHash: '$2b$12$hashed',
   name: 'Test User',
+  role: 'EDITOR' as const,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -45,16 +46,18 @@ describe('POST /api/auth/register', () => {
       id: mockUser.id,
       email: mockUser.email,
       name: mockUser.name,
+      role: 'EDITOR',
     } as any);
   });
 
-  it('gibt 201 mit user und tokens zurück', async () => {
+  it('gibt 201 mit user, role und tokens zurück', async () => {
     const res = await request(app)
       .post('/api/auth/register')
       .send({ email: 'test@example.com', password: 'sicherespasswort' });
 
     expect(res.status).toBe(201);
     expect(res.body.user.email).toBe('test@example.com');
+    expect(res.body.user.role).toBe('EDITOR');
     expect(res.body.accessToken).toBeTruthy();
     expect(res.body.refreshToken).toBeTruthy();
     expect(res.body.user.passwordHash).toBeUndefined();
@@ -132,9 +135,9 @@ describe('POST /api/auth/login', () => {
 
 describe('POST /api/auth/refresh', () => {
   it('gibt neuen accessToken zurück bei gültigem refreshToken', async () => {
-    // echten refresh-Token generieren
     const { signRefresh } = await import('../utils/jwt');
     const refreshToken = signRefresh('user-1');
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({ id: 'user-1', role: 'EDITOR' } as any);
 
     const res = await request(app)
       .post('/api/auth/refresh')

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
-import { authenticate } from '../middleware/auth';
+import { authenticate, requireEditor } from '../middleware/auth';
 
 const router = Router();
 router.use(authenticate);
@@ -13,11 +13,9 @@ const ContainerTypeBody = z.object({
 });
 
 // GET /api/container-types
-router.get('/', async (req, res, next) => {
+router.get('/', async (_req, res, next) => {
   try {
-    const userId = req.userId;
     const types = await prisma.containerType.findMany({
-      where: { userId },
       include: { _count: { select: { locations: true } } },
       orderBy: { name: 'asc' },
     });
@@ -28,11 +26,10 @@ router.get('/', async (req, res, next) => {
 });
 
 // POST /api/container-types
-router.post('/', async (req, res, next) => {
+router.post('/', requireEditor, async (req, res, next) => {
   try {
-    const userId = req.userId;
     const data = ContainerTypeBody.parse(req.body);
-    const type = await prisma.containerType.create({ data: { ...data, userId } });
+    const type = await prisma.containerType.create({ data });
     res.status(201).json(type);
   } catch (err) {
     next(err);
@@ -40,10 +37,9 @@ router.post('/', async (req, res, next) => {
 });
 
 // PUT /api/container-types/:id
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', requireEditor, async (req, res, next) => {
   try {
-    const userId = req.userId;
-    const existing = await prisma.containerType.findFirst({ where: { id: req.params.id, userId } });
+    const existing = await prisma.containerType.findFirst({ where: { id: req.params.id } });
     if (!existing) { res.status(404).json({ error: 'Container-Typ nicht gefunden' }); return; }
     const data = ContainerTypeBody.partial().parse(req.body);
     const type = await prisma.containerType.update({ where: { id: req.params.id }, data });
@@ -54,12 +50,10 @@ router.put('/:id', async (req, res, next) => {
 });
 
 // DELETE /api/container-types/:id
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', requireEditor, async (req, res, next) => {
   try {
-    const userId = req.userId;
-    const existing = await prisma.containerType.findFirst({ where: { id: req.params.id, userId } });
+    const existing = await prisma.containerType.findFirst({ where: { id: req.params.id } });
     if (!existing) { res.status(404).json({ error: 'Container-Typ nicht gefunden' }); return; }
-    // onDelete: SetNull im Schema — Locations behalten ihre Form, verlieren nur den Typ
     await prisma.containerType.delete({ where: { id: req.params.id } });
     res.status(204).send();
   } catch (err) {

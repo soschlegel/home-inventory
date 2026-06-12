@@ -3,7 +3,7 @@ import { z } from 'zod';
 import fs from 'fs';
 import path from 'path';
 import { prisma } from '../lib/prisma';
-import { authenticate } from '../middleware/auth';
+import { authenticate, requireEditor } from '../middleware/auth';
 import { upload } from '../utils/upload';
 
 const router = Router();
@@ -16,7 +16,7 @@ const ItemBody = z.object({
   unit: z.string().optional(),
   minQuantity: z.coerce.number().positive().optional(),
   condition: z.enum(['NEW', 'GOOD', 'WORN', 'BROKEN']).optional(),
-  purchaseUrl: z.string().url().optional(),
+  purchaseUrl: z.string().url().optional().or(z.literal('')),
   purchasePrice: z.coerce.number().nonnegative().optional(),
   purchaseDate: z.coerce.date().optional(),
   warrantyUntil: z.coerce.date().optional(),
@@ -42,11 +42,9 @@ function deleteImageFile(imageUrl: string) {
 // GET /api/items/search?q=...
 router.get('/search', async (req, res, next) => {
   try {
-    const userId = req.userId;
     const q = z.string().min(1).parse(req.query.q);
     const items = await prisma.item.findMany({
       where: {
-        location: { room: { userId } },
         OR: [
           { name: { contains: q, mode: 'insensitive' } },
           { description: { contains: q, mode: 'insensitive' } },
@@ -67,24 +65,16 @@ router.get('/search', async (req, res, next) => {
   }
 });
 
-// GET /api/items/low-stock — Items unter Mindestbestand
-router.get('/low-stock', async (req, res, next) => {
+// GET /api/items/low-stock
+router.get('/low-stock', async (_req, res, next) => {
   try {
-    const userId = req.userId;
     const items = await prisma.item.findMany({
-      where: {
-        location: { room: { userId } },
-        minQuantity: { not: null },
-        // Prisma kann keinen Feldvergleich direkt — wir filtern im Speicher
-      },
+      where: { minQuantity: { not: null } },
       include: {
         location: { include: { room: { select: { id: true, name: true } } } },
       },
     });
-    const lowStock = items.filter(
-      (i) => i.minQuantity !== null && i.quantity < i.minQuantity,
-    );
-    res.json(lowStock);
+    res.json(items.filter((i) => i.minQuantity !== null && i.quantity < i.minQuantity));
   } catch (err) {
     next(err);
   }
@@ -93,9 +83,8 @@ router.get('/low-stock', async (req, res, next) => {
 // GET /api/items/:id
 router.get('/:id', async (req, res, next) => {
   try {
-    const userId = req.userId;
     const item = await prisma.item.findFirst({
-      where: { id: req.params.id, location: { room: { userId } } },
+      where: { id: req.params.id },
       include: {
         tags: { include: { tag: true } },
         lendings: { orderBy: { lentAt: 'desc' } },
@@ -115,12 +104,9 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // PUT /api/items/:id
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', requireEditor, async (req, res, next) => {
   try {
-    const userId = req.userId;
-    const existing = await prisma.item.findFirst({
-      where: { id: req.params.id, location: { room: { userId } } },
-    });
+    const existing = await prisma.item.findFirst({ where: { id: req.params.id } });
     if (!existing) { res.status(404).json({ error: 'Gegenstand nicht gefunden' }); return; }
     const { tags: tagNames, ...data } = ItemBody.partial().parse(req.body);
     const tags = tagNames !== undefined ? await upsertTags(tagNames) : undefined;
@@ -128,6 +114,7 @@ router.put('/:id', async (req, res, next) => {
       where: { id: req.params.id },
       data: {
         ...data,
+        purchaseUrl: data.purchaseUrl === '' ? null : data.purchaseUrl,
         ...(tags !== undefined ? {
           tags: {
             deleteMany: {},
@@ -144,12 +131,9 @@ router.put('/:id', async (req, res, next) => {
 });
 
 // DELETE /api/items/:id
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', requireEditor, async (req, res, next) => {
   try {
-    const userId = req.userId;
-    const existing = await prisma.item.findFirst({
-      where: { id: req.params.id, location: { room: { userId } } },
-    });
+    const existing = await prisma.item.findFirst({ where: { id: req.params.id } });
     if (!existing) { res.status(404).json({ error: 'Gegenstand nicht gefunden' }); return; }
     if (existing.imageUrl) deleteImageFile(existing.imageUrl);
     await prisma.item.delete({ where: { id: req.params.id } });
@@ -160,12 +144,9 @@ router.delete('/:id', async (req, res, next) => {
 });
 
 // POST /api/items/:id/image
-router.post('/:id/image', upload.single('image'), async (req, res, next) => {
+router.post('/:id/image', requireEditor, upload.single('image'), async (req, res, next) => {
   try {
-    const userId = req.userId;
-    const existing = await prisma.item.findFirst({
-      where: { id: req.params.id, location: { room: { userId } } },
-    });
+    const existing = await prisma.item.findFirst({ where: { id: req.params.id } });
     if (!existing) { res.status(404).json({ error: 'Gegenstand nicht gefunden' }); return; }
     if (!req.file) { res.status(400).json({ error: 'Kein Bild hochgeladen' }); return; }
     if (existing.imageUrl) deleteImageFile(existing.imageUrl);

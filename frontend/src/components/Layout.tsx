@@ -5,26 +5,29 @@ import {
   Search,
   ArrowRightLeft,
   Box,
+  Users,
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
-const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/rooms', icon: Home, label: 'Räume' },
-  { to: '/search', icon: Search, label: 'Suche' },
-  { to: '/lendings', icon: ArrowRightLeft, label: 'Ausleihen' },
-  { to: '/container-types', icon: Box, label: 'Container-Typen' },
-];
-
 export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const isEditor = user?.role === 'EDITOR';
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
+
+  const navItems = [
+    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', show: true },
+    { to: '/rooms', icon: Home, label: 'Räume', show: true },
+    { to: '/search', icon: Search, label: 'Suche', show: true },
+    { to: '/lendings', icon: ArrowRightLeft, label: 'Ausleihen', show: true },
+    { to: '/container-types', icon: Box, label: 'Container-Typen', show: isEditor },
+    { to: '/users', icon: Users, label: 'Nutzer', show: isEditor },
+  ];
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -35,7 +38,7 @@ export default function Layout() {
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1">
-          {navItems.map(({ to, icon: Icon, label }) => (
+          {navItems.filter((n) => n.show).map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}
@@ -54,8 +57,14 @@ export default function Layout() {
         </nav>
 
         <div className="px-3 py-4 border-t border-gray-700">
-          <div className="px-3 py-2 text-gray-400 text-sm truncate">{user?.name ?? user?.email}</div>
+          <div className="px-3 py-1.5">
+            <div className="text-gray-200 text-sm truncate">{user?.name ?? user?.email}</div>
+            <div className="text-gray-500 text-xs mt-0.5">
+              {user?.role === 'EDITOR' ? '✏️ Editor' : '👁 Betrachter'}
+            </div>
+          </div>
           <button
+            type="button"
             onClick={handleLogout}
             className="mt-1 w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
           >

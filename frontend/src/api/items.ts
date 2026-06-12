@@ -9,7 +9,7 @@ export const searchItems = (q: string) =>
 export const getLowStockItems = () =>
   api.get<Item[]>('/items/low-stock').then((r) => r.data);
 
-export const updateItem = (id: string, data: Partial<Item> & { tags?: string[] }) =>
+export const updateItem = (id: string, data: Omit<Partial<Item>, 'tags'> & { tags?: string[] }) =>
   api.put<Item>(`/items/${id}`, data).then((r) => r.data);
 
 export const deleteItem = (id: string) => api.delete(`/items/${id}`);

@@ -6,7 +6,7 @@ import * as authApi from '../api/auth';
 vi.mock('../api/auth');
 
 const mockAuthResponse = {
-  user: { id: 'user-1', email: 'max@example.com', name: 'Max' },
+  user: { id: 'user-1', email: 'max@example.com', name: 'Max', role: 'EDITOR' as const },
   accessToken: 'mock-access-token',
   refreshToken: 'mock-refresh-token',
 };
@@ -17,12 +17,12 @@ function TestConsumer() {
   if (!user) {
     return (
       <>
-        <button onClick={() => login('max@example.com', 'passwort')}>login</button>
-        <button onClick={() => register('neu@example.com', 'passwort', 'Neu')}>register</button>
+        <button type="button" onClick={() => login('max@example.com', 'passwort')}>login</button>
+        <button type="button" onClick={() => register('neu@example.com', 'passwort', 'Neu')}>register</button>
       </>
     );
   }
-  return <button onClick={logout}>logout {user.email}</button>;
+  return <button type="button" onClick={logout}>logout {user.email}</button>;
 }
 
 describe('AuthContext', () => {
