@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ItemCondition {
+  NEW    // Neu
+  GOOD   // Gut
+  WORN   // Abgenutzt
+  BROKEN // Defekt
+}
+
+model User {
+  id             String          @id @default(cuid())
+  email          String          @unique
+  passwordHash   String
+  name           String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  rooms          Room[]
+  containerTypes ContainerType[]
+}
+
+// Benutzerdefinierter Container-Typ (z.B. Schublade, Karton, Box, Regal)
+model ContainerType {
+  id        String     @id @default(cuid())
+  name      String
+  icon      String?    // Emoji oder Icon-Name für die UI
+  color     String?    // Farbe für die UI (z.B. "#FF5733")
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  locations Location[]
+  createdAt DateTime   @default(now())
+
+  @@unique([name, userId])
+}
+
+// Raum im Haus (Küche, Wohnzimmer, Keller, ...)
+model Room {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  icon        String?
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  locations   Location[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+// Aufbewahrungsort / Container innerhalb eines Raums
+// Unterstützt beliebige Verschachtelung: Schrank → Schublade → Box
+model Location {
+  id              String         @id @default(cuid())
+  name            String
+  description     String?
+  containerTypeId String?
+  containerType   ContainerType? @relation(fields: [containerTypeId], references: [id], onDelete: SetNull)
+  roomId          String
+  room            Room           @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  parentId        String?
+  parent          Location?      @relation("LocationChildren", fields: [parentId], references: [id])
+  children        Location[]     @relation("LocationChildren")
+  items           Item[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+// Ein Gegenstand an einem Aufbewahrungsort
+model Item {
+  id            String         @id @default(cuid())
+  name          String
+  description   String?
+  quantity      Float          @default(1)
+  unit          String?        // "Stück", "Liter", "kg", "Packung"
+  minQuantity   Float?         // Warnung wenn quantity < minQuantity
+  condition     ItemCondition?
+  imageUrl      String?
+
+  // Kauf & Herkunft
+  purchaseUrl   String?        // Amazon-Link, Shop-URL o.ä.
+  purchasePrice Float?
+  purchaseDate  DateTime?
+  warrantyUntil DateTime?
+  serialNumber  String?
+  barcode       String?        // EAN / QR-Code
+
+  locationId    String
+  location      Location       @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  tags          ItemTag[]
+  lendings      Lending[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+// Verleihistorie
+model Lending {
+  id         String    @id @default(cuid())
+  itemId     String
+  item       Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  lentTo     String
+  lentAt     DateTime  @default(now())
+  returnedAt DateTime?
+  note       String?
+  createdAt  DateTime  @default(now())
+}
+
+model Tag {
+  id    String    @id @default(cuid())
+  name  String    @unique
+  items ItemTag[]
+}
+
+model ItemTag {
+  itemId String
+  tagId  String
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([itemId, tagId])
+}
