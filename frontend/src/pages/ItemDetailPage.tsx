@@ -5,6 +5,7 @@ import { ChevronRight, ExternalLink, Trash2, Upload, ArrowRightLeft, Pencil, X, 
 import { useTranslation } from 'react-i18next';
 import { getItem, updateItem, deleteItem, uploadItemImage } from '../api/items';
 import { lendItem, returnItem } from '../api/lendings';
+import { getUnits } from '../api/units';
 import { useAuth } from '../contexts/AuthContext';
 import type { ItemCondition } from '../types';
 import { CONDITION_COLORS } from '../types';
@@ -22,6 +23,7 @@ export default function ItemDetailPage() {
     queryKey: ['items', id],
     queryFn: () => getItem(id!),
   });
+  const { data: units } = useQuery({ queryKey: ['units'], queryFn: getUnits });
 
   // ── Edit state ──────────────────────────────────────────────────────
   const [isEditing, setIsEditing] = useState(false);
@@ -187,7 +189,10 @@ export default function ItemDetailPage() {
                 </label>
                 <label className="label-wrap">
                   <span className="label">{t('item.field_unit')}</span>
-                  <input value={editUnit} onChange={(e) => setEditUnit(e.target.value)} placeholder={t('item.field_unit_placeholder')} className="input" />
+                  <input list="item-units-list" value={editUnit} onChange={(e) => setEditUnit(e.target.value)} placeholder={t('item.field_unit_placeholder')} className="input" />
+                  <datalist id="item-units-list">
+                    {units?.map((u) => <option key={u.id} value={u.name} />)}
+                  </datalist>
                 </label>
                 <label className="label-wrap">
                   <span className="label">{t('item.field_min_quantity')}</span>

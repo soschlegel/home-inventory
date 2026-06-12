@@ -30,6 +30,7 @@
     "logout": "Sign out",
     "role_editor": "✏️ Editor",
     "role_viewer": "👁 Viewer",
+    "units": "Units",
     "lang_toggle": "DE"
   },
   "login": {
@@ -175,5 +176,18 @@
     "confirm_delete": "Really delete user \"{{name}}\"?",
     "error_create": "Error creating user",
     "delete_title": "Delete user"
+  },
+  "units": {
+    "title": "Units",
+    "subtitle": "Suggestion list for quantity units (kg, L, piece…)",
+    "add_btn": "New unit",
+    "name_placeholder": "e.g. kg, piece, litre",
+    "no_units": "No units yet. Create one!",
+    "confirm_delete": "Delete unit \"{{name}}\"?",
+    "edit_label": "Edit",
+    "delete_label": "Delete",
+    "save_label": "Save",
+    "cancel_label": "Cancel",
+    "error_duplicate": "Unit already exists"
   }
 }

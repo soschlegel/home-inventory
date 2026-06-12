@@ -11,6 +11,7 @@ async function main() {
   await prisma.location.deleteMany();
   await prisma.room.deleteMany();
   await prisma.containerType.deleteMany();
+  await prisma.unit.deleteMany();
   await prisma.tag.deleteMany();
   await prisma.user.deleteMany();
 
@@ -30,6 +31,29 @@ async function main() {
       name: 'Erika Mustermann',
       role: 'VIEWER',
     },
+  });
+
+  // ── Einheiten ─────────────────────────────────────────────────────────
+  await prisma.unit.createMany({
+    data: [
+      { name: 'Stück' },
+      { name: 'Packung' },
+      { name: 'Paar' },
+      { name: 'Set' },
+      { name: 'Box' },
+      { name: 'Dose' },
+      { name: 'Flasche' },
+      { name: 'Rollen' },
+      { name: 'Karton' },
+      { name: 'kg' },
+      { name: 'g' },
+      { name: 'mg' },
+      { name: 'L' },
+      { name: 'ml' },
+      { name: 'm' },
+      { name: 'cm' },
+      { name: 'Tabletten' },
+    ],
   });
 
   // ── Container-Typen (geteilt, ohne userId) ────────────────────────────

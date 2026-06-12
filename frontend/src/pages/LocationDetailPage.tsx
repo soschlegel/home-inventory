@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { getLocation, getLocationItems, createItem, deleteLocation } from '../api/locations';
 import { createLocation } from '../api/rooms';
 import { getContainerTypes } from '../api/containerTypes';
+import { getUnits } from '../api/units';
 import type { ItemCondition } from '../types';
 import { CONDITION_COLORS } from '../types';
 import Spinner from '../components/Spinner';
@@ -28,6 +29,7 @@ export default function LocationDetailPage() {
     queryKey: ['container-types'],
     queryFn: getContainerTypes,
   });
+  const { data: units } = useQuery({ queryKey: ['units'], queryFn: getUnits });
 
   // Add item form
   const [showItemForm, setShowItemForm] = useState(false);
@@ -175,11 +177,15 @@ export default function LocationDetailPage() {
               className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm"
             />
             <input
+              list="units-list"
               value={itemUnit}
               onChange={(e) => setItemUnit(e.target.value)}
               placeholder={t('location.unit_placeholder')}
               className="w-28 border border-gray-300 rounded-lg px-3 py-2 text-sm"
             />
+            <datalist id="units-list">
+              {units?.map((u) => <option key={u.id} value={u.name} />)}
+            </datalist>
             <button
               onClick={() => createItemMut.mutate()}
               disabled={!itemName || createItemMut.isPending}

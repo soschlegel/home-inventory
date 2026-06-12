@@ -29,6 +29,13 @@ model User {
   updatedAt    DateTime @updatedAt
 }
 
+// Einheitenliste – geteilt zwischen allen Nutzern, dient als Vorschlagsliste
+model Unit {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+}
+
 // Benutzerdefinierter Container-Typ – geteilt zwischen allen Nutzern
 model ContainerType {
   id        String     @id @default(cuid())

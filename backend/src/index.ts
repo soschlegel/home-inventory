@@ -9,6 +9,7 @@ import itemsRouter from './routes/items';
 import tagsRouter from './routes/tags';
 import lendingsRouter from './routes/lendings';
 import containerTypesRouter from './routes/containerTypes';
+import unitsRouter from './routes/units';
 import usersRouter from './routes/users';
 import { errorHandler } from './middleware/errorHandler';
 import openapiSpec from './openapi';
@@ -32,6 +33,7 @@ app.use('/api/locations', locationsRouter);
 app.use('/api/items', itemsRouter);
 app.use('/api/tags', tagsRouter);
 app.use('/api/container-types', containerTypesRouter);
+app.use('/api/units', unitsRouter);
 app.use('/api/lendings', lendingsRouter);
 app.use('/api/users', usersRouter);
 app.use('/api', lendingsRouter); // für /api/items/:itemId/lend und /api/items/:itemId/lendings

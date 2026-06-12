@@ -30,6 +30,7 @@
     "logout": "Abmelden",
     "role_editor": "✏️ Editor",
     "role_viewer": "👁 Betrachter",
+    "units": "Einheiten",
     "lang_toggle": "EN"
   },
   "login": {
@@ -175,5 +176,18 @@
     "confirm_delete": "Nutzer \"{{name}}\" wirklich löschen?",
     "error_create": "Fehler beim Anlegen",
     "delete_title": "Nutzer löschen"
+  },
+  "units": {
+    "title": "Einheiten",
+    "subtitle": "Vorschlagsliste für Mengeneinheiten (kg, L, Stück…)",
+    "add_btn": "Neue Einheit",
+    "name_placeholder": "z.B. kg, Stück, Liter",
+    "no_units": "Noch keine Einheiten. Leg eine an!",
+    "confirm_delete": "Einheit \"{{name}}\" löschen?",
+    "edit_label": "Bearbeiten",
+    "delete_label": "Löschen",
+    "save_label": "Speichern",
+    "cancel_label": "Abbrechen",
+    "error_duplicate": "Einheit bereits vorhanden"
   }
 }

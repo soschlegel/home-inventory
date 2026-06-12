@@ -11,6 +11,7 @@ import LocationDetailPage from './pages/LocationDetailPage';
 import ItemDetailPage from './pages/ItemDetailPage';
 import SearchPage from './pages/SearchPage';
 import ContainerTypesPage from './pages/ContainerTypesPage';
+import UnitsPage from './pages/UnitsPage';
 import LendingsPage from './pages/LendingsPage';
 import UsersPage from './pages/UsersPage';
 
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="/search" element={<SearchPage />} />
           <Route path="/lendings" element={<LendingsPage />} />
           <Route path="/container-types" element={<ContainerTypesPage />} />
+          <Route path="/units" element={<UnitsPage />} />
           <Route path="/users" element={<UsersPage />} />
         </Route>
       </Route>

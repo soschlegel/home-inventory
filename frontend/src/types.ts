@@ -1,5 +1,10 @@
 export type UserRole = 'EDITOR' | 'VIEWER';
 
+export interface Unit {
+  id: string;
+  name: string;
+}
+
 export interface User {
   id: string;
   email: string;

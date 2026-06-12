@@ -5,6 +5,7 @@ import {
   Search,
   ArrowRightLeft,
   Box,
+  Ruler,
   Users,
   LogOut,
 } from 'lucide-react';
@@ -34,6 +35,7 @@ export default function Layout() {
     { to: '/search', icon: Search, label: t('nav.search'), show: true },
     { to: '/lendings', icon: ArrowRightLeft, label: t('nav.lendings'), show: true },
     { to: '/container-types', icon: Box, label: t('nav.container_types'), show: isEditor },
+    { to: '/units', icon: Ruler, label: t('nav.units'), show: isEditor },
     { to: '/users', icon: Users, label: t('nav.users'), show: isEditor },
   ];
 
