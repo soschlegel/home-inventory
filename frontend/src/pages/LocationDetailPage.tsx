@@ -167,10 +167,10 @@ export default function LocationDetailPage() {
           </div>
         </div>
       ) : (
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-gray-900">{location.name}</h1>
+              <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">{location.name}</h1>
               {isEditor && (
                 <button
                   type="button"
@@ -189,7 +189,7 @@ export default function LocationDetailPage() {
             )}
           </div>
           {isEditor && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <button
                 type="button"
                 onClick={() => setShowLocForm(!showLocForm)}

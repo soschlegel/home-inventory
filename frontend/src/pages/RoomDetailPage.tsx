@@ -138,9 +138,9 @@ export default function RoomDetailPage() {
           </div>
         </div>
       ) : (
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-gray-900">{room.icon} {locRoomName(t, room)}</h1>
+            <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">{room.icon} {locRoomName(t, room)}</h1>
             {isEditor && (
               <button
                 type="button"
