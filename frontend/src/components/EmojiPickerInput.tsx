@@ -183,24 +183,22 @@ export default function EmojiPickerInput({ value, onChange, className = '' }: Pr
   useEffect(() => {
     if (!open) return;
     const close = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node) &&
+          popupRef.current && !popupRef.current.contains(e.target as Node)) {
         setOpen(false);
         setSearch('');
       }
     };
-    const closeOnScroll = () => { setOpen(false); setSearch(''); };
     document.addEventListener('mousedown', close);
-    window.addEventListener('scroll', closeOnScroll, true);
     return () => {
       document.removeEventListener('mousedown', close);
-      window.removeEventListener('scroll', closeOnScroll, true);
     };
   }, [open]);
 
   const handleToggle = () => {
     if (!open && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      const popupWidth = 288;
+      const popupWidth = 352;
       const left = rect.left + popupWidth > window.innerWidth
         ? Math.max(0, window.innerWidth - popupWidth - 8)
         : rect.left;
@@ -235,7 +233,7 @@ export default function EmojiPickerInput({ value, onChange, className = '' }: Pr
       {open && (
         <div
           ref={popupRef}
-          className="fixed z-[200] bg-white border border-gray-200 rounded-xl shadow-xl p-3 w-72"
+          className="fixed z-[200] bg-white border border-gray-200 rounded-xl shadow-xl p-3 w-[352px]"
         >
           <input
             autoFocus
@@ -248,7 +246,7 @@ export default function EmojiPickerInput({ value, onChange, className = '' }: Pr
           {filtered.length === 0 ? (
             <p className="text-center text-sm text-gray-400 py-4">{t('emojiPicker.no_results')}</p>
           ) : (
-            <div className="grid grid-cols-8 gap-0.5 max-h-52 overflow-y-auto">
+            <div className="grid grid-cols-9 gap-0.5 max-h-64 overflow-y-auto">
               {filtered.map(({ emoji }) => (
                 <button
                   key={emoji}

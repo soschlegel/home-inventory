@@ -159,6 +159,11 @@ export interface InstanceOverview {
   _count: { lendings: number };
 }
 
+export interface LowStockItem {
+  product: Pick<Product, 'id' | 'name' | 'imageUrl' | 'minQuantity'>;
+  totalQuantity: number;
+}
+
 export interface AuthResponse {
   user: User;
   accessToken: string;

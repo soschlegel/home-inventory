@@ -141,16 +141,28 @@ describe('GET /api/instances/search', () => {
 });
 
 describe('GET /api/instances/low-stock', () => {
-  it('gibt Instanzen zurück bei denen quantity < product.minQuantity', async () => {
-    const lowStock = { ...mockInstance, quantity: 1, product: { ...mockInstance.product, minQuantity: 3 } };
-    const ok = { ...mockInstance, id: 'inst-2', quantity: 5, product: { ...mockInstance.product, minQuantity: 3 } };
-    mockPrisma.instance.findMany.mockResolvedValue([lowStock, ok]);
+  it('gibt Produkte zurück bei denen Gesamtmenge < product.minQuantity', async () => {
+    const inst1 = { productId: 'prod-1', quantity: 1, product: { id: 'prod-1', name: 'Hammer', imageUrl: null, minQuantity: 3 } };
+    const inst2 = { productId: 'prod-1', quantity: 1, product: { id: 'prod-1', name: 'Hammer', imageUrl: null, minQuantity: 3 } };
+    mockPrisma.instance.findMany.mockResolvedValue([inst1, inst2]);
 
     const res = await request(app).get('/api/instances/low-stock');
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
-    expect(res.body[0].id).toBe('inst-1');
+    expect(res.body[0].totalQuantity).toBe(2);
+    expect(res.body[0].product.id).toBe('prod-1');
+  });
+
+  it('gibt kein Produkt zurück wenn Gesamtmenge >= minQuantity', async () => {
+    const inst1 = { productId: 'prod-1', quantity: 2, product: { id: 'prod-1', name: 'Hammer', imageUrl: null, minQuantity: 3 } };
+    const inst2 = { productId: 'prod-1', quantity: 2, product: { id: 'prod-1', name: 'Hammer', imageUrl: null, minQuantity: 3 } };
+    mockPrisma.instance.findMany.mockResolvedValue([inst1, inst2]);
+
+    const res = await request(app).get('/api/instances/low-stock');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(0);
   });
 });
 

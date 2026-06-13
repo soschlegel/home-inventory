@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { Instance, InstanceDocument, InstanceOverview } from '../types';
+import type { Instance, InstanceDocument, InstanceOverview, LowStockItem } from '../types';
 
 export const getAllInstances = () => api.get<InstanceOverview[]>('/instances').then((r) => r.data);
 
@@ -12,7 +12,7 @@ export const searchInstances = (q: string) =>
   api.get<InstanceOverview[]>('/instances/search', { params: { q } }).then((r) => r.data);
 
 export const getLowStockInstances = () =>
-  api.get<Instance[]>('/instances/low-stock').then((r) => r.data);
+  api.get<LowStockItem[]>('/instances/low-stock').then((r) => r.data);
 
 export const getExpiringSoonInstances = () =>
   api.get<Instance[]>('/instances/expiring-soon').then((r) => r.data);

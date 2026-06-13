@@ -78,12 +78,12 @@ export default function DashboardPage() {
             <AlertTriangle size={16} /> {t('dashboard.low_stock_title')}
           </h2>
           <ul className="space-y-1">
-            {lowStock.data?.map((instance) => (
-              <li key={instance.id} className="text-sm text-red-700">
-                <Link to={`/instances/${instance.id}`} className="hover:underline font-medium">
-                  {instance.product.name}
+            {lowStock.data?.map((item) => (
+              <li key={item.product.id} className="text-sm text-red-700">
+                <Link to={`/products/${item.product.id}`} className="hover:underline font-medium">
+                  {item.product.name}
                 </Link>{' '}
-                — {instance.quantity} {instance.unit ?? t('common.piece')} (min. {instance.product.minQuantity})
+                — {item.totalQuantity} {t('common.piece')} (min. {item.product.minQuantity})
               </li>
             ))}
           </ul>

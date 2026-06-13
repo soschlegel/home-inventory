@@ -115,12 +115,15 @@ router.get('/low-stock', async (_req, res, next) => {
   try {
     const instances = await prisma.instance.findMany({
       where: { product: { minQuantity: { not: null } } },
-      include: {
-        product: { select: { id: true, name: true, imageUrl: true, minQuantity: true } },
-        location: { include: { room: { select: { id: true, name: true } } } },
-      },
+      select: { productId: true, quantity: true, product: { select: { id: true, name: true, imageUrl: true, minQuantity: true } } },
     });
-    res.json(instances.filter((i) => i.product.minQuantity !== null && i.quantity < (i.product.minQuantity ?? Infinity)));
+    const byProduct = new Map<string, { product: (typeof instances)[0]['product']; totalQuantity: number }>();
+    for (const inst of instances) {
+      const entry = byProduct.get(inst.productId);
+      if (entry) { entry.totalQuantity += inst.quantity; }
+      else { byProduct.set(inst.productId, { product: inst.product, totalQuantity: inst.quantity }); }
+    }
+    res.json([...byProduct.values()].filter((e) => e.product.minQuantity !== null && e.totalQuantity < (e.product.minQuantity ?? Infinity)));
   } catch (err) { next(err); }
 });
 
