@@ -23,6 +23,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "rooms": "Räume",
+    "containers": "Container",
     "items_overview": "Alle Gegenstände",
     "search": "Suche",
     "lendings": "Ausleihen",
@@ -72,6 +73,12 @@
     "name_placeholder": "Raumname",
     "confirm_delete": "Raum \"{{name}}\" wirklich löschen?",
     "not_found": "Raum nicht gefunden."
+  },
+  "containers": {
+    "title": "Container-Übersicht",
+    "subtitle": "Alle Räume und Container in einer Baumansicht",
+    "no_rooms": "Noch keine Räume angelegt.",
+    "empty_room": "Keine Container in diesem Raum."
   },
   "roomDetail": {
     "add_container": "Container hinzufügen",
@@ -138,7 +145,11 @@
     "move_container_label": "Container",
     "move_select_room": "Raum wählen…",
     "move_select_container": "Container wählen…",
-    "move_location_label": "Aktueller Standort"
+    "move_location_label": "Aktueller Standort",
+    "documents_section": "Dokumente",
+    "documents_upload": "Dokument hochladen",
+    "documents_empty": "Noch keine Dokumente hochgeladen.",
+    "documents_delete_confirm": "Dokument wirklich löschen?"
   },
   "condition": {
     "NEW": "Neu",
@@ -173,6 +184,7 @@
     "name_de_placeholder": "z.B. Schublade",
     "name_en_label": "Name Englisch",
     "name_en_placeholder": "z.B. Drawer (optional)",
+    "translations_hint": "Weitere Sprachen im Bereich \"Übersetzungen\" verwalten.",
     "no_types": "Noch keine Typen. Leg einen an!",
     "confirm_delete": "Typ \"{{name}}\" löschen? Container behalten ihren Typ nicht mehr.",
     "edit_name_label": "Name",

@@ -15,11 +15,22 @@ vi.mock('../lib/prisma', () => ({
     tag: {
       findMany: vi.fn(),
     },
+    itemDocument: {
+      create: vi.fn(),
+      findFirst: vi.fn(),
+      delete: vi.fn(),
+    },
   },
 }));
 
 vi.mock('../utils/upload', () => ({
   upload: { single: () => (_req: any, _res: any, next: any) => next() },
+  uploadDocument: {
+    single: () => (req: any, _res: any, next: any) => {
+      req.file = { filename: 'mock.pdf', originalname: 'rechnung.pdf', mimetype: 'application/pdf', size: 1024 };
+      next();
+    },
+  },
 }));
 
 vi.mock('../middleware/auth', () => ({
@@ -33,6 +44,8 @@ vi.mock('../middleware/auth', () => ({
 
 import itemsRouter from '../routes/items';
 import { prisma } from '../lib/prisma';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockPrisma = prisma as any;
 
 const app = express();
 app.use(express.json());
@@ -218,6 +231,66 @@ describe('DELETE /api/items/:id', () => {
     vi.mocked(prisma.item.findFirst).mockResolvedValue(null);
 
     const res = await request(app).delete('/api/items/nonexistent');
+
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('POST /api/items/:id/documents', () => {
+  const mockDoc = {
+    id: 'doc-1',
+    itemId: 'item-1',
+    originalName: 'rechnung.pdf',
+    url: '/uploads/abc.pdf',
+    mimeType: 'application/pdf',
+    size: 12345,
+    createdAt: new Date(),
+  };
+
+  it('erstellt ein Dokument und antwortet 201', async () => {
+    vi.mocked(prisma.item.findFirst).mockResolvedValue(mockItem as any);
+    mockPrisma.itemDocument.create.mockResolvedValue(mockDoc);
+
+    const res = await request(app)
+      .post('/api/items/item-1/documents')
+      .attach('document', Buffer.from('pdf content'), { filename: 'rechnung.pdf', contentType: 'application/pdf' });
+
+    expect(res.status).toBe(201);
+  });
+
+  it('gibt 404 zurück wenn Item nicht gefunden', async () => {
+    vi.mocked(prisma.item.findFirst).mockResolvedValue(null);
+
+    const res = await request(app).post('/api/items/nonexistent/documents');
+
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('DELETE /api/items/:id/documents/:docId', () => {
+  const mockDoc = {
+    id: 'doc-1',
+    itemId: 'item-1',
+    originalName: 'rechnung.pdf',
+    url: '/uploads/abc.pdf',
+    mimeType: 'application/pdf',
+    size: 12345,
+    createdAt: new Date(),
+  };
+
+  it('löscht ein Dokument und antwortet 204', async () => {
+    mockPrisma.itemDocument.findFirst.mockResolvedValue(mockDoc);
+    mockPrisma.itemDocument.delete.mockResolvedValue(mockDoc);
+
+    const res = await request(app).delete('/api/items/item-1/documents/doc-1');
+
+    expect(res.status).toBe(204);
+  });
+
+  it('gibt 404 zurück wenn Dokument nicht gefunden', async () => {
+    mockPrisma.itemDocument.findFirst.mockResolvedValue(null);
+
+    const res = await request(app).delete('/api/items/item-1/documents/nonexistent');
 
     expect(res.status).toBe(404);
   });

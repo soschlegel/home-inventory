@@ -21,14 +21,13 @@ export default function UnitsPage() {
   const { data: units, isLoading } = useQuery({ queryKey: ['units'], queryFn: getUnits });
 
   const [showForm, setShowForm] = useState(false);
-  const [newKey, setNewKey] = useState('');
   const [newName, setNewName] = useState('');
 
   const createMut = useMutation({
-    mutationFn: () => createUnit({ key: newKey, name: newName }),
+    mutationFn: () => createUnit({ key: toKey(newName), name: newName }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['units'] });
-      setNewKey(''); setNewName(''); setShowForm(false);
+      setNewName(''); setShowForm(false);
     },
   });
 
@@ -48,8 +47,6 @@ export default function UnitsPage() {
     },
   });
 
-  const isValidKey = (k: string) => /^[a-z][a-z0-9_]*$/.test(k);
-
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -68,43 +65,29 @@ export default function UnitsPage() {
 
       {showForm && (
         <div className="mb-6 bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">{t('units.name_label')}</label>
-              <input
-                value={newName}
-                onChange={(e) => {
-                  setNewName(e.target.value);
-                  if (!newKey) setNewKey(toKey(e.target.value));
-                }}
-                placeholder={t('units.name_placeholder')}
-                onKeyDown={(e) => e.key === 'Enter' && newKey && newName && isValidKey(newKey) && createMut.mutate()}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">{t('units.key_label')}</label>
-              <input
-                value={newKey}
-                onChange={(e) => setNewKey(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                placeholder={t('units.key_placeholder')}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-              <p className="text-xs text-gray-400 mt-1">{t('units.key_hint')}</p>
-            </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">{t('units.name_label')}</label>
+            <input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder={t('units.name_placeholder')}
+              onKeyDown={(e) => e.key === 'Enter' && newName && toKey(newName) && createMut.mutate()}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              autoFocus
+            />
           </div>
           <div className="flex gap-3">
             <button
               type="button"
               onClick={() => createMut.mutate()}
-              disabled={!newKey || !newName || !isValidKey(newKey) || createMut.isPending}
+              disabled={!newName || !toKey(newName) || createMut.isPending}
               className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
             >
               {createMut.isPending ? t('common.saving') : t('common.save')}
             </button>
             <button
               type="button"
-              onClick={() => { setShowForm(false); setNewKey(''); setNewName(''); }}
+              onClick={() => { setShowForm(false); setNewName(''); }}
               className="px-4 py-2 rounded-lg text-sm border border-gray-300 hover:bg-gray-50"
             >
               {t('common.cancel')}

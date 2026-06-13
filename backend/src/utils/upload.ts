@@ -21,3 +21,16 @@ export const upload = multer({
     }
   },
 });
+
+export const uploadDocument = multer({
+  storage,
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Nur Bilder und PDFs erlaubt'));
+    }
+  },
+});

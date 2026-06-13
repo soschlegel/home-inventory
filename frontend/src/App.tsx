@@ -18,6 +18,7 @@ import TagsPage from './pages/TagsPage';
 import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
 import TranslationsPage from './pages/TranslationsPage';
+import ContainersPage from './pages/ContainersPage';
 
 export default function App() {
   const { isLoading } = useAuth();
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/rooms" element={<RoomsPage />} />
           <Route path="/rooms/:id" element={<RoomDetailPage />} />
+          <Route path="/containers" element={<ContainersPage />} />
           <Route path="/locations/:id" element={<LocationDetailPage />} />
           <Route path="/items/:id" element={<ItemDetailPage />} />
           <Route path="/items-overview" element={<ItemsOverviewPage />} />

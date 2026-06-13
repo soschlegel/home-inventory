@@ -72,6 +72,16 @@ export interface ItemTag {
   tag: Pick<Tag, 'id' | 'key' | 'name'>;
 }
 
+export interface ItemDocument {
+  id: string;
+  itemId: string;
+  originalName: string;
+  url: string;
+  mimeType?: string | null;
+  size?: number | null;
+  createdAt: string;
+}
+
 export interface Item {
   id: string;
   name: string;
@@ -91,6 +101,7 @@ export interface Item {
   location?: Location & { room: Pick<Room, 'id' | 'key' | 'name'> };
   tags?: ItemTag[];
   lendings?: Lending[];
+  documents?: ItemDocument[];
 }
 
 export interface Lending {

@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { prisma } from '../lib/prisma';
 import { authenticate, requireEditor } from '../middleware/auth';
-import { upload } from '../utils/upload';
+import { upload, uploadDocument } from '../utils/upload';
 
 const router = Router();
 router.use(authenticate);
@@ -117,6 +117,7 @@ router.get('/:id', async (req, res, next) => {
       include: {
         tags: { include: { tag: true } },
         lendings: { orderBy: { lentAt: 'desc' } },
+        documents: { orderBy: { createdAt: 'desc' } },
         location: {
           include: {
             room: { select: { id: true, key: true, name: true } },
@@ -166,6 +167,44 @@ router.delete('/:id', requireEditor, async (req, res, next) => {
     if (!existing) { res.status(404).json({ error: 'Gegenstand nicht gefunden' }); return; }
     if (existing.imageUrl) deleteImageFile(existing.imageUrl);
     await prisma.item.delete({ where: { id: req.params.id } });
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/items/:id/documents
+router.post('/:id/documents', requireEditor, uploadDocument.single('document'), async (req, res, next) => {
+  try {
+    const existing = await prisma.item.findFirst({ where: { id: req.params.id } });
+    if (!existing) { res.status(404).json({ error: 'Gegenstand nicht gefunden' }); return; }
+    if (!req.file) { res.status(400).json({ error: 'Kein Dokument hochgeladen' }); return; }
+    const doc = await prisma.itemDocument.create({
+      data: {
+        itemId: req.params.id,
+        originalName: req.file.originalname,
+        url: `/uploads/${req.file.filename}`,
+        mimeType: req.file.mimetype,
+        size: req.file.size,
+      },
+    });
+    res.status(201).json(doc);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/items/:id/documents/:docId
+router.delete('/:id/documents/:docId', requireEditor, async (req, res, next) => {
+  try {
+    const doc = await prisma.itemDocument.findFirst({
+      where: { id: req.params.docId, itemId: req.params.id },
+    });
+    if (!doc) { res.status(404).json({ error: 'Dokument nicht gefunden' }); return; }
+    const uploadDir = process.env.UPLOAD_DIR ?? './uploads';
+    const filename = path.basename(doc.url);
+    try { fs.unlinkSync(path.join(uploadDir, filename)); } catch { /* ignore */ }
+    await prisma.itemDocument.delete({ where: { id: req.params.docId } });
     res.status(204).send();
   } catch (err) {
     next(err);

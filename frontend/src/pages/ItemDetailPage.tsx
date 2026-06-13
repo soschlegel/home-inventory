@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, ExternalLink, Trash2, Upload, ArrowRightLeft, Pencil, X, Check, MoveRight } from 'lucide-react';
+import { ChevronRight, ExternalLink, Trash2, Upload, ArrowRightLeft, Pencil, X, Check, MoveRight, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { getItem, updateItem, deleteItem, uploadItemImage } from '../api/items';
+import { getItem, updateItem, deleteItem, uploadItemImage, uploadItemDocument, deleteItemDocument } from '../api/items';
 import { lendItem, returnItem } from '../api/lendings';
 import { getUnits } from '../api/units';
 import { getTags } from '../api/tags';
@@ -166,6 +166,16 @@ export default function ItemDetailPage() {
 
   const uploadMut = useMutation({
     mutationFn: (file: File) => uploadItemImage(id!, file),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['items', id] }),
+  });
+
+  const uploadDocMut = useMutation({
+    mutationFn: (file: File) => uploadItemDocument(id!, file),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['items', id] }),
+  });
+
+  const deleteDocMut = useMutation({
+    mutationFn: (docId: string) => deleteItemDocument(id!, docId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['items', id] }),
   });
 
@@ -568,6 +578,71 @@ export default function ItemDetailPage() {
               </div>
             )}
           </div>
+
+          {/* Dokumente */}
+          {!isEditing && (
+            <div className="bg-white border border-gray-200 rounded-xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-medium text-gray-800 flex items-center gap-2">
+                  <FileText size={16} /> {t('item.documents_section')}
+                </h2>
+                {isEditor && (
+                  <label className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-700 cursor-pointer">
+                    <Upload size={14} /> {t('item.documents_upload')}
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && uploadDocMut.mutate(e.target.files[0])}
+                    />
+                  </label>
+                )}
+              </div>
+              {!item.documents?.length ? (
+                <p className="text-sm text-gray-400">{t('item.documents_empty')}</p>
+              ) : (
+                <div className="space-y-2">
+                  {item.documents.map((doc) => (
+                    <div key={doc.id} className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg">
+                      <span className="text-xl flex-shrink-0">
+                        {doc.mimeType === 'application/pdf' ? '📄' : '🖼️'}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-indigo-600 hover:underline truncate block"
+                        >
+                          {doc.originalName}
+                        </a>
+                        {doc.size && (
+                          <span className="text-xs text-gray-400">
+                            {doc.size < 1024 * 1024
+                              ? `${(doc.size / 1024).toFixed(0)} KB`
+                              : `${(doc.size / 1024 / 1024).toFixed(1)} MB`}
+                          </span>
+                        )}
+                      </div>
+                      {isEditor && (
+                        <button
+                          type="button"
+                          title={t('common.delete')}
+                          onClick={() => {
+                            if (confirm(t('item.documents_delete_confirm')))
+                              deleteDocMut.mutate(doc.id);
+                          }}
+                          className="p-1 text-gray-400 hover:text-red-500 flex-shrink-0"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Löschen */}
           {isEditor && (

@@ -23,6 +23,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "rooms": "Rooms",
+    "containers": "Containers",
     "items_overview": "All Items",
     "search": "Search",
     "lendings": "Lendings",
@@ -72,6 +73,12 @@
     "name_placeholder": "Room name",
     "confirm_delete": "Really delete room \"{{name}}\"?",
     "not_found": "Room not found."
+  },
+  "containers": {
+    "title": "Container Overview",
+    "subtitle": "All rooms and containers as a tree view",
+    "no_rooms": "No rooms created yet.",
+    "empty_room": "No containers in this room."
   },
   "roomDetail": {
     "add_container": "Add container",
@@ -138,7 +145,11 @@
     "move_container_label": "Container",
     "move_select_room": "Select room…",
     "move_select_container": "Select container…",
-    "move_location_label": "Current location"
+    "move_location_label": "Current location",
+    "documents_section": "Documents",
+    "documents_upload": "Upload document",
+    "documents_empty": "No documents uploaded yet.",
+    "documents_delete_confirm": "Really delete this document?"
   },
   "condition": {
     "NEW": "New",
@@ -173,6 +184,7 @@
     "name_de_placeholder": "e.g. Schublade",
     "name_en_label": "Name English",
     "name_en_placeholder": "e.g. Drawer (optional)",
+    "translations_hint": "Manage additional languages in the \"Translations\" section.",
     "no_types": "No types yet. Create one!",
     "confirm_delete": "Delete type \"{{name}}\"? Containers will no longer keep their type.",
     "edit_name_label": "Name",

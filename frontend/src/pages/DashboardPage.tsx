@@ -22,8 +22,8 @@ export default function DashboardPage() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-4 mb-8 sm:grid-cols-4">
-        <StatCard icon={<Home size={20} />} label={t('dashboard.stat_rooms')} value={rooms.data?.length ?? '…'} color="indigo" />
-        <StatCard icon={<Package size={20} />} label={t('dashboard.stat_container')} value={totalLocations} color="blue" />
+        <StatCard icon={<Home size={20} />} label={t('dashboard.stat_rooms')} value={rooms.data?.length ?? '…'} color="indigo" href="/rooms" />
+        <StatCard icon={<Package size={20} />} label={t('dashboard.stat_container')} value={totalLocations} color="blue" href="/containers" />
         <StatCard
           icon={<ArrowRightLeft size={20} />}
           label={t('dashboard.stat_lent')}

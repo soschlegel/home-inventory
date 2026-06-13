@@ -6,6 +6,7 @@ import {
   Table2,
   ArrowRightLeft,
   Box,
+  Layers,
   Ruler,
   Tag,
   Languages,
@@ -42,6 +43,7 @@ export default function Layout() {
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: t('nav.dashboard'), show: true },
     { to: '/rooms', icon: Home, label: t('nav.rooms'), show: true },
+    { to: '/containers', icon: Layers, label: t('nav.containers'), show: true },
     { to: '/items-overview', icon: Table2, label: t('nav.items_overview'), show: true },
     { to: '/lendings', icon: ArrowRightLeft, label: t('nav.lendings'), show: true },
     { to: '/container-types', icon: Box, label: t('nav.container_types'), show: isEditor },

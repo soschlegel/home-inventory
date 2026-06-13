@@ -99,8 +99,20 @@ model Item {
   location      Location       @relation(fields: [locationId], references: [id], onDelete: Cascade)
   tags          ItemTag[]
   lendings      Lending[]
+  documents     ItemDocument[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+}
+
+model ItemDocument {
+  id           String   @id @default(cuid())
+  itemId       String
+  item         Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  originalName String
+  url          String
+  mimeType     String?
+  size         Int?
+  createdAt    DateTime @default(now())
 }
 
 model Lending {

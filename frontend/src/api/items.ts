@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { Item, ItemOverview } from '../types';
+import type { Item, ItemDocument, ItemOverview } from '../types';
 
 export const getAllItems = () => api.get<ItemOverview[]>('/items').then((r) => r.data);
 
@@ -24,3 +24,12 @@ export const uploadItemImage = (id: string, file: File) => {
   form.append('image', file);
   return api.post<Item>(`/items/${id}/image`, form).then((r) => r.data);
 };
+
+export const uploadItemDocument = (id: string, file: File) => {
+  const form = new FormData();
+  form.append('document', file);
+  return api.post<ItemDocument>(`/items/${id}/documents`, form).then((r) => r.data);
+};
+
+export const deleteItemDocument = (itemId: string, docId: string) =>
+  api.delete(`/items/${itemId}/documents/${docId}`);

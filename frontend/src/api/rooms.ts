@@ -6,6 +6,9 @@ export const getRooms = () => api.get<Room[]>('/rooms').then((r) => r.data);
 export const getRoom = (id: string) =>
   api.get<Room & { locations: Location[] }>(`/rooms/${id}`).then((r) => r.data);
 
+export const getRoomsTree = () =>
+  api.get<(Room & { locations: Location[]; _count: { locations: number } })[]>('/rooms/tree').then((r) => r.data);
+
 export const createRoom = (data: { name: string; translations?: Record<string, string>; description?: string; icon?: string }) =>
   api.post<Room>('/rooms', data).then((r) => r.data);
 

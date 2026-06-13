@@ -60,6 +60,31 @@ describe('GET /api/rooms', () => {
   });
 });
 
+describe('GET /api/rooms/tree', () => {
+  it('gibt alle Räume mit verschachtelten Locations zurück', async () => {
+    const roomWithLocations = {
+      ...mockRoom,
+      locations: [
+        {
+          id: 'loc-1',
+          name: 'Kühlschrank',
+          containerType: null,
+          _count: { items: 3 },
+          children: [],
+        },
+      ],
+    };
+    vi.mocked(prisma.room.findMany).mockResolvedValue([roomWithLocations] as any);
+
+    const res = await request(app).get('/api/rooms/tree');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].locations).toHaveLength(1);
+    expect(res.body[0].locations[0].name).toBe('Kühlschrank');
+  });
+});
+
 describe('POST /api/rooms', () => {
   it('erstellt einen Raum und gibt 201 zurück', async () => {
     vi.mocked(prisma.room.create).mockResolvedValue(mockRoom as any);

@@ -22,24 +22,18 @@ export default function ContainerTypesPage() {
 
   const [showForm, setShowForm] = useState(false);
   const [newNameDe, setNewNameDe] = useState('');
-  const [newNameEn, setNewNameEn] = useState('');
   const [newIcon, setNewIcon] = useState('');
 
   const createMut = useMutation({
-    mutationFn: () => {
-      const translations: Record<string, string> = {};
-      if (newNameDe) translations.de = newNameDe;
-      if (newNameEn) translations.en = newNameEn;
-      return createContainerType({
+    mutationFn: () =>
+      createContainerType({
         name: newNameDe,
-        translations: Object.keys(translations).length > 0 ? translations : undefined,
+        translations: newNameDe ? { de: newNameDe } : undefined,
         icon: newIcon || undefined,
-      });
-    },
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['container-types'] });
       setNewNameDe('');
-      setNewNameEn('');
       setNewIcon('');
       setShowForm(false);
     },
@@ -52,14 +46,14 @@ export default function ContainerTypesPage() {
 
   const [editId, setEditId] = useState<string | null>(null);
   const [editNameDe, setEditNameDe] = useState('');
-  const [editNameEn, setEditNameEn] = useState('');
   const [editIcon, setEditIcon] = useState('');
 
   const updateMut = useMutation({
     mutationFn: () => {
+      const existing = types?.find((c) => c.id === editId);
       const translations: Record<string, string> = {};
       if (editNameDe) translations.de = editNameDe;
-      if (editNameEn) translations.en = editNameEn;
+      if (existing?.translations?.en) translations.en = existing.translations.en;
       return updateContainerType(editId!, {
         name: editNameDe || undefined,
         translations: Object.keys(translations).length > 0 ? translations : null,
@@ -92,28 +86,17 @@ export default function ContainerTypesPage() {
 
       {showForm && (
         <div className="mb-6 bg-white border border-gray-200 rounded-xl p-4">
-          <div className="flex gap-3 flex-wrap">
+          <div className="flex gap-3 flex-wrap items-center">
             <EmojiPickerInput value={newIcon} onChange={setNewIcon} />
-            <div className="relative flex-1 min-w-32">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm">🇩🇪</span>
-              <input
-                aria-label={t('containerTypes.name_de_label')}
-                value={newNameDe}
-                onChange={(e) => setNewNameDe(e.target.value)}
-                placeholder={t('containerTypes.name_de_placeholder')}
-                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <div className="relative flex-1 min-w-32">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm">🇬🇧</span>
-              <input
-                aria-label={t('containerTypes.name_en_label')}
-                value={newNameEn}
-                onChange={(e) => setNewNameEn(e.target.value)}
-                placeholder={t('containerTypes.name_en_placeholder')}
-                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
+            <input
+              aria-label={t('containerTypes.name_de_label')}
+              value={newNameDe}
+              onChange={(e) => setNewNameDe(e.target.value)}
+              placeholder={t('containerTypes.name_de_placeholder')}
+              onKeyDown={(e) => e.key === 'Enter' && newNameDe && createMut.mutate()}
+              className="flex-1 min-w-40 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              autoFocus
+            />
             <button
               type="button"
               onClick={() => createMut.mutate()}
@@ -123,6 +106,7 @@ export default function ContainerTypesPage() {
               {t('common.save')}
             </button>
           </div>
+          <p className="text-xs text-gray-400 mt-2">{t('containerTypes.translations_hint')}</p>
         </div>
       )}
 
@@ -140,24 +124,14 @@ export default function ContainerTypesPage() {
                 {editId === ct.id ? (
                   <>
                     <EmojiPickerInput value={editIcon} onChange={setEditIcon} />
-                    <div className="relative flex-1 min-w-28">
-                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm">🇩🇪</span>
-                      <input
-                        aria-label={t('containerTypes.name_de_label')}
-                        value={editNameDe}
-                        onChange={(e) => setEditNameDe(e.target.value)}
-                        className="w-full pl-8 pr-2 py-1 border border-gray-300 rounded-lg text-sm"
-                      />
-                    </div>
-                    <div className="relative flex-1 min-w-28">
-                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm">🇬🇧</span>
-                      <input
-                        aria-label={t('containerTypes.name_en_label')}
-                        value={editNameEn}
-                        onChange={(e) => setEditNameEn(e.target.value)}
-                        className="w-full pl-8 pr-2 py-1 border border-gray-300 rounded-lg text-sm"
-                      />
-                    </div>
+                    <input
+                      aria-label={t('containerTypes.name_de_label')}
+                      value={editNameDe}
+                      onChange={(e) => setEditNameDe(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && editNameDe) updateMut.mutate(); }}
+                      className="flex-1 min-w-28 px-2 py-1 border border-gray-300 rounded-lg text-sm"
+                      autoFocus
+                    />
                     <button
                       type="button"
                       aria-label={t('containerTypes.save_label')}
@@ -196,7 +170,6 @@ export default function ContainerTypesPage() {
                       onClick={() => {
                         setEditId(ct.id);
                         setEditNameDe(ct.translations?.de ?? ct.name);
-                        setEditNameEn(ct.translations?.en ?? '');
                         setEditIcon(ct.icon ?? '');
                       }}
                       className="p-1.5 text-gray-400 hover:text-indigo-600"

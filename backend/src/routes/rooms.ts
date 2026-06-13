@@ -64,6 +64,43 @@ router.post('/', requireEditor, async (req, res, next) => {
   }
 });
 
+// GET /api/rooms/tree – all rooms with full location tree
+router.get('/tree', async (_req, res, next) => {
+  try {
+    const rooms = await prisma.room.findMany({
+      include: {
+        _count: { select: { locations: true } },
+        locations: {
+          where: { parentId: null },
+          include: {
+            containerType: true,
+            _count: { select: { items: true } },
+            children: {
+              include: {
+                containerType: true,
+                _count: { select: { items: true } },
+                children: {
+                  include: {
+                    containerType: true,
+                    _count: { select: { items: true } },
+                  },
+                  orderBy: { name: 'asc' },
+                },
+              },
+              orderBy: { name: 'asc' },
+            },
+          },
+          orderBy: { name: 'asc' },
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+    res.json(rooms);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/rooms/:id
 router.get('/:id', async (req, res, next) => {
   try {
