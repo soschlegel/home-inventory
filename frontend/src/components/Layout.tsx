@@ -9,6 +9,7 @@ import {
   Ruler,
   Tag,
   Users,
+  Settings,
   LogOut,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -41,6 +42,7 @@ export default function Layout() {
     { to: '/units', icon: Ruler, label: t('nav.units'), show: isEditor },
     { to: '/tags', icon: Tag, label: t('nav.tags'), show: isEditor },
     { to: '/users', icon: Users, label: t('nav.users'), show: isEditor },
+    { to: '/admin', icon: Settings, label: t('nav.admin'), show: isEditor },
   ];
 
   return (

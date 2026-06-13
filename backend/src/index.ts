@@ -11,6 +11,7 @@ import lendingsRouter from './routes/lendings';
 import containerTypesRouter from './routes/containerTypes';
 import unitsRouter from './routes/units';
 import usersRouter from './routes/users';
+import adminRouter from './routes/admin';
 import { errorHandler } from './middleware/errorHandler';
 import openapiSpec from './openapi';
 
@@ -36,6 +37,7 @@ app.use('/api/container-types', containerTypesRouter);
 app.use('/api/units', unitsRouter);
 app.use('/api/lendings', lendingsRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/admin', adminRouter);
 app.use('/api', lendingsRouter); // für /api/items/:itemId/lend und /api/items/:itemId/lendings
 
 app.use(errorHandler);

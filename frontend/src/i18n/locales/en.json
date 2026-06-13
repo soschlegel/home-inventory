@@ -33,6 +33,7 @@
     "role_viewer": "👁 Viewer",
     "units": "Units",
     "tags": "Tags",
+    "admin": "Administration",
     "lang_toggle": "DE"
   },
   "login": {
@@ -230,6 +231,24 @@
     "items_count_one": "{{count}} item",
     "items_count_other": "{{count}} items",
     "key_hint": "Lowercase letters and underscores only (e.g. tools)"
+  },
+  "admin": {
+    "title": "Administration",
+    "subtitle": "Data backup and restore for editors",
+    "export_title": "Export data",
+    "export_desc": "Exports all rooms, containers, items, tags, units and lending history as a JSON file.",
+    "export_btn": "Download backup",
+    "exporting": "Exporting…",
+    "export_error": "Export failed",
+    "import_title": "Import data",
+    "import_desc": "Restores all data from a previously exported JSON file.",
+    "import_choose": "Select JSON file…",
+    "import_btn": "Import",
+    "importing": "Importing…",
+    "import_confirm": "Warning: All current data (rooms, containers, items, lendings) will be replaced by the import. User accounts will be kept. Continue?",
+    "import_warning": "All existing data will be overwritten on import. Create a backup first!",
+    "import_success": "Import successful. Reload the page to see the changes.",
+    "import_error": "Import failed. Please check the file format."
   },
   "tagNames": {
     "food": "Food",

@@ -16,6 +16,7 @@ import LendingsPage from './pages/LendingsPage';
 import UsersPage from './pages/UsersPage';
 import ItemsOverviewPage from './pages/ItemsOverviewPage';
 import TagsPage from './pages/TagsPage';
+import AdminPage from './pages/AdminPage';
 
 export default function App() {
   const { isLoading } = useAuth();
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/units" element={<UnitsPage />} />
           <Route path="/tags" element={<TagsPage />} />
           <Route path="/users" element={<UsersPage />} />
+          <Route path="/admin" element={<AdminPage />} />
         </Route>
       </Route>
     </Routes>

@@ -33,6 +33,7 @@
     "role_viewer": "👁 Betrachter",
     "units": "Einheiten",
     "tags": "Tags",
+    "admin": "Administration",
     "lang_toggle": "EN"
   },
   "login": {
@@ -230,6 +231,24 @@
     "items_count_one": "{{count}} Gegenstand",
     "items_count_other": "{{count}} Gegenstände",
     "key_hint": "Nur Kleinbuchstaben und Unterstriche (z.B. werkzeug)"
+  },
+  "admin": {
+    "title": "Administration",
+    "subtitle": "Datensicherung und Wiederherstellung für Editoren",
+    "export_title": "Daten exportieren",
+    "export_desc": "Exportiert alle Räume, Container, Gegenstände, Tags, Einheiten und Ausleihhistorie als JSON-Datei.",
+    "export_btn": "Backup herunterladen",
+    "exporting": "Exportiere…",
+    "export_error": "Export fehlgeschlagen",
+    "import_title": "Daten importieren",
+    "import_desc": "Stellt alle Daten aus einer zuvor exportierten JSON-Datei wieder her.",
+    "import_choose": "JSON-Datei auswählen…",
+    "import_btn": "Importieren",
+    "importing": "Importiere…",
+    "import_confirm": "Achtung: Alle aktuellen Daten (Räume, Container, Gegenstände, Ausleihen) werden durch den Import überschrieben. Nutzerkonten bleiben erhalten. Fortfahren?",
+    "import_warning": "Alle vorhandenen Daten werden beim Import überschrieben. Vorher ein Backup anlegen!",
+    "import_success": "Import erfolgreich. Seite neu laden, um die Änderungen zu sehen.",
+    "import_error": "Import fehlgeschlagen. Bitte Dateiformat prüfen."
   },
   "tagNames": {
     "food": "Lebensmittel",
