@@ -1,7 +1,12 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { authenticate, requireEditor } from '../middleware/auth';
+
+function jsonField(v: Record<string, string> | null | undefined) {
+  return v === null ? Prisma.JsonNull : v;
+}
 
 const router = Router();
 router.use(authenticate);
@@ -28,12 +33,12 @@ router.get('/', async (_req, res, next) => {
 // POST /api/units
 router.post('/', requireEditor, async (req, res, next) => {
   try {
-    const data = UnitBody.parse(req.body);
+    const { translations, ...rest } = UnitBody.parse(req.body);
     const existing = await prisma.unit.findFirst({
-      where: { OR: [{ key: data.key }, { name: data.name }] },
+      where: { OR: [{ key: rest.key }, { name: rest.name }] },
     });
     if (existing) { res.status(409).json({ error: 'Einheit bereits vorhanden' }); return; }
-    const unit = await prisma.unit.create({ data });
+    const unit = await prisma.unit.create({ data: { ...rest, translations: jsonField(translations) } });
     res.status(201).json(unit);
   } catch (err) {
     next(err);
@@ -45,16 +50,19 @@ router.put('/:id', requireEditor, async (req, res, next) => {
   try {
     const existing = await prisma.unit.findFirst({ where: { id: req.params.id } });
     if (!existing) { res.status(404).json({ error: 'Einheit nicht gefunden' }); return; }
-    const data = UnitBody.partial().parse(req.body);
-    if (data.key && data.key !== existing.key) {
-      const keyConflict = await prisma.unit.findFirst({ where: { key: data.key } });
+    const { translations, ...rest } = UnitBody.partial().parse(req.body);
+    if (rest.key && rest.key !== existing.key) {
+      const keyConflict = await prisma.unit.findFirst({ where: { key: rest.key } });
       if (keyConflict) { res.status(409).json({ error: 'Schlüssel bereits vergeben' }); return; }
     }
-    if (data.name && data.name !== existing.name) {
-      const nameConflict = await prisma.unit.findFirst({ where: { name: data.name } });
+    if (rest.name && rest.name !== existing.name) {
+      const nameConflict = await prisma.unit.findFirst({ where: { name: rest.name } });
       if (nameConflict) { res.status(409).json({ error: 'Name bereits vergeben' }); return; }
     }
-    const unit = await prisma.unit.update({ where: { id: req.params.id }, data });
+    const unit = await prisma.unit.update({
+      where: { id: req.params.id },
+      data: { ...rest, ...(translations !== undefined ? { translations: jsonField(translations) } : {}) },
+    });
     res.json(unit);
   } catch (err) {
     next(err);

@@ -1,8 +1,13 @@
 import { Router } from 'express';
 import { randomUUID } from 'crypto';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { authenticate, requireEditor } from '../middleware/auth';
+
+function jsonField(v: Record<string, string> | null | undefined) {
+  return v === null ? Prisma.JsonNull : v;
+}
 
 const router = Router();
 router.use(authenticate);
@@ -42,8 +47,10 @@ router.get('/', async (_req, res, next) => {
 // POST /api/container-types
 router.post('/', requireEditor, async (req, res, next) => {
   try {
-    const data = ContainerTypeCreateBody.parse(req.body);
-    const type = await prisma.containerType.create({ data: { ...data, key: randomUUID() } });
+    const { translations, ...rest } = ContainerTypeCreateBody.parse(req.body);
+    const type = await prisma.containerType.create({
+      data: { ...rest, key: randomUUID(), translations: jsonField(translations) },
+    });
     res.status(201).json(type);
   } catch (err) {
     next(err);
@@ -55,8 +62,11 @@ router.put('/:id', requireEditor, async (req, res, next) => {
   try {
     const existing = await prisma.containerType.findFirst({ where: { id: req.params.id } });
     if (!existing) { res.status(404).json({ error: 'Container-Typ nicht gefunden' }); return; }
-    const data = ContainerTypeUpdateBody.parse(req.body);
-    const type = await prisma.containerType.update({ where: { id: req.params.id }, data });
+    const { translations, ...rest } = ContainerTypeUpdateBody.parse(req.body);
+    const type = await prisma.containerType.update({
+      where: { id: req.params.id },
+      data: { ...rest, ...(translations !== undefined ? { translations: jsonField(translations) } : {}) },
+    });
     res.json(type);
   } catch (err) {
     next(err);

@@ -1,8 +1,13 @@
 import { Router } from 'express';
 import { randomUUID } from 'crypto';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { authenticate, requireEditor } from '../middleware/auth';
+
+function jsonField(v: Record<string, string> | null | undefined) {
+  return v === null ? Prisma.JsonNull : v;
+}
 
 const router = Router();
 router.use(authenticate);
@@ -38,11 +43,11 @@ router.get('/', async (_req, res, next) => {
 // POST /api/tags
 router.post('/', requireEditor, async (req, res, next) => {
   try {
-    const data = TagCreateBody.parse(req.body);
-    const existing = await prisma.tag.findFirst({ where: { name: data.name } });
+    const { translations, ...rest } = TagCreateBody.parse(req.body);
+    const existing = await prisma.tag.findFirst({ where: { name: rest.name } });
     if (existing) { res.status(409).json({ error: 'Tag bereits vorhanden' }); return; }
     const tag = await prisma.tag.create({
-      data: { ...data, key: randomUUID() },
+      data: { ...rest, key: randomUUID(), translations: jsonField(translations) },
       include: { _count: { select: { items: true } } },
     });
     res.status(201).json(tag);
@@ -56,10 +61,10 @@ router.put('/:id', requireEditor, async (req, res, next) => {
   try {
     const existing = await prisma.tag.findFirst({ where: { id: req.params.id } });
     if (!existing) { res.status(404).json({ error: 'Tag nicht gefunden' }); return; }
-    const data = TagUpdateBody.parse(req.body);
+    const { translations, ...rest } = TagUpdateBody.parse(req.body);
     const tag = await prisma.tag.update({
       where: { id: req.params.id },
-      data,
+      data: { ...rest, ...(translations !== undefined ? { translations: jsonField(translations) } : {}) },
       include: { _count: { select: { items: true } } },
     });
     res.json(tag);
