@@ -8,6 +8,8 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    env:
+      PORTAINER_WEBHOOK_URL: ${{ secrets.PORTAINER_WEBHOOK_URL }}
 
     steps:
       - name: Checkout
@@ -60,5 +62,5 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Trigger Portainer redeploy
-        if: ${{ secrets.PORTAINER_WEBHOOK_URL != '' }}
-        run: curl -fsSL -X POST "${{ secrets.PORTAINER_WEBHOOK_URL }}"
+        if: env.PORTAINER_WEBHOOK_URL != ''
+        run: curl -fsSL -X POST "$PORTAINER_WEBHOOK_URL"
