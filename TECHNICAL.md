@@ -50,23 +50,26 @@ home-inventory/
 │       ├── routes/
 │       │   ├── auth.ts
 │       │   ├── rooms.ts          CRUD + /tree Endpunkt (Baumstruktur)
-│       │   ├── locations.ts
-│       │   ├── items.ts          CRUD + Bildupload + Dokumentupload + Suche + Low-Stock
-│       │   ├── lendings.ts
+│       │   ├── locations.ts      CRUD + Sub-Instances-Endpunkte
+│       │   ├── products.ts       CRUD + Bildupload + Dokumentupload + Suche
+│       │   ├── instances.ts      CRUD + Dokumentupload + Suche + Low-Stock + Expiring-Soon
+│       │   ├── lendings.ts       Verleihen + Rückgabe
 │       │   ├── tags.ts           Tag-CRUD (key + name)
 │       │   ├── containerTypes.ts
 │       │   ├── units.ts          Einheitenverwaltung (key + name)
-│       │   └── users.ts
+│       │   ├── users.ts
+│       │   ├── admin.ts          Export / Import
+│       │   └── settings.ts       Anwendungseinstellungen (Registrierung an/aus)
 │       ├── utils/
 │       │   ├── jwt.ts
 │       │   └── upload.ts         Multer: upload (Bilder 10 MB) + uploadDocument (PDF/Bild 20 MB)
-│       └── __tests__/            14 Testdateien (~147 Tests)
+│       └── __tests__/            15 Testdateien (158 Tests)
 │
 └── frontend/
     └── src/
         ├── main.tsx              i18n-Import hier (vor Render)
         ├── App.tsx
-        ├── types.ts
+        ├── types.ts              Zentrale TypeScript-Interfaces
         ├── i18n/
         │   ├── config.ts         i18next-Init, localStorage-Persistenz
         │   └── locales/
@@ -77,40 +80,48 @@ home-inventory/
         │   ├── auth.ts
         │   ├── rooms.ts
         │   ├── locations.ts
-        │   ├── items.ts
+        │   ├── products.ts       Produkt-CRUD + Bild/Dokumentupload
+        │   ├── instances.ts      Exemplar-CRUD + Low-Stock + Expiring-Soon
         │   ├── lendings.ts
         │   ├── containerTypes.ts
-        │   ├── tags.ts           Tag-API (getTags, createTag, updateTag, deleteTag)
+        │   ├── tags.ts
         │   ├── units.ts
-        │   └── users.ts
+        │   ├── users.ts
+        │   ├── profile.ts
+        │   └── settings.ts
         ├── contexts/AuthContext.tsx
         ├── components/
-        │   ├── Layout.tsx        Navigation, Rollenbadge, Sprachumschalter
+        │   ├── Layout.tsx            Navigation, Rollenbadge, Sprachumschalter
+        │   ├── EmojiPickerInput.tsx  Emoji-Picker mit Suchfeld (Räume, Container-Typen)
         │   ├── PrivateRoute.tsx
         │   └── Spinner.tsx
         ├── pages/
         │   ├── LoginPage.tsx
-        │   ├── DashboardPage.tsx     Stat-Cards verlinken zu /rooms und /containers
+        │   ├── DashboardPage.tsx         Low-Stock (Produktsumme) + Ablaufdaten + Ausleihen
         │   ├── RoomsPage.tsx
         │   ├── RoomDetailPage.tsx
-        │   ├── LocationDetailPage.tsx
-        │   ├── ContainersPage.tsx    Baumansicht aller Räume → Container → Sub-Container
-        │   ├── ItemDetailPage.tsx    Tag-Picker + Unit-Select + Dokumentupload
-        │   ├── ItemsOverviewPage.tsx Multi-Tag-Filter (Set<string> IDs, OR-Logik)
+        │   ├── LocationDetailPage.tsx    Produkt-Combobox beim Hinzufügen von Exemplaren
+        │   ├── ContainersPage.tsx        Baumansicht aller Räume → Container
+        │   ├── ProductsPage.tsx          Alle Produkte mit Suche
+        │   ├── ProductDetailPage.tsx     Stammdaten + Exemplar anlegen
+        │   ├── InstanceDetailPage.tsx    Exemplar-Details + Verleihen + Umhängen
+        │   ├── ItemsOverviewPage.tsx     Alle Exemplare, Multi-Tag-Filter
+        │   ├── QRScannerPage.tsx         Kamera-Scanner für Barcodes
+        │   ├── SearchPage.tsx
         │   ├── LendingsPage.tsx
-        │   ├── ContainerTypesPage.tsx  DE-Eingabe; EN via TranslationsPage
-        │   ├── TagsPage.tsx      Tag-Verwaltung, key auto-generiert (EDITOR only)
-        │   ├── UnitsPage.tsx     Einheitenverwaltung, key auto-generiert aus Name (EDITOR only)
-        │   ├── TranslationsPage.tsx  Zentrale Übersetzungspflege (Tab-UI)
-        │   ├── UsersPage.tsx     inkl. Passwort-Reset anderer Nutzer (EDITOR only)
-        │   ├── AdminPage.tsx     Export/Import/Registrierungstoggle (EDITOR only)
-        │   └── ProfilePage.tsx   Eigenes Profil (Name + Passwort)
+        │   ├── ContainerTypesPage.tsx
+        │   ├── TagsPage.tsx
+        │   ├── UnitsPage.tsx
+        │   ├── TranslationsPage.tsx      Zentrale Übersetzungspflege (Tab-UI)
+        │   ├── UsersPage.tsx
+        │   ├── AdminPage.tsx
+        │   └── ProfilePage.tsx
         ├── utils/
         │   └── localizedName.ts  locRoomName / locContainerTypeName / locTagName / locUnitName
-        └── __tests__/            4 Testdateien
+        └── __tests__/            4 Testdateien (30 Tests)
 ```
 
-> **Tests gesamt:** 14 Backend-Testdateien · 4 Frontend-Testdateien
+> **Tests gesamt:** 15 Backend-Testdateien · 4 Frontend-Testdateien
 
 ---
 
@@ -168,30 +179,42 @@ Schema: [`backend/prisma/schema.prisma`](backend/prisma/schema.prisma)
 
 ```text
 User (role: EDITOR | VIEWER)
+  └── assignedInstances → Instance[]   (Exemplare, die direkt einem Nutzer zugewiesen sind)
 
 Unit  ← key (unique slug, z.B. "piece"), name (Anzeigename, z.B. "Stück")
-        translations Json?  — z.B. { "de": "Stück", "en": "piece", "fr": "pièce" }
+        translations Json?
 
-Tag   ← key (unique slug, auto-UUID für neue Einträge), name (Anzeigename)
-        translations Json?  — beliebige Sprachcodes als Keys
+Tag   ← key (unique slug), name
+        translations Json?
+        products → ProductTag[] (m:n)
 
-ContainerType ← key? (optional, z.B. "drawer"), name, icon, color
+ContainerType ← key?, name, icon, color
                 translations Json?
 
-Room  ← key? (optional, z.B. "kitchen"), name, icon
-        translations Json?
+Room  ← key?, name, icon, translations Json?
  └── Location (Container, beliebig tief verschachtelbar)
-      ├── containerTypeId → ContainerType
-      ├── parentId → Location
-      └── Item
-           ├── quantity / unit (Key-String, z.B. "piece") / minQuantity
-           ├── condition (NEW / GOOD / WORN / BROKEN)
-           ├── purchaseUrl / purchasePrice / purchaseDate
-           ├── warrantyUntil / serialNumber / barcode
-           ├── imageUrl
-           ├── tags (ItemTag many-to-many)
-           ├── lendings (lentTo, lentAt, returnedAt, note)
-           └── documents (ItemDocument: originalName, url, mimeType, size)
+      ├── containerTypeId? → ContainerType
+      ├── parentId? → Location
+      └── instances → Instance[]
+
+Product (Stammdaten — was ist dieser Gegenstand?)
+  ├── name / description / imageUrl / barcode
+  ├── purchaseUrl / minQuantity / expiryWarningDays
+  ├── tags → ProductTag[] (m:n mit Tag)
+  ├── documents → ProductDocument[]
+  └── instances → Instance[]
+
+Instance (Exemplar — ein konkretes physisches Objekt)
+  ├── productId → Product
+  ├── quantity / unit / condition / serialNumber
+  ├── purchasePrice / purchaseDate / warrantyUntil / expiryDate
+  ├── locationId? → Location   (oder null)
+  ├── assignedUserId? → User   (oder null)
+  ├── documents → InstanceDocument[]
+  └── lendings → Lending[]
+
+Lending ← instanceId → Instance, lentTo, lentAt, returnedAt?, note?
+Setting ← key (PK), value (Anwendungseinstellungen, z.B. registration_enabled)
 ```
 
 **`translations Json?`** speichert Übersetzungen als JSON-Objekt mit ISO-639-1-Codes als Keys: `{ "de": "Küche", "en": "Kitchen", "fr": "Cuisine" }`. Neue Sprachen erfordern keine Schema-Änderung.
@@ -208,7 +231,7 @@ Room  ← key? (optional, z.B. "kitchen"), name, icon
 
 ### Room
 
-Geteilt zwischen allen Nutzern. Löschen kaskadiert zu Locations und Items.
+Geteilt zwischen allen Nutzern. Löschen kaskadiert zu Locations → Instances.
 
 | Feld | Typ | |
 |------|-----|-|
@@ -225,35 +248,49 @@ Geteilt zwischen allen Nutzern. Löschen kaskadiert zu Locations und Items.
 |------|-----|-|
 | `id` | `String` (cuid) | |
 | `name` | `String` | |
-| `containerTypeId` | `String?` | → ContainerType |
-| `roomId` | `String` | → Room |
+| `containerTypeId` | `String?` | → ContainerType (`onDelete: SetNull`) |
+| `roomId` | `String` | → Room (`onDelete: Cascade`) |
 | `parentId` | `String?` | → Location (Eltern) |
 
-### Item
+### Product
+
+Stammdaten — beschreibt, was ein Gegenstand ist.
 
 | Feld | Typ | |
 |------|-----|-|
 | `id` | `String` (cuid) | |
 | `name` | `String` | |
 | `description` | `String?` | |
+| `imageUrl` | `String?` | |
+| `barcode` | `String?` | |
+| `purchaseUrl` | `String?` | Link zum Produkt |
+| `minQuantity` | `Float?` | Schwellwert für Dashboard-Warnung (Summe aller Exemplare) |
+| `expiryWarningDays` | `Int?` | Warnvorlauf in Tagen vor Ablaufdatum |
+
+### Instance
+
+Exemplar — ein konkretes physisches Objekt eines Produkts.
+
+| Feld | Typ | |
+|------|-----|-|
+| `id` | `String` (cuid) | |
+| `productId` | `String` | → Product (`onDelete: Cascade`) |
 | `quantity` | `Float` | Standard: 1 |
 | `unit` | `String?` | Key einer Unit (z. B. `"piece"`, `"kg"`) |
-| `minQuantity` | `Float?` | Schwellwert für Dashboard-Warnung |
 | `condition` | `ItemCondition?` | NEW / GOOD / WORN / BROKEN |
-| `imageUrl` | `String?` | |
-| `purchaseUrl` | `String?` | |
+| `serialNumber` | `String?` | |
 | `purchasePrice` | `Float?` | |
 | `purchaseDate` | `DateTime?` | |
 | `warrantyUntil` | `DateTime?` | |
-| `serialNumber` | `String?` | |
-| `barcode` | `String?` | |
-| `locationId` | `String` | → Location |
+| `expiryDate` | `DateTime?` | |
+| `locationId` | `String?` | → Location (`onDelete: SetNull`) — optional |
+| `assignedUserId` | `String?` | → User (`onDelete: SetNull`) — optional |
 
-`Item.unit` speichert den **Key** der Unit-Tabelle (kein FK). Die Anzeige erfolgt über `t('unitNames.${unit}', { defaultValue: unit })`.
+`Instance.unit` speichert den **Key** der Unit-Tabelle (kein FK). Anzeige: `t('unitNames.${unit}', { defaultValue: unit })`.
 
 ### Unit
 
-Verwaltete Vorschlagsliste für `Item.unit`. Kein FK auf Item — bestehende Items sind von Änderungen unberührt.
+Verwaltete Vorschlagsliste für `Instance.unit`. Kein FK — bestehende Exemplare sind von Änderungen unberührt.
 
 | Feld | Typ | |
 |------|-----|-|
@@ -270,9 +307,7 @@ Verwaltete Vorschlagsliste für `Item.unit`. Kein FK auf Item — bestehende Ite
 | `key` | `String` | eindeutiger Slug — für Seed-Daten sprechend (`"food"`), für neue Einträge auto-UUID |
 | `name` | `String` | eindeutiger Anzeigename, z. B. `"Lebensmittel"` |
 | `translations` | `Json?` | `{ "de": "Lebensmittel", "en": "Food" }` |
-| `items` | `ItemTag[]` | m:n zu Item (Cascade Delete) |
-
-Beim Löschen eines Tags werden alle zugehörigen `ItemTag`-Einträge kaskadiert gelöscht. Das Frontend warnt vor dem Löschen, wenn `_count.items > 0`.
+| `products` | `ProductTag[]` | m:n zu Product (Cascade Delete) |
 
 ### ContainerType
 
@@ -292,20 +327,20 @@ Wird ein Typ gelöscht, verlieren zugeordnete Locations ihren Typ (`onDelete: Se
 | Feld | Typ | |
 |------|-----|-|
 | `id` | `String` (cuid) | |
-| `itemId` | `String` | → Item |
+| `instanceId` | `String` | → Instance (`onDelete: Cascade`) |
 | `lentTo` | `String` | Name der ausleihenden Person |
 | `lentAt` | `DateTime` | Standard: now() |
 | `returnedAt` | `DateTime?` | null = noch ausgeliehen |
 | `note` | `String?` | |
 
-### ItemDocument
+### ProductDocument / InstanceDocument
 
-Dateianhänge (PDFs, Bilder) zu einem Item — z. B. Anleitungen, Rechnungen.
+Dateianhänge (PDFs, Bilder) — z. B. Anleitungen, Rechnungen. Gleiche Felder für beide Typen:
 
 | Feld | Typ | |
 |------|-----|-|
 | `id` | `String` (cuid) | |
-| `itemId` | `String` | → Item (onDelete: Cascade) |
+| `productId` / `instanceId` | `String` | → Product / Instance (`onDelete: Cascade`) |
 | `originalName` | `String` | ursprünglicher Dateiname |
 | `url` | `String` | Serverpfad `/uploads/<hash>.<ext>` |
 | `mimeType` | `String?` | z. B. `application/pdf`, `image/jpeg` |
@@ -342,29 +377,39 @@ Alle Endpunkte außer Auth erfordern `Authorization: Bearer <accessToken>`.
 | `DELETE` | `/api/rooms/:id` | 🔒 | Raum löschen |
 | `GET` | `/api/rooms/:roomId/locations` | ✓ | Locations eines Raums |
 | `POST` | `/api/rooms/:roomId/locations` | 🔒 | Location anlegen |
-| `GET` | `/api/locations/:id` | ✓ | Location mit Unter-Containers |
+| `GET` | `/api/locations/:id` | ✓ | Location mit Unter-Containers und Exemplaren |
 | `PUT` | `/api/locations/:id` | 🔒 | Location bearbeiten |
 | `DELETE` | `/api/locations/:id` | 🔒 | Location löschen |
-| `GET` | `/api/locations/:id/items` | ✓ | Items einer Location |
-| `POST` | `/api/locations/:id/items` | 🔒 | Item anlegen |
-| `GET` | `/api/items` | ✓ | Alle Items mit Lagerort und Tags |
-| `GET` | `/api/items/search?q=` | ✓ | Volltextsuche (max. 50) |
-| `GET` | `/api/items/low-stock` | ✓ | Items unter Mindestbestand |
-| `GET` | `/api/items/:id` | ✓ | Item-Detail |
-| `PUT` | `/api/items/:id` | 🔒 | Item bearbeiten (inkl. `tags: string[]` IDs) |
-| `DELETE` | `/api/items/:id` | 🔒 | Item löschen |
-| `POST` | `/api/items/:id/image` | 🔒 | Bild hochladen |
-| `POST` | `/api/items/:id/documents` | 🔒 | Dokument hochladen (PDF/Bild, max. 20 MB) |
-| `DELETE` | `/api/items/:id/documents/:docId` | 🔒 | Dokument löschen (Datei + DB-Eintrag) |
-| `POST` | `/api/items/:id/lend` | 🔒 | Item verleihen |
-| `GET` | `/api/items/:id/lendings` | ✓ | Verleihistorie |
+| `GET` | `/api/locations/:id/instances` | ✓ | Exemplare einer Location |
+| `POST` | `/api/locations/:id/instances` | 🔒 | Exemplar in Location anlegen (mit Produkt-Combobox) |
+| `GET` | `/api/products` | ✓ | Alle Produkte |
+| `GET` | `/api/products/search?q=` | ✓ | Produktsuche (max. 50) |
+| `POST` | `/api/products` | 🔒 | Produkt anlegen |
+| `GET` | `/api/products/:id` | ✓ | Produkt-Detail (inkl. Exemplare) |
+| `PUT` | `/api/products/:id` | 🔒 | Produkt bearbeiten (inkl. `tags: string[]` IDs) |
+| `DELETE` | `/api/products/:id` | 🔒 | Produkt löschen |
+| `POST` | `/api/products/:id/image` | 🔒 | Produktbild hochladen |
+| `POST` | `/api/products/:id/documents` | 🔒 | Produktdokument hochladen (PDF/Bild, max. 20 MB) |
+| `DELETE` | `/api/products/:id/documents/:docId` | 🔒 | Produktdokument löschen |
+| `GET` | `/api/instances` | ✓ | Alle Exemplare (Übersicht) |
+| `GET` | `/api/instances/search?q=` | ✓ | Exemplarsuche (max. 50) |
+| `GET` | `/api/instances/low-stock` | ✓ | Produkte unter Mindestbestand (Summe aller Exemplare) |
+| `GET` | `/api/instances/expiring-soon` | ✓ | Exemplare, die innerhalb des Warnfensters ablaufen |
+| `POST` | `/api/instances` | 🔒 | Exemplar anlegen (locationId optional) |
+| `GET` | `/api/instances/:id` | ✓ | Exemplar-Detail |
+| `PUT` | `/api/instances/:id` | 🔒 | Exemplar bearbeiten |
+| `DELETE` | `/api/instances/:id` | 🔒 | Exemplar löschen |
+| `POST` | `/api/instances/:id/documents` | 🔒 | Exemplardokument hochladen (PDF/Bild, max. 20 MB) |
+| `DELETE` | `/api/instances/:id/documents/:docId` | 🔒 | Exemplardokument löschen |
+| `POST` | `/api/instances/:id/lend` | 🔒 | Exemplar verleihen |
+| `GET` | `/api/instances/:id/lendings` | ✓ | Verleihistorie eines Exemplars |
 | `GET` | `/api/lendings/active` | ✓ | Aktive Ausleihen |
 | `GET` | `/api/lendings/:id` | ✓ | Einzelne Ausleihe |
 | `PUT` | `/api/lendings/:id/return` | 🔒 | Rückgabe eintragen |
-| `GET` | `/api/tags` | ✓ | Alle Tags (inkl. `_count.items`, `translations`) |
-| `POST` | `/api/tags` | 🔒 | Tag anlegen (`name`, `translations?`) — `key` wird auto-generiert |
+| `GET` | `/api/tags` | ✓ | Alle Tags (inkl. `_count.products`, `translations`) |
+| `POST` | `/api/tags` | 🔒 | Tag anlegen — `key` wird auto-generiert |
 | `PUT` | `/api/tags/:id` | 🔒 | Tag bearbeiten |
-| `DELETE` | `/api/tags/:id` | 🔒 | Tag löschen (kaskadiert ItemTags) |
+| `DELETE` | `/api/tags/:id` | 🔒 | Tag löschen (kaskadiert ProductTags) |
 | `GET` | `/api/container-types` | ✓ | Alle Container-Typen (inkl. `translations`) |
 | `POST` | `/api/container-types` | 🔒 | Typ anlegen (`name`, `translations?`, `icon?`, `color?`) |
 | `PUT` | `/api/container-types/:id` | 🔒 | Typ bearbeiten |
@@ -431,7 +476,7 @@ frontend/src/i18n/
     en.json           Englisch
 ```
 
-**Namespaces:** `common`, `nav`, `login`, `dashboard`, `rooms`, `containers`, `roomDetail`, `location`, `item`, `condition`, `search`, `lendings`, `containerTypes`, `units`, `tags`, `users`, `itemsOverview`, `translations`, `emojiPicker`, `admin`, `profile`, `tagNames`, `unitNames`, `containerTypeNames`, `roomNames`
+**Namespaces:** `common`, `nav`, `login`, `dashboard`, `rooms`, `containers`, `roomDetail`, `location`, `products`, `instance`, `condition`, `search`, `lendings`, `containerTypes`, `units`, `tags`, `users`, `itemsOverview`, `translations`, `emojiPicker`, `qrscanner`, `admin`, `profile`, `tagNames`, `unitNames`, `containerTypeNames`, `roomNames`
 
 **Sprachumschalter:** Button in der Sidebar-Footer-Leiste. Speichert Auswahl in `localStorage('lang')`.
 
@@ -463,7 +508,7 @@ Zwei separate Multer-Instanzen in `backend/src/utils/upload.ts`:
 
 ### Bildupload
 
-Upload via `POST /api/items/:id/image` (`multipart/form-data`, Feld `image`).
+Upload via `POST /api/products/:id/image` (`multipart/form-data`, Feld `image`).
 
 - Max. Dateigröße: **10 MB**
 - Erlaubte MIME-Types: `image/*`
@@ -471,18 +516,23 @@ Upload via `POST /api/items/:id/image` (`multipart/form-data`, Feld `image`).
 - Speicherort: `UPLOAD_DIR` (Standard `./uploads`, Docker `/app/uploads`)
 - Nginx serviert `/uploads/*` direkt mit `Cache-Control: public, immutable, max-age=30d`
 
-Altes Bild wird beim Überschreiben oder Item-Löschen automatisch entfernt.
+Altes Bild wird beim Überschreiben oder Produkt-Löschen automatisch entfernt.
 
 ### Dokumentupload
 
-Upload via `POST /api/items/:id/documents` (`multipart/form-data`, Feld `document`).
+Dokumente können sowohl an **Produkte** als auch an **Exemplare** gehängt werden:
+
+- `POST /api/products/:id/documents` (`multipart/form-data`, Feld `document`) → `ProductDocument`
+- `POST /api/instances/:id/documents` (`multipart/form-data`, Feld `document`) → `InstanceDocument`
+
+Eigenschaften für beide:
 
 - Max. Dateigröße: **20 MB**
 - Erlaubte MIME-Types: `image/*` und `application/pdf`
 - Dateiname: 16 zufällige Hex-Bytes + Original-Erweiterung
 - Speicherort: gleicher `UPLOAD_DIR`
-- Metadaten (originalName, mimeType, size, url) werden in der `ItemDocument`-Tabelle gespeichert
-- Beim Löschen (`DELETE /api/items/:id/documents/:docId`) wird die Datei von der Festplatte entfernt
+- Metadaten (originalName, mimeType, size, url) werden in der jeweiligen Dokument-Tabelle gespeichert
+- Beim Löschen (`DELETE /api/products/:id/documents/:docId` / `DELETE /api/instances/:id/documents/:docId`) wird die Datei von der Festplatte entfernt
 
 ---
 
@@ -542,7 +592,7 @@ Erstellt (löscht vorher alle Daten):
 
 ## Tests
 
-**Backend** — 14 Dateien · ~147 Tests (Vitest + supertest)
+**Backend** — 15 Dateien · 158 Tests (Vitest + supertest)
 
 | Test-Datei | Was wird getestet |
 |------------|-------------------|
@@ -551,8 +601,9 @@ Erstellt (löscht vorher alle Daten):
 | `errorHandler.test.ts` | ZodError → 400, generische Fehler → 500 |
 | `auth.routes.test.ts` | Register, Login, Refresh-Token |
 | `rooms.routes.test.ts` | CRUD Räume, `/tree`-Endpunkt, `translations`-Objekt, 404 |
-| `locations.routes.test.ts` | GET, PUT (Name + Typ), DELETE, Items-Endpunkte |
-| `items.routes.test.ts` | Suche, Low-Stock, CRUD, purchaseUrl-Clearing, Dokumentupload/-löschen |
+| `locations.routes.test.ts` | GET, PUT (Name + Typ), DELETE, Instances-Endpunkte |
+| `products.routes.test.ts` | CRUD Produkte, Suche, Bildupload, Dokumentupload, purchaseUrl-Clearing |
+| `instances.routes.test.ts` | CRUD Exemplare, Low-Stock (Produktsumme), Expiring-Soon, POST ohne Standort |
 | `containerTypes.routes.test.ts` | CRUD, `translations` inkl. Drittsprache, Farbvalidierung |
 | `lendings.routes.test.ts` | Verleihen, Rückgabe, Doppelrückgabe (409), Historie |
 | `tags.routes.test.ts` | Tags CRUD, `translations`, 409 bei Duplikat |

@@ -7,6 +7,9 @@ dist/
 backend/uploads/*
 !backend/uploads/.gitkeep
 
+# Claude Code-Konfiguration (lokal, kein Repo-Inhalt)
+.claude/
+
 # OS
 .DS_Store
 Thumbs.db

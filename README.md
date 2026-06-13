@@ -8,17 +8,21 @@ Technische Details: [TECHNICAL.md](TECHNICAL.md)
 
 ## Features
 
-- **Hierarchische Struktur:** Raum → Container (beliebig tief verschachtelbar) → Gegenstand
-- **Gegenstände:** Name, Menge, Einheit, Zustand (Neu/Gut/Abgenutzt/Defekt), Foto, Tags, Mindestbestand
-- **Kaufinformationen:** Link, Preis, Datum, Garantie, Seriennummer, Barcode
-- **Dokumente:** PDFs und Bilder (Anleitungen, Rechnungen) pro Gegenstand hochladbar
-- **Umhängen:** Gegenstände zwischen Containern verschieben
+- **Hierarchische Struktur:** Raum → Container (beliebig tief verschachtelbar) → Exemplar
+- **Produkt / Exemplar-Trennung:** Stammdaten (Produkt: Name, Bild, Barcode, Mindestbestand, Ablaufwarnung, Kauflink, Tags, Dokumente) getrennt von physischen Exemplaren (Menge, Einheit, Zustand, Kaufpreis, Seriennummer, Ablaufdatum, Lagerort oder Nutzer)
+- **Standort optional:** Ein Exemplar kann einem Container ODER einem Nutzer zugewiesen werden — auch ohne Standort
+- **Ablaufdatum-Warnung:** Konfigurierbare Warnfrist (in Tagen) auf Produktebene; abgelaufene und bald ablaufende Exemplare auf dem Dashboard
+- **Mindestbestand:** Schwellwert auf Produktebene — Dashboard warnt, wenn die Summe aller Exemplare eines Produkts den Schwellwert unterschreitet
+- **QR- / Barcode-Scanner:** Kamera-Scanner zum Abrufen von Produkten über Barcode; direkt in der App
+- **Kaufinformationen:** Kauflink, Preis, Datum, Garantie, Seriennummer
+- **Dokumente:** PDFs und Bilder (Anleitungen, Rechnungen) pro Produkt und pro Exemplar hochladbar
+- **Umhängen:** Exemplare zwischen Containern verschieben oder Standort entfernen
 - **Verleihistorie:** An Person verleihen, Rückgabe eintragen, aktive Ausleihen auf dem Dashboard
 - **Einheitenverwaltung:** Verwaltbare Vorschlagsliste für Mengeneinheiten (kg, L, Stück …) — Key wird automatisch aus dem Namen generiert
-- **Tag-Verwaltung:** Frei definierbare Tags für Gegenstände (Werkzeug, Lebensmittel …), filterbar in der Übersicht (Multi-Tag-Filter)
+- **Tag-Verwaltung:** Frei definierbare Tags für Produkte (Werkzeug, Lebensmittel …), filterbar in der Übersicht (Multi-Tag-Filter)
 - **Container-Typen:** Benutzerdefinierte Typen mit Emoji (Schrank, Karton …) — Übersetzungen zentral per Übersetzungsseite
 - **Container-Baumansicht:** Alle Räume und Container auf einen Blick, verschachtelt als Baumstruktur
-- **Gesamtübersicht:** Alle Gegenstände tabellarisch, nach Name gruppiert, mit mehrfachem Tag-Filter und Lagerort-Links
+- **Gesamtübersicht:** Alle Exemplare tabellarisch, mit mehrfachem Tag-Filter und Lagerort-Links
 - **Übersetzungsverwaltung:** Zentrale Seite zum Pflegen von Namen in beliebig vielen Sprachen (DE/EN als Standard, erweiterbar)
 - **Mehrsprachig:** Deutsch (Standard) und Englisch, Sprachwahl in der Navigation — Übersetzungen im JSON-Format in der DB gespeichert
 - **Rollen:** EDITOR (Lesen + Schreiben + Passwort-Reset anderer Nutzer) und VIEWER (nur Lesen)
@@ -168,7 +172,7 @@ cd backend && npm test
 cd frontend && npm test
 ```
 
-14 Backend-Testdateien · ~147 Tests (Vitest + supertest) · 4 Frontend-Testdateien · ~30 Tests (Vitest + jsdom)
+15 Backend-Testdateien · 158 Tests (Vitest + supertest) · 4 Frontend-Testdateien · 30 Tests (Vitest + jsdom)
 
 ---
 
