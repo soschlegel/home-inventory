@@ -83,7 +83,7 @@ export default function DashboardPage() {
                 <Link to={`/instances/${instance.id}`} className="hover:underline font-medium">
                   {instance.product.name}
                 </Link>{' '}
-                — {instance.quantity} {instance.unit ?? t('common.piece')} (min. {instance.minQuantity})
+                — {instance.quantity} {instance.unit ?? t('common.piece')} (min. {instance.product.minQuantity})
               </li>
             ))}
           </ul>

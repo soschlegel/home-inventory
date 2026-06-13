@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, ExternalLink, Trash2, Upload, ArrowRightLeft, Pencil, X, Check, MoveRight, FileText } from 'lucide-react';
+import { ChevronRight, Trash2, Upload, ArrowRightLeft, Pencil, X, Check, MoveRight, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getInstance, updateInstance, deleteInstance, uploadInstanceDocument, deleteInstanceDocument } from '../api/instances';
 import { lendInstance, returnItem } from '../api/lendings';
@@ -41,10 +41,8 @@ export default function InstanceDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editQuantity, setEditQuantity] = useState('');
   const [editUnit, setEditUnit] = useState('');
-  const [editMinQty, setEditMinQty] = useState('');
   const [editCondition, setEditCondition] = useState('');
   const [editSerialNumber, setEditSerialNumber] = useState('');
-  const [editPurchaseUrl, setEditPurchaseUrl] = useState('');
   const [editPurchasePrice, setEditPurchasePrice] = useState('');
   const [editPurchaseDate, setEditPurchaseDate] = useState('');
   const [editWarrantyUntil, setEditWarrantyUntil] = useState('');
@@ -55,10 +53,8 @@ export default function InstanceDetailPage() {
     if (!instance) return;
     setEditQuantity(String(instance.quantity));
     setEditUnit(instance.unit ?? '');
-    setEditMinQty(instance.minQuantity != null ? String(instance.minQuantity) : '');
     setEditCondition(instance.condition ?? '');
     setEditSerialNumber(instance.serialNumber ?? '');
-    setEditPurchaseUrl(instance.purchaseUrl ?? '');
     setEditPurchasePrice(instance.purchasePrice != null ? String(instance.purchasePrice) : '');
     setEditPurchaseDate(instance.purchaseDate ? instance.purchaseDate.slice(0, 10) : '');
     setEditWarrantyUntil(instance.warrantyUntil ? instance.warrantyUntil.slice(0, 10) : '');
@@ -71,10 +67,8 @@ export default function InstanceDetailPage() {
     mutationFn: () => updateInstance(id!, {
       quantity: parseFloat(editQuantity) || 1,
       unit: editUnit || undefined,
-      minQuantity: editMinQty ? parseFloat(editMinQty) : undefined,
       condition: (editCondition as ItemCondition) || undefined,
       serialNumber: editSerialNumber || undefined,
-      purchaseUrl: editPurchaseUrl || undefined,
       purchasePrice: editPurchasePrice ? parseFloat(editPurchasePrice) : undefined,
       purchaseDate: editPurchaseDate || undefined,
       warrantyUntil: editWarrantyUntil || undefined,
@@ -243,10 +237,6 @@ export default function InstanceDetailPage() {
                   </select>
                 </label>
                 <label className="label-wrap">
-                  <span className="label">{t('item.field_min_quantity')}</span>
-                  <input type="number" min="0" step="0.1" value={editMinQty} onChange={(e) => setEditMinQty(e.target.value)} placeholder="–" className="input" />
-                </label>
-                <label className="label-wrap">
                   <span className="label">{t('item.field_condition')}</span>
                   <select value={editCondition} onChange={(e) => setEditCondition(e.target.value)} className="input">
                     <option value="">–</option>
@@ -264,10 +254,6 @@ export default function InstanceDetailPage() {
               <hr className="border-gray-100" />
               <h3 className="text-sm font-medium text-gray-700">{t('item.purchase_section')}</h3>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <label className="sm:col-span-2 label-wrap">
-                  <span className="label">{t('item.field_purchase_url')}</span>
-                  <input type="url" value={editPurchaseUrl} onChange={(e) => setEditPurchaseUrl(e.target.value)} placeholder="https://…" className="input" />
-                </label>
                 <label className="label-wrap">
                   <span className="label">{t('item.field_purchase_price')}</span>
                   <input type="number" min="0" step="0.01" value={editPurchasePrice} onChange={(e) => setEditPurchasePrice(e.target.value)} placeholder="0.00" className="input" />
@@ -355,10 +341,10 @@ export default function InstanceDetailPage() {
                 <Field label={t('item.field_quantity')}>
                   {instance.quantity}{unitLabel(instance.unit) ? ` ${unitLabel(instance.unit)}` : ''}
                 </Field>
-                {instance.minQuantity != null && (
-                  <Field label={t('item.field_min_quantity')}>
-                    <span className={instance.quantity < (instance.minQuantity ?? Infinity) ? 'text-red-600 font-medium' : ''}>
-                      {instance.minQuantity}{unitLabel(instance.unit) ? ` ${unitLabel(instance.unit)}` : ''}
+                {instance.product.minQuantity != null && (
+                  <Field label={t('products.field_min_quantity')}>
+                    <span className={instance.quantity < (instance.product.minQuantity ?? Infinity) ? 'text-red-600 font-medium' : ''}>
+                      {instance.product.minQuantity}{unitLabel(instance.unit) ? ` ${unitLabel(instance.unit)}` : ''}
                     </span>
                   </Field>
                 )}
@@ -437,7 +423,7 @@ export default function InstanceDetailPage() {
           })()}
 
           {/* Kaufinfos */}
-          {!isEditing && (instance.purchaseUrl || instance.purchasePrice || instance.purchaseDate || instance.warrantyUntil || instance.expiryDate) && (
+          {!isEditing && (instance.purchasePrice || instance.purchaseDate || instance.warrantyUntil || instance.expiryDate) && (
             <div className="bg-white border border-gray-200 rounded-xl p-5">
               <h2 className="font-medium text-gray-800 mb-3">{t('item.purchase_section')}</h2>
               <div className="grid grid-cols-2 gap-3 text-sm">
@@ -463,11 +449,6 @@ export default function InstanceDetailPage() {
                   </Field>
                 )}
               </div>
-              {instance.purchaseUrl && (
-                <a href={instance.purchaseUrl} target="_blank" rel="noopener noreferrer" className="mt-3 flex items-center gap-1.5 text-sm text-indigo-600 hover:underline">
-                  <ExternalLink size={14} /> {t('item.purchase_link')}
-                </a>
-              )}
             </div>
           )}
 

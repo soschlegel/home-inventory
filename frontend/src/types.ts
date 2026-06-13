@@ -88,6 +88,8 @@ export interface Product {
   description?: string | null;
   imageUrl?: string | null;
   barcode?: string | null;
+  purchaseUrl?: string | null;
+  minQuantity?: number | null;
   tags?: ProductTag[];
   documents?: ProductDocument[];
   instances?: Instance[];
@@ -107,13 +109,11 @@ export interface InstanceDocument {
 export interface Instance {
   id: string;
   productId: string;
-  product: Pick<Product, 'id' | 'name' | 'imageUrl' | 'description' | 'barcode' | 'tags'>;
+  product: Pick<Product, 'id' | 'name' | 'imageUrl' | 'description' | 'barcode' | 'minQuantity' | 'tags'>;
   quantity: number;
   unit?: string | null;
-  minQuantity?: number | null;
   condition?: ItemCondition | null;
   serialNumber?: string | null;
-  purchaseUrl?: string | null;
   purchasePrice?: number | null;
   purchaseDate?: string | null;
   warrantyUntil?: string | null;
@@ -145,7 +145,7 @@ export interface Lending {
 export interface InstanceOverview {
   id: string;
   productId: string;
-  product: Pick<Product, 'id' | 'name' | 'imageUrl' | 'description' | 'barcode' | 'tags'>;
+  product: Pick<Product, 'id' | 'name' | 'imageUrl' | 'description' | 'barcode' | 'minQuantity' | 'tags'>;
   quantity: number;
   unit?: string | null;
   condition?: ItemCondition | null;

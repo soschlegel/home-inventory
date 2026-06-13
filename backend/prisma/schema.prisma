@@ -87,6 +87,8 @@ model Product {
   description String?
   imageUrl    String?
   barcode     String?
+  purchaseUrl String?
+  minQuantity Float?
   tags        ProductTag[]
   documents   ProductDocument[]
   instances   Instance[]
@@ -121,12 +123,10 @@ model Instance {
   product           Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
   quantity          Float              @default(1)
   unit              String?
-  minQuantity       Float?
   condition         ItemCondition?
   serialNumber      String?
   purchaseDate      DateTime?
   purchasePrice     Float?
-  purchaseUrl       String?
   warrantyUntil     DateTime?
   expiryDate        DateTime?
   expiryWarningDays Int?

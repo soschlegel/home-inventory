@@ -362,7 +362,9 @@
     "instances_count_one": "{{count}} Exemplar",
     "instances_count_other": "{{count}} Exemplare",
     "add_instance_btn": "Exemplar hinzufügen",
-    "add_instance_title": "Neues Exemplar anlegen"
+    "add_instance_title": "Neues Exemplar anlegen",
+    "field_min_quantity": "Mindestbestand",
+    "field_purchase_url": "Kauflink (URL)"
   },
   "qrscanner": {
     "title": "QR / Barcode-Scanner",
@@ -410,7 +412,8 @@
     "move_container_label": "Container",
     "move_select_room": "Raum wählen…",
     "move_select_container": "Container wählen…",
-    "breadcrumb": "Exemplar"
+    "breadcrumb": "Exemplar",
+    "view_product": "zum Produkt"
   },
   "containerTypeNames": {
     "drawer": "Schublade",

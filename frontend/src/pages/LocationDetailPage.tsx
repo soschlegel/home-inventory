@@ -429,7 +429,7 @@ export default function LocationDetailPage() {
                 <div className="font-medium text-gray-900 text-sm">{instance.product.name}</div>
                 <div className="text-xs text-gray-500">
                   {instance.quantity}{instance.unit ? ` ${t(`unitNames.${instance.unit}`, { defaultValue: instance.unit })}` : ''}
-                  {instance.minQuantity !== null && instance.quantity < (instance.minQuantity ?? Infinity) && (
+                  {instance.product.minQuantity != null && instance.quantity < (instance.product.minQuantity ?? Infinity) && (
                     <span className="ml-2 text-red-500">{t('location.below_minimum')}</span>
                   )}
                 </div>

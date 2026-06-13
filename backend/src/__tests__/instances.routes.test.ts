@@ -50,13 +50,11 @@ app.use(errorHandler);
 const mockInstance = {
   id: 'inst-1',
   productId: 'prod-1',
-  product: { id: 'prod-1', name: 'Hammer', imageUrl: null, description: null, barcode: null, tags: [] },
+  product: { id: 'prod-1', name: 'Hammer', imageUrl: null, description: null, barcode: null, minQuantity: null, tags: [] },
   quantity: 1,
   unit: null,
-  minQuantity: null,
   condition: null,
   serialNumber: null,
-  purchaseUrl: null,
   purchasePrice: null,
   purchaseDate: null,
   warrantyUntil: null,
@@ -97,9 +95,9 @@ describe('GET /api/instances/search', () => {
 });
 
 describe('GET /api/instances/low-stock', () => {
-  it('gibt Instanzen zurück bei denen quantity < minQuantity', async () => {
-    const lowStock = { ...mockInstance, quantity: 1, minQuantity: 3 };
-    const ok = { ...mockInstance, id: 'inst-2', quantity: 5, minQuantity: 3 };
+  it('gibt Instanzen zurück bei denen quantity < product.minQuantity', async () => {
+    const lowStock = { ...mockInstance, quantity: 1, product: { ...mockInstance.product, minQuantity: 3 } };
+    const ok = { ...mockInstance, id: 'inst-2', quantity: 5, product: { ...mockInstance.product, minQuantity: 3 } };
     mockPrisma.instance.findMany.mockResolvedValue([lowStock, ok]);
 
     const res = await request(app).get('/api/instances/low-stock');
@@ -178,19 +176,6 @@ describe('PUT /api/instances/:id', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.quantity).toBe(5);
-  });
-
-  it('wandelt leere purchaseUrl in null um', async () => {
-    mockPrisma.instance.findFirst.mockResolvedValue(mockInstance);
-    mockPrisma.instance.update.mockResolvedValue(mockInstance);
-
-    await request(app)
-      .put('/api/instances/inst-1')
-      .send({ purchaseUrl: '' });
-
-    expect(mockPrisma.instance.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ purchaseUrl: null }) }),
-    );
   });
 
   it('gibt 404 zurück wenn nicht gefunden', async () => {

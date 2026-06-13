@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Upload, Pencil, X, Check, FileText, Trash2, Package, Plus } from 'lucide-react';
+import { ChevronRight, Upload, Pencil, X, Check, FileText, Trash2, Package, Plus, ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getProduct, updateProduct, deleteProduct, uploadProductImage, uploadProductDocument, deleteProductDocument } from '../api/products';
 import { getTags } from '../api/tags';
@@ -79,6 +79,8 @@ export default function ProductDetailPage() {
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editBarcode, setEditBarcode] = useState('');
+  const [editPurchaseUrl, setEditPurchaseUrl] = useState('');
+  const [editMinQty, setEditMinQty] = useState('');
   const [editTagKeys, setEditTagKeys] = useState<string[]>([]);
 
   function startEditing() {
@@ -86,6 +88,8 @@ export default function ProductDetailPage() {
     setEditName(product.name);
     setEditDescription(product.description ?? '');
     setEditBarcode(product.barcode ?? '');
+    setEditPurchaseUrl(product.purchaseUrl ?? '');
+    setEditMinQty(product.minQuantity != null ? String(product.minQuantity) : '');
     setEditTagKeys(product.tags?.map(({ tag }) => tag.key) ?? []);
     setIsEditing(true);
   }
@@ -95,6 +99,8 @@ export default function ProductDetailPage() {
       name: editName,
       description: editDescription || undefined,
       barcode: editBarcode || undefined,
+      purchaseUrl: editPurchaseUrl || '',
+      minQuantity: editMinQty ? parseFloat(editMinQty) : null,
       tags: editTagKeys,
     }),
     onSuccess: () => {
@@ -182,6 +188,14 @@ export default function ProductDetailPage() {
                   <span className="label">{t('products.field_barcode')}</span>
                   <input value={editBarcode} onChange={(e) => setEditBarcode(e.target.value)} className="input" placeholder="EAN / ISBN …" />
                 </label>
+                <label className="label-wrap">
+                  <span className="label">{t('products.field_min_quantity')}</span>
+                  <input type="number" min="0" step="0.1" value={editMinQty} onChange={(e) => setEditMinQty(e.target.value)} placeholder="–" className="input" />
+                </label>
+                <label className="sm:col-span-2 label-wrap">
+                  <span className="label">{t('products.field_purchase_url')}</span>
+                  <input type="url" value={editPurchaseUrl} onChange={(e) => setEditPurchaseUrl(e.target.value)} placeholder="https://…" className="input" />
+                </label>
               </div>
               {allTags && allTags.length > 0 && (
                 <div>
@@ -225,6 +239,14 @@ export default function ProductDetailPage() {
                   {product.description && <p className="text-gray-600 text-sm mt-1">{product.description}</p>}
                   {product.barcode && (
                     <p className="text-xs text-gray-400 font-mono mt-1">EAN: {product.barcode}</p>
+                  )}
+                  {product.minQuantity != null && (
+                    <p className="text-xs text-gray-500 mt-1">{t('products.field_min_quantity')}: {product.minQuantity}</p>
+                  )}
+                  {product.purchaseUrl && (
+                    <a href={product.purchaseUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline mt-1">
+                      <ExternalLink size={11} /> {t('products.field_purchase_url')}
+                    </a>
                   )}
                 </div>
                 {isEditor && (

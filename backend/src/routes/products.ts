@@ -13,6 +13,8 @@ const ProductBody = z.object({
   name: z.string().min(1).max(200),
   description: z.string().optional(),
   barcode: z.string().optional(),
+  purchaseUrl: z.string().url().optional().or(z.literal('')),
+  minQuantity: z.coerce.number().nonnegative().optional(),
   tags: z.array(z.string()).optional(),
 });
 
@@ -115,6 +117,7 @@ router.put('/:id', requireEditor, async (req, res, next) => {
       where: { id: req.params.id },
       data: {
         ...data,
+        purchaseUrl: data.purchaseUrl === '' ? null : data.purchaseUrl,
         ...(tags !== undefined ? {
           tags: { deleteMany: {}, create: tags.map((t) => ({ tagId: t.id })) },
         } : {}),

@@ -362,7 +362,9 @@
     "instances_count_one": "{{count}} instance",
     "instances_count_other": "{{count}} instances",
     "add_instance_btn": "Add instance",
-    "add_instance_title": "Add new instance"
+    "add_instance_title": "Add new instance",
+    "field_min_quantity": "Min. stock",
+    "field_purchase_url": "Purchase link (URL)"
   },
   "qrscanner": {
     "title": "QR / Barcode Scanner",
@@ -410,7 +412,8 @@
     "move_container_label": "Container",
     "move_select_room": "Select room…",
     "move_select_container": "Select container…",
-    "breadcrumb": "Instance"
+    "breadcrumb": "Instance",
+    "view_product": "To product"
   },
   "containerTypeNames": {
     "drawer": "Drawer",

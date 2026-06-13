@@ -12,10 +12,8 @@ router.use(authenticate);
 const InstanceBody = z.object({
   quantity: z.coerce.number().positive().default(1),
   unit: z.string().optional(),
-  minQuantity: z.coerce.number().positive().optional(),
   condition: z.enum(['NEW', 'GOOD', 'WORN', 'BROKEN']).optional(),
   serialNumber: z.string().optional(),
-  purchaseUrl: z.string().url().optional().or(z.literal('')),
   purchasePrice: z.coerce.number().nonnegative().optional(),
   purchaseDate: z.coerce.date().optional(),
   warrantyUntil: z.coerce.date().optional(),
@@ -37,6 +35,7 @@ const productSelect = {
   description: true,
   imageUrl: true,
   barcode: true,
+  minQuantity: true,
   tags: { include: { tag: true } },
 } as const;
 
@@ -94,13 +93,13 @@ router.get('/search', async (req, res, next) => {
 router.get('/low-stock', async (_req, res, next) => {
   try {
     const instances = await prisma.instance.findMany({
-      where: { minQuantity: { not: null } },
+      where: { product: { minQuantity: { not: null } } },
       include: {
-        product: { select: { id: true, name: true, imageUrl: true } },
+        product: { select: { id: true, name: true, imageUrl: true, minQuantity: true } },
         location: { include: { room: { select: { id: true, name: true } } } },
       },
     });
-    res.json(instances.filter((i) => i.minQuantity !== null && i.quantity < i.minQuantity));
+    res.json(instances.filter((i) => i.product.minQuantity !== null && i.quantity < (i.product.minQuantity ?? Infinity)));
   } catch (err) { next(err); }
 });
 
@@ -161,10 +160,7 @@ router.put('/:id', requireEditor, async (req, res, next) => {
     const data = InstanceBody.partial().parse(req.body);
     const instance = await prisma.instance.update({
       where: { id: req.params.id },
-      data: {
-        ...data,
-        purchaseUrl: data.purchaseUrl === '' ? null : data.purchaseUrl,
-      },
+      data,
       include: {
         product: { select: productSelect },
       },
