@@ -1,35 +1,38 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRight, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { getAllItems, searchItemsOverview } from '../api/items';
+import { getAllInstances, searchInstances } from '../api/instances';
 import { getTags } from '../api/tags';
 import { locTagName } from '../utils/localizedName';
-import type { ItemOverview, ItemCondition } from '../types';
+import type { InstanceOverview, ItemCondition } from '../types';
 import { CONDITION_COLORS } from '../types';
 import Spinner from '../components/Spinner';
 
-interface ItemGroup {
+interface InstanceGroup {
   name: string;
-  items: ItemOverview[];
+  instances: InstanceOverview[];
 }
 
-function LocationPath({ item }: { item: ItemOverview }) {
+function LocationPath({ instance }: { instance: InstanceOverview }) {
+  if (!instance.locationId || !instance.location) {
+    return <span className="text-gray-400 text-sm">—</span>;
+  }
   return (
     <Link
-      to={`/locations/${item.locationId}`}
+      to={`/locations/${instance.locationId}`}
       className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 hover:underline text-sm"
     >
-      <span className="text-gray-400">{item.location.room.name}</span>
+      <span className="text-gray-400">{instance.location.room?.name}</span>
       <ChevronRight size={12} className="text-gray-300" />
-      {item.location.parent && (
+      {instance.location.parent && (
         <>
-          <span className="text-gray-400">{item.location.parent.name}</span>
+          <span className="text-gray-400">{instance.location.parent.name}</span>
           <ChevronRight size={12} className="text-gray-300" />
         </>
       )}
-      <span>{item.location.name}</span>
+      <span>{instance.location.name}</span>
     </Link>
   );
 }
@@ -47,21 +50,21 @@ export default function ItemsOverviewPage() {
 
   const isSearchMode = debouncedFilter.length >= 2;
 
-  const { data: allItems, isLoading: allLoading } = useQuery({
-    queryKey: ['items-overview'],
-    queryFn: getAllItems,
+  const { data: allInstances, isLoading: allLoading } = useQuery({
+    queryKey: ['instances'],
+    queryFn: getAllInstances,
     enabled: !isSearchMode,
   });
 
   const { data: searchResults, isLoading: searchLoading } = useQuery({
-    queryKey: ['items-search', debouncedFilter],
-    queryFn: () => searchItemsOverview(debouncedFilter),
+    queryKey: ['instances-search', debouncedFilter],
+    queryFn: () => searchInstances(debouncedFilter),
     enabled: isSearchMode,
   });
 
   const { data: allTags } = useQuery({ queryKey: ['tags'], queryFn: getTags });
 
-  const items = isSearchMode ? searchResults : allItems;
+  const instances = isSearchMode ? searchResults : allInstances;
   const isLoading = isSearchMode ? searchLoading : allLoading;
 
   const toggleTag = (id: string) => {
@@ -73,31 +76,35 @@ export default function ItemsOverviewPage() {
     });
   };
 
-  const groups = useMemo<ItemGroup[]>(() => {
-    if (!items) return [];
+  const groups = useMemo<InstanceGroup[]>(() => {
+    if (!instances) return [];
 
-    let filtered = items;
+    let filtered = instances;
     if (selectedTagIds.size > 0) {
       filtered = filtered.filter((i) =>
-        i.tags?.some(({ tag }) => selectedTagIds.has(tag.id))
+        i.product.tags?.some(({ tag }) => selectedTagIds.has(tag.id))
       );
     }
 
-    const result: ItemGroup[] = [];
-    for (const item of filtered) {
+    const sorted = [...filtered].sort((a, b) =>
+      a.product.name.localeCompare(b.product.name)
+    );
+
+    const result: InstanceGroup[] = [];
+    for (const inst of sorted) {
       const last = result[result.length - 1];
-      if (last && last.name === item.name) {
-        last.items.push(item);
+      if (last && last.name === inst.product.name) {
+        last.instances.push(inst);
       } else {
-        result.push({ name: item.name, items: [item] });
+        result.push({ name: inst.product.name, instances: [inst] });
       }
     }
     return result;
-  }, [items, selectedTagIds]);
+  }, [instances, selectedTagIds]);
 
-  const totalEntries = groups.reduce((s, g) => s + g.items.length, 0);
+  const totalEntries = groups.reduce((s, g) => s + g.instances.length, 0);
 
-  if (isLoading && !items) return <Spinner />;
+  if (isLoading && !instances) return <Spinner />;
 
   return (
     <div>
@@ -113,7 +120,7 @@ export default function ItemsOverviewPage() {
             placeholder={t('itemsOverview.filter_placeholder')}
             className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
-          {isLoading && items && (
+          {isLoading && instances && (
             <div className="absolute right-3 top-1/2 -translate-y-1/2">
               <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
             </div>
@@ -147,7 +154,7 @@ export default function ItemsOverviewPage() {
           </div>
         )}
 
-        {items && (
+        {instances && (
           <p className="text-xs text-gray-500">
             {isSearchMode
               ? t('itemsOverview.search_results', { count: totalEntries, query: debouncedFilter })
@@ -182,49 +189,51 @@ export default function ItemsOverviewPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {groups.map((group) =>
-                  group.items.map((item, idx) => (
+                  group.instances.map((instance, idx) => (
                     <tr
-                      key={item.id}
-                      className={`hover:bg-gray-50 transition-colors ${idx === 0 && group.items.length > 1 ? 'border-t-2 border-gray-200' : ''}`}
+                      key={instance.id}
+                      className={`hover:bg-gray-50 transition-colors ${idx === 0 && group.instances.length > 1 ? 'border-t-2 border-gray-200' : ''}`}
                     >
                       {idx === 0 && (
                         <td
-                          rowSpan={group.items.length}
+                          rowSpan={group.instances.length}
                           className="px-4 py-3 align-top border-r border-gray-100"
                         >
                           <Link
-                            to={`/items/${item.id}`}
+                            to={`/products/${instance.productId}`}
                             className="font-medium text-gray-900 hover:text-indigo-600 hover:underline leading-snug block"
                           >
                             {group.name}
                           </Link>
-                          {group.items.length > 1 && (
+                          {group.instances.length > 1 && (
                             <span className="text-xs text-gray-400 mt-0.5 block">
-                              {t('itemsOverview.locations_count', { count: group.items.length })}
+                              {t('itemsOverview.locations_count', { count: group.instances.length })}
                             </span>
                           )}
                         </td>
                       )}
                       <td className="px-4 py-3 text-gray-700 tabular-nums">
-                        {item.quantity}
-                        {item.unit && (
-                          <span className="ml-1 text-gray-400">
-                            {t(`unitNames.${item.unit}`, { defaultValue: item.unit })}
-                          </span>
-                        )}
+                        <Link to={`/instances/${instance.id}`} className="hover:text-indigo-600">
+                          {instance.quantity}
+                          {instance.unit && (
+                            <span className="ml-1 text-gray-400">
+                              {t(`unitNames.${instance.unit}`, { defaultValue: instance.unit })}
+                            </span>
+                          )}
+                        </Link>
                       </td>
                       <td className="px-4 py-3">
-                        <LocationPath item={item} />
-                        {item._count.lendings > 0 && (
+                        <LocationPath instance={instance} />
+                        {instance._count && instance._count.lendings > 0 && (
                           <span className="ml-1 inline-block text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">
                             {t('itemsOverview.lent_badge')}
                           </span>
                         )}
                       </td>
                       <td className="hidden sm:table-cell px-4 py-3">
-                        {item.condition ? (
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${CONDITION_COLORS[item.condition as ItemCondition]}`}>
-                            {t(`condition.${item.condition}`)}
+                        {instance.condition ? (
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${CONDITION_COLORS[instance.condition as ItemCondition]}`}>
+                            {t(`condition.${instance.condition}`)}
                           </span>
                         ) : (
                           <span className="text-gray-300">—</span>

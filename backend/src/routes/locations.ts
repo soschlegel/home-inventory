@@ -13,19 +13,11 @@ const LocationBody = z.object({
   parentId: z.string().optional(),
 });
 
-const ItemBody = z.object({
-  name: z.string().min(1).max(200),
-  description: z.string().optional(),
+const InstanceCreateBody = z.object({
+  productId: z.string().optional(),
+  name: z.string().min(1).max(200).optional(),
   quantity: z.coerce.number().positive().default(1),
   unit: z.string().optional(),
-  minQuantity: z.coerce.number().positive().optional(),
-  condition: z.enum(['NEW', 'GOOD', 'WORN', 'BROKEN']).optional(),
-  purchaseUrl: z.string().url().optional().or(z.literal('')),
-  purchasePrice: z.coerce.number().nonnegative().optional(),
-  purchaseDate: z.coerce.date().optional(),
-  warrantyUntil: z.coerce.date().optional(),
-  serialNumber: z.string().optional(),
-  barcode: z.string().optional(),
   tags: z.array(z.string()).optional(),
 });
 
@@ -33,39 +25,62 @@ async function findTagsByKeys(keys: string[]) {
   return prisma.tag.findMany({ where: { key: { in: keys } } });
 }
 
-// GET /api/locations/:locationId/items
-router.get('/:locationId/items', async (req, res, next) => {
+// GET /api/locations/:locationId/instances
+router.get('/:locationId/instances', async (req, res, next) => {
   try {
     const location = await prisma.location.findFirst({ where: { id: req.params.locationId } });
     if (!location) { res.status(404).json({ error: 'Ort nicht gefunden' }); return; }
-    const items = await prisma.item.findMany({
+    const instances = await prisma.instance.findMany({
       where: { locationId: req.params.locationId },
-      include: { tags: { include: { tag: true } } },
-      orderBy: { name: 'asc' },
+      include: {
+        product: { select: { id: true, name: true, imageUrl: true, tags: { include: { tag: true } } } },
+        lendings: { where: { returnedAt: null }, take: 1 },
+      },
+      orderBy: { product: { name: 'asc' } },
     });
-    res.json(items);
+    res.json(instances);
   } catch (err) {
     next(err);
   }
 });
 
-// POST /api/locations/:locationId/items
-router.post('/:locationId/items', requireEditor, async (req, res, next) => {
+// POST /api/locations/:locationId/instances
+router.post('/:locationId/instances', requireEditor, async (req, res, next) => {
   try {
     const location = await prisma.location.findFirst({ where: { id: req.params.locationId } });
     if (!location) { res.status(404).json({ error: 'Ort nicht gefunden' }); return; }
-    const { tags: tagKeys, ...data } = ItemBody.parse(req.body);
-    const tags = tagKeys?.length ? await findTagsByKeys(tagKeys) : [];
-    const item = await prisma.item.create({
+
+    const { productId, name, tags: tagKeys, ...instData } = InstanceCreateBody.parse(req.body);
+
+    if (!productId && !name) {
+      res.status(400).json({ error: 'productId oder name ist erforderlich' });
+      return;
+    }
+
+    let pid = productId;
+    if (!pid) {
+      const tags = tagKeys?.length ? await findTagsByKeys(tagKeys) : [];
+      const product = await prisma.product.create({
+        data: {
+          name: name!,
+          tags: { create: tags.map((t) => ({ tagId: t.id })) },
+        },
+      });
+      pid = product.id;
+    }
+
+    const instance = await prisma.instance.create({
       data: {
-        ...data,
-        purchaseUrl: data.purchaseUrl || undefined,
+        ...instData,
+        productId: pid,
         locationId: req.params.locationId,
-        tags: { create: tags.map((t) => ({ tagId: t.id })) },
       },
-      include: { tags: { include: { tag: true } } },
+      include: {
+        product: { select: { id: true, name: true, imageUrl: true, tags: { include: { tag: true } } } },
+        lendings: { where: { returnedAt: null }, take: 1 },
+      },
     });
-    res.status(201).json(item);
+    res.status(201).json(instance);
   } catch (err) {
     next(err);
   }
@@ -83,12 +98,15 @@ router.get('/:id', async (req, res, next) => {
         children: {
           include: {
             containerType: true,
-            _count: { select: { items: true } },
+            _count: { select: { instances: true } },
           },
         },
-        items: {
-          include: { tags: { include: { tag: true } } },
-          orderBy: { name: 'asc' },
+        instances: {
+          include: {
+            product: { select: { id: true, name: true, imageUrl: true } },
+            lendings: { where: { returnedAt: null }, take: 1 },
+          },
+          orderBy: { product: { name: 'asc' } },
         },
       },
     });

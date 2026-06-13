@@ -9,24 +9,25 @@ router.use(authenticate, requireEditor);
 // GET /api/admin/export
 router.get('/export', async (_req, res, next) => {
   try {
-    const [units, tags, containerTypes, rooms, locations, items, itemTags, lendings] =
+    const [units, tags, containerTypes, rooms, locations, products, productTags, instances, lendings] =
       await Promise.all([
         prisma.unit.findMany({ orderBy: { createdAt: 'asc' } }),
         prisma.tag.findMany({ orderBy: { createdAt: 'asc' } }),
         prisma.containerType.findMany({ orderBy: { createdAt: 'asc' } }),
         prisma.room.findMany({ orderBy: { createdAt: 'asc' } }),
         prisma.location.findMany({ orderBy: { createdAt: 'asc' } }),
-        prisma.item.findMany({ orderBy: { createdAt: 'asc' } }),
-        prisma.itemTag.findMany(),
+        prisma.product.findMany({ orderBy: { createdAt: 'asc' } }),
+        prisma.productTag.findMany(),
+        prisma.instance.findMany({ orderBy: { createdAt: 'asc' } }),
         prisma.lending.findMany({ orderBy: { lentAt: 'asc' } }),
       ]);
 
     const filename = `home-inventory-backup-${new Date().toISOString().split('T')[0]}.json`;
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.json({
-      version: '1.0',
+      version: '2.0',
       exportedAt: new Date().toISOString(),
-      data: { units, tags, containerTypes, rooms, locations, items, itemTags, lendings },
+      data: { units, tags, containerTypes, rooms, locations, products, productTags, instances, lendings },
     });
   } catch (err) {
     next(err);
@@ -76,32 +77,43 @@ const importSchema = z.object({
         updatedAt: z.string(),
       }),
     ),
-    items: z.array(
+    products: z.array(
       z.object({
         id: z.string(),
         name: z.string(),
-        locationId: z.string(),
         description: z.string().nullable().optional(),
-        quantity: z.number().optional(),
-        unit: z.string().nullable().optional(),
-        minQuantity: z.number().nullable().optional(),
-        condition: z.enum(['NEW', 'GOOD', 'WORN', 'BROKEN']).nullable().optional(),
         imageUrl: z.string().nullable().optional(),
-        purchaseUrl: z.string().nullable().optional(),
-        purchasePrice: z.number().nullable().optional(),
-        purchaseDate: z.string().nullable().optional(),
-        warrantyUntil: z.string().nullable().optional(),
-        serialNumber: z.string().nullable().optional(),
         barcode: z.string().nullable().optional(),
         createdAt: z.string(),
         updatedAt: z.string(),
       }),
     ),
-    itemTags: z.array(z.object({ itemId: z.string(), tagId: z.string() })),
+    productTags: z.array(z.object({ productId: z.string(), tagId: z.string() })),
+    instances: z.array(
+      z.object({
+        id: z.string(),
+        productId: z.string(),
+        quantity: z.number().optional(),
+        unit: z.string().nullable().optional(),
+        minQuantity: z.number().nullable().optional(),
+        condition: z.enum(['NEW', 'GOOD', 'WORN', 'BROKEN']).nullable().optional(),
+        serialNumber: z.string().nullable().optional(),
+        purchaseUrl: z.string().nullable().optional(),
+        purchasePrice: z.number().nullable().optional(),
+        purchaseDate: z.string().nullable().optional(),
+        warrantyUntil: z.string().nullable().optional(),
+        expiryDate: z.string().nullable().optional(),
+        expiryWarningDays: z.number().nullable().optional(),
+        locationId: z.string().nullable().optional(),
+        assignedUserId: z.string().nullable().optional(),
+        createdAt: z.string(),
+        updatedAt: z.string(),
+      }),
+    ),
     lendings: z.array(
       z.object({
         id: z.string(),
-        itemId: z.string(),
+        instanceId: z.string(),
         lentTo: z.string(),
         lentAt: z.string(),
         returnedAt: z.string().nullable().optional(),
@@ -138,11 +150,12 @@ router.post('/import', async (req, res, next) => {
     const sortedLocations = sortLocationsTopologically(data.locations);
 
     await prisma.$transaction(async (tx) => {
-      // Delete in reverse FK order
       await tx.lending.deleteMany();
-      await tx.itemTag.deleteMany();
-      await tx.item.deleteMany();
-      // Clear self-referencing parentId before mass delete
+      await tx.instanceDocument.deleteMany();
+      await tx.instance.deleteMany();
+      await tx.productDocument.deleteMany();
+      await tx.productTag.deleteMany();
+      await tx.product.deleteMany();
       await tx.location.updateMany({ data: { parentId: null } });
       await tx.location.deleteMany();
       await tx.room.deleteMany();
@@ -150,7 +163,6 @@ router.post('/import', async (req, res, next) => {
       await tx.tag.deleteMany();
       await tx.unit.deleteMany();
 
-      // Re-insert in FK order
       if (data.units.length) {
         await tx.unit.createMany({
           data: data.units.map((u) => ({ ...u, createdAt: new Date(u.createdAt) })),
@@ -175,7 +187,6 @@ router.post('/import', async (req, res, next) => {
           })),
         });
       }
-      // Locations: insert parents before children
       for (const loc of sortedLocations) {
         await tx.location.create({
           data: {
@@ -190,37 +201,50 @@ router.post('/import', async (req, res, next) => {
           },
         });
       }
-      if (data.items.length) {
-        await tx.item.createMany({
-          data: data.items.map((item) => ({
-            id: item.id,
-            name: item.name,
-            description: item.description ?? null,
-            quantity: item.quantity ?? 1,
-            unit: item.unit ?? null,
-            minQuantity: item.minQuantity ?? null,
-            condition: item.condition ?? null,
-            imageUrl: item.imageUrl ?? null,
-            purchaseUrl: item.purchaseUrl ?? null,
-            purchasePrice: item.purchasePrice ?? null,
-            purchaseDate: item.purchaseDate ? new Date(item.purchaseDate) : null,
-            warrantyUntil: item.warrantyUntil ? new Date(item.warrantyUntil) : null,
-            serialNumber: item.serialNumber ?? null,
-            barcode: item.barcode ?? null,
-            locationId: item.locationId,
-            createdAt: new Date(item.createdAt),
-            updatedAt: new Date(item.updatedAt),
+      if (data.products.length) {
+        await tx.product.createMany({
+          data: data.products.map((p) => ({
+            id: p.id,
+            name: p.name,
+            description: p.description ?? null,
+            imageUrl: p.imageUrl ?? null,
+            barcode: p.barcode ?? null,
+            createdAt: new Date(p.createdAt),
+            updatedAt: new Date(p.updatedAt),
           })),
         });
       }
-      if (data.itemTags.length) {
-        await tx.itemTag.createMany({ data: data.itemTags });
+      if (data.productTags.length) {
+        await tx.productTag.createMany({ data: data.productTags });
+      }
+      if (data.instances.length) {
+        await tx.instance.createMany({
+          data: data.instances.map((i) => ({
+            id: i.id,
+            productId: i.productId,
+            quantity: i.quantity ?? 1,
+            unit: i.unit ?? null,
+            minQuantity: i.minQuantity ?? null,
+            condition: i.condition ?? null,
+            serialNumber: i.serialNumber ?? null,
+            purchaseUrl: i.purchaseUrl ?? null,
+            purchasePrice: i.purchasePrice ?? null,
+            purchaseDate: i.purchaseDate ? new Date(i.purchaseDate) : null,
+            warrantyUntil: i.warrantyUntil ? new Date(i.warrantyUntil) : null,
+            expiryDate: i.expiryDate ? new Date(i.expiryDate) : null,
+            expiryWarningDays: i.expiryWarningDays ?? null,
+            locationId: i.locationId ?? null,
+            assignedUserId: i.assignedUserId ?? null,
+            createdAt: new Date(i.createdAt),
+            updatedAt: new Date(i.updatedAt),
+          })),
+        });
       }
       if (data.lendings.length) {
         await tx.lending.createMany({
           data: data.lendings.map((l) => ({
             id: l.id,
-            itemId: l.itemId,
+            instanceId: l.instanceId,
             lentTo: l.lentTo,
             lentAt: new Date(l.lentAt),
             returnedAt: l.returnedAt ? new Date(l.returnedAt) : null,

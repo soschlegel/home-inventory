@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, Plus, Package, Folder, Trash2, Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { getLocation, getLocationItems, createItem, deleteLocation, updateLocation } from '../api/locations';
+import { getLocation, getLocationInstances, createInstance, deleteLocation, updateLocation } from '../api/locations';
 import { createLocation } from '../api/rooms';
 import { getContainerTypes } from '../api/containerTypes';
 import { getUnits } from '../api/units';
@@ -25,9 +25,9 @@ export default function LocationDetailPage() {
     queryKey: ['locations', id],
     queryFn: () => getLocation(id!),
   });
-  const { data: items, isLoading: itemsLoading } = useQuery({
-    queryKey: ['locations', id, 'items'],
-    queryFn: () => getLocationItems(id!),
+  const { data: instances, isLoading: instancesLoading } = useQuery({
+    queryKey: ['locations', id, 'instances'],
+    queryFn: () => getLocationInstances(id!),
   });
   const { data: containerTypes } = useQuery({
     queryKey: ['container-types'],
@@ -55,17 +55,17 @@ export default function LocationDetailPage() {
     setIsEditing(true);
   };
 
-  // Add item form
+  // Add instance form
   const [showItemForm, setShowItemForm] = useState(false);
   const [itemName, setItemName] = useState('');
   const [itemQty, setItemQty] = useState('1');
   const [itemUnit, setItemUnit] = useState('');
 
-  const createItemMut = useMutation({
+  const createInstanceMut = useMutation({
     mutationFn: () =>
-      createItem(id!, { name: itemName, quantity: parseFloat(itemQty) || 1, unit: itemUnit || undefined }),
+      createInstance(id!, { name: itemName, quantity: parseFloat(itemQty) || 1, unit: itemUnit || undefined }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['locations', id, 'items'] });
+      qc.invalidateQueries({ queryKey: ['locations', id, 'instances'] });
       setItemName('');
       setItemQty('1');
       setItemUnit('');
@@ -172,12 +172,7 @@ export default function LocationDetailPage() {
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">{location.name}</h1>
               {isEditor && (
-                <button
-                  type="button"
-                  aria-label={t('common.edit')}
-                  onClick={startEdit}
-                  className="p-1 text-gray-400 hover:text-indigo-600 rounded transition-colors"
-                >
+                <button type="button" aria-label={t('common.edit')} onClick={startEdit} className="p-1 text-gray-400 hover:text-indigo-600 rounded transition-colors">
                   <Pencil size={16} />
                 </button>
               )}
@@ -245,7 +240,7 @@ export default function LocationDetailPage() {
         </div>
       )}
 
-      {/* Item form */}
+      {/* Instance form */}
       {isEditor && showItemForm && (
         <div className="mb-4 bg-white border border-gray-200 rounded-xl p-4">
           <h2 className="font-medium text-gray-800 mb-3">{t('location.new_item')}</h2>
@@ -254,7 +249,7 @@ export default function LocationDetailPage() {
               aria-label={t('common.name')}
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && itemName) createItemMut.mutate(); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && itemName) createInstanceMut.mutate(); }}
               placeholder={t('location.name_placeholder')}
               className="flex-1 min-w-40 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
@@ -283,8 +278,8 @@ export default function LocationDetailPage() {
             </select>
             <button
               type="button"
-              onClick={() => createItemMut.mutate()}
-              disabled={!itemName || createItemMut.isPending}
+              onClick={() => createInstanceMut.mutate()}
+              disabled={!itemName || createInstanceMut.isPending}
               className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
             >
               {t('common.save')}
@@ -306,7 +301,7 @@ export default function LocationDetailPage() {
               >
                 <Folder size={16} className="text-indigo-400" />
                 <span className="flex-1 text-sm font-medium text-gray-800">{child.name}</span>
-                <span className="text-xs text-gray-400">{t('common.items_count', { count: child._count?.items ?? 0 })}</span>
+                <span className="text-xs text-gray-400">{t('common.items_count', { count: child._count?.instances ?? child._count?.items ?? 0 })}</span>
                 <ChevronRight size={14} className="text-gray-300" />
               </Link>
             ))}
@@ -314,44 +309,44 @@ export default function LocationDetailPage() {
         </div>
       )}
 
-      {/* Items */}
+      {/* Instances */}
       <h2 className="text-sm font-medium text-gray-600 uppercase tracking-wide mb-2">{t('location.items_title')}</h2>
-      {itemsLoading ? (
+      {instancesLoading ? (
         <Spinner />
-      ) : !items?.length ? (
+      ) : !instances?.length ? (
         <div className="bg-white border border-gray-200 rounded-xl py-8 text-center text-gray-400 text-sm">
           {t('location.no_items')}
         </div>
       ) : (
         <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
-          {items.map((item) => (
+          {instances.map((instance) => (
             <Link
-              key={item.id}
-              to={`/items/${item.id}`}
+              key={instance.id}
+              to={`/instances/${instance.id}`}
               className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 group"
             >
-              {item.imageUrl ? (
-                <img src={item.imageUrl} alt={item.name} className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
+              {instance.product.imageUrl ? (
+                <img src={instance.product.imageUrl} alt={instance.product.name} className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
               ) : (
                 <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                   <Package size={18} className="text-gray-400" />
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <div className="font-medium text-gray-900 text-sm">{item.name}</div>
+                <div className="font-medium text-gray-900 text-sm">{instance.product.name}</div>
                 <div className="text-xs text-gray-500">
-                  {item.quantity}{item.unit ? ` ${t(`unitNames.${item.unit}`, { defaultValue: item.unit })}` : ''}
-                  {item.minQuantity !== null && item.quantity < (item.minQuantity ?? Infinity) && (
+                  {instance.quantity}{instance.unit ? ` ${t(`unitNames.${instance.unit}`, { defaultValue: instance.unit })}` : ''}
+                  {instance.minQuantity !== null && instance.quantity < (instance.minQuantity ?? Infinity) && (
                     <span className="ml-2 text-red-500">{t('location.below_minimum')}</span>
                   )}
                 </div>
               </div>
-              {item.condition && (
-                <span className={`text-xs px-2 py-0.5 rounded-full ${CONDITION_COLORS[item.condition as ItemCondition]}`}>
-                  {t(`condition.${item.condition}`)}
+              {instance.condition && (
+                <span className={`text-xs px-2 py-0.5 rounded-full ${CONDITION_COLORS[instance.condition as ItemCondition]}`}>
+                  {t(`condition.${instance.condition}`)}
                 </span>
               )}
-              {(item.lendings?.some((l) => !l.returnedAt)) && (
+              {instance.lendings?.some((l) => !l.returnedAt) && (
                 <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
                   {t('location.lent_badge')}
                 </span>

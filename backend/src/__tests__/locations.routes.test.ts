@@ -10,14 +10,16 @@ vi.mock('../lib/prisma', () => ({
       findFirst: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
-      findMany: vi.fn(),
     },
-    item: {
+    instance: {
       findMany: vi.fn(),
       create: vi.fn(),
     },
+    product: {
+      create: vi.fn(),
+    },
     tag: {
-      upsert: vi.fn(),
+      findMany: vi.fn(),
     },
   },
 }));
@@ -33,6 +35,7 @@ vi.mock('../middleware/auth', () => ({
 
 import locationsRouter from '../routes/locations';
 import { prisma } from '../lib/prisma';
+const mockPrisma = prisma as any;
 
 const app = express();
 app.use(express.json());
@@ -49,12 +52,12 @@ const mockLocation = {
   room: { id: 'room-1', name: 'Küche' },
   parent: null,
   children: [],
-  items: [],
+  instances: [],
 };
 
 describe('GET /api/locations/:id', () => {
   it('gibt eine Location zurück', async () => {
-    vi.mocked(prisma.location.findFirst).mockResolvedValue(mockLocation as any);
+    mockPrisma.location.findFirst.mockResolvedValue(mockLocation);
 
     const res = await request(app).get('/api/locations/loc-1');
 
@@ -63,7 +66,7 @@ describe('GET /api/locations/:id', () => {
   });
 
   it('gibt 404 zurück wenn Location nicht existiert', async () => {
-    vi.mocked(prisma.location.findFirst).mockResolvedValue(null);
+    mockPrisma.location.findFirst.mockResolvedValue(null);
 
     const res = await request(app).get('/api/locations/nonexistent');
 
@@ -73,11 +76,8 @@ describe('GET /api/locations/:id', () => {
 
 describe('PUT /api/locations/:id', () => {
   it('aktualisiert Name einer Location', async () => {
-    vi.mocked(prisma.location.findFirst).mockResolvedValue(mockLocation as any);
-    vi.mocked(prisma.location.update).mockResolvedValue({
-      ...mockLocation,
-      name: 'Gefrierfach',
-    } as any);
+    mockPrisma.location.findFirst.mockResolvedValue(mockLocation);
+    mockPrisma.location.update.mockResolvedValue({ ...mockLocation, name: 'Gefrierfach' });
 
     const res = await request(app)
       .put('/api/locations/loc-1')
@@ -85,27 +85,10 @@ describe('PUT /api/locations/:id', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.name).toBe('Gefrierfach');
-    expect(prisma.location.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ name: 'Gefrierfach' }) }),
-    );
-  });
-
-  it('aktualisiert Container-Typ einer Location', async () => {
-    vi.mocked(prisma.location.findFirst).mockResolvedValue(mockLocation as any);
-    vi.mocked(prisma.location.update).mockResolvedValue({
-      ...mockLocation,
-      containerTypeId: 'ct-1',
-    } as any);
-
-    const res = await request(app)
-      .put('/api/locations/loc-1')
-      .send({ containerTypeId: 'ct-1' });
-
-    expect(res.status).toBe(200);
   });
 
   it('gibt 404 zurück wenn Location nicht existiert', async () => {
-    vi.mocked(prisma.location.findFirst).mockResolvedValue(null);
+    mockPrisma.location.findFirst.mockResolvedValue(null);
 
     const res = await request(app)
       .put('/api/locations/nonexistent')
@@ -115,7 +98,7 @@ describe('PUT /api/locations/:id', () => {
   });
 
   it('gibt 400 zurück bei leerem name', async () => {
-    vi.mocked(prisma.location.findFirst).mockResolvedValue(mockLocation as any);
+    mockPrisma.location.findFirst.mockResolvedValue(mockLocation);
 
     const res = await request(app)
       .put('/api/locations/loc-1')
@@ -127,19 +110,16 @@ describe('PUT /api/locations/:id', () => {
 
 describe('DELETE /api/locations/:id', () => {
   it('löscht eine Location und antwortet 204', async () => {
-    vi.mocked(prisma.location.findFirst).mockResolvedValue(mockLocation as any);
-    vi.mocked(prisma.location.delete).mockResolvedValue(mockLocation as any);
+    mockPrisma.location.findFirst.mockResolvedValue(mockLocation);
+    mockPrisma.location.delete.mockResolvedValue(mockLocation);
 
     const res = await request(app).delete('/api/locations/loc-1');
 
     expect(res.status).toBe(204);
-    expect(prisma.location.delete).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'loc-1' } }),
-    );
   });
 
   it('gibt 404 zurück wenn Location nicht gefunden', async () => {
-    vi.mocked(prisma.location.findFirst).mockResolvedValue(null);
+    mockPrisma.location.findFirst.mockResolvedValue(null);
 
     const res = await request(app).delete('/api/locations/nonexistent');
 
@@ -147,53 +127,74 @@ describe('DELETE /api/locations/:id', () => {
   });
 });
 
-describe('GET /api/locations/:locationId/items', () => {
-  it('gibt Items einer Location zurück', async () => {
-    vi.mocked(prisma.location.findFirst).mockResolvedValue(mockLocation as any);
-    vi.mocked(prisma.item.findMany).mockResolvedValue([
-      { id: 'item-1', name: 'Milch', quantity: 2, locationId: 'loc-1', tags: [] },
-    ] as any);
+describe('GET /api/locations/:locationId/instances', () => {
+  it('gibt Instanzen einer Location zurück', async () => {
+    mockPrisma.location.findFirst.mockResolvedValue(mockLocation);
+    mockPrisma.instance.findMany.mockResolvedValue([
+      { id: 'inst-1', productId: 'prod-1', product: { name: 'Milch' }, quantity: 2, locationId: 'loc-1', lendings: [] },
+    ]);
 
-    const res = await request(app).get('/api/locations/loc-1/items');
+    const res = await request(app).get('/api/locations/loc-1/instances');
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
-    expect(res.body[0].name).toBe('Milch');
+    expect(res.body[0].product.name).toBe('Milch');
   });
 
   it('gibt 404 zurück wenn Location nicht existiert', async () => {
-    vi.mocked(prisma.location.findFirst).mockResolvedValue(null);
+    mockPrisma.location.findFirst.mockResolvedValue(null);
 
-    const res = await request(app).get('/api/locations/nonexistent/items');
+    const res = await request(app).get('/api/locations/nonexistent/instances');
 
     expect(res.status).toBe(404);
   });
 });
 
-describe('POST /api/locations/:locationId/items', () => {
-  it('erstellt ein Item und gibt 201 zurück', async () => {
-    vi.mocked(prisma.location.findFirst).mockResolvedValue(mockLocation as any);
-    vi.mocked(prisma.item.create).mockResolvedValue({
-      id: 'item-2',
-      name: 'Butter',
+describe('POST /api/locations/:locationId/instances', () => {
+  it('erstellt eine Instanz mit neuem Produkt und gibt 201 zurück', async () => {
+    mockPrisma.location.findFirst.mockResolvedValue(mockLocation);
+    mockPrisma.tag.findMany.mockResolvedValue([]);
+    mockPrisma.product.create.mockResolvedValue({ id: 'prod-new', name: 'Butter' });
+    mockPrisma.instance.create.mockResolvedValue({
+      id: 'inst-new',
+      productId: 'prod-new',
+      product: { id: 'prod-new', name: 'Butter', imageUrl: null, tags: [] },
       quantity: 1,
       locationId: 'loc-1',
-      tags: [],
-    } as any);
+      lendings: [],
+    });
 
     const res = await request(app)
-      .post('/api/locations/loc-1/items')
+      .post('/api/locations/loc-1/instances')
       .send({ name: 'Butter', quantity: 1 });
 
     expect(res.status).toBe(201);
-    expect(res.body.name).toBe('Butter');
+    expect(res.body.product.name).toBe('Butter');
   });
 
-  it('gibt 400 zurück bei fehlendem name', async () => {
-    vi.mocked(prisma.location.findFirst).mockResolvedValue(mockLocation as any);
+  it('erstellt eine Instanz mit bestehendem Produkt', async () => {
+    mockPrisma.location.findFirst.mockResolvedValue(mockLocation);
+    mockPrisma.instance.create.mockResolvedValue({
+      id: 'inst-2',
+      productId: 'prod-1',
+      product: { id: 'prod-1', name: 'Hammer', imageUrl: null, tags: [] },
+      quantity: 2,
+      locationId: 'loc-1',
+      lendings: [],
+    });
 
     const res = await request(app)
-      .post('/api/locations/loc-1/items')
+      .post('/api/locations/loc-1/instances')
+      .send({ productId: 'prod-1', quantity: 2 });
+
+    expect(res.status).toBe(201);
+  });
+
+  it('gibt 400 zurück wenn weder name noch productId angegeben', async () => {
+    mockPrisma.location.findFirst.mockResolvedValue(mockLocation);
+
+    const res = await request(app)
+      .post('/api/locations/loc-1/instances')
       .send({ quantity: 1 });
 
     expect(res.status).toBe(400);

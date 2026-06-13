@@ -9,9 +9,12 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  await prisma.itemTag.deleteMany();
   await prisma.lending.deleteMany();
-  await prisma.item.deleteMany();
+  await prisma.instanceDocument.deleteMany();
+  await prisma.instance.deleteMany();
+  await prisma.productDocument.deleteMany();
+  await prisma.productTag.deleteMany();
+  await prisma.product.deleteMany();
   await prisma.$executeRaw`UPDATE "Location" SET "parentId" = NULL`;
   await prisma.location.deleteMany();
   await prisma.room.deleteMany();
@@ -61,7 +64,7 @@ async function main() {
     ],
   });
 
-  // ── Container-Typen (geteilt, ohne userId) ────────────────────────────
+  // ── Container-Typen ───────────────────────────────────────────────────
   const [schublade, schrank, regal, box, karton] = await Promise.all([
     prisma.containerType.create({ data: { key: 'drawer', name: 'Schublade', icon: '🗄️' } }),
     prisma.containerType.create({ data: { key: 'cabinet', name: 'Schrank', icon: '🚪' } }),
@@ -80,7 +83,7 @@ async function main() {
     prisma.tag.create({ data: { key: 'medicine', name: 'Medizin' } }),
   ]);
 
-  // ── Räume (geteilt, ohne userId) ──────────────────────────────────────
+  // ── Räume ─────────────────────────────────────────────────────────────
   const [kueche, wohnzimmer, keller, bad, schlafzimmer] = await Promise.all([
     prisma.room.create({ data: { key: 'kitchen', name: 'Küche', icon: '🍳' } }),
     prisma.room.create({ data: { key: 'living_room', name: 'Wohnzimmer', icon: '🛋️' } }),
@@ -102,61 +105,84 @@ async function main() {
   const unterWaschbecken = await prisma.location.create({ data: { name: 'Unter dem Waschbecken', containerTypeId: schrank.id, roomId: bad.id } });
   const nachttisch = await prisma.location.create({ data: { name: 'Nachttisch Schublade', containerTypeId: schublade.id, roomId: schlafzimmer.id } });
 
-  // ── Items ─────────────────────────────────────────────────────────────
-  await prisma.item.createMany({ data: [
-    { name: 'Tomatendosen', quantity: 6, unit: 'can', minQuantity: 3, locationId: vorratsschrank.id },
-    { name: 'Spaghetti', quantity: 2, unit: 'pack', minQuantity: 2, locationId: vorratsschrank.id },
-    { name: 'Olivenöl extra vergine', description: 'Kaltgepresst, 500ml', quantity: 1, unit: 'bottle', minQuantity: 1, purchaseUrl: 'https://www.amazon.de', locationId: vorratsschrank.id },
-    { name: 'Milch', quantity: 1, unit: 'liter', minQuantity: 2, locationId: kuehlschrank.id },
-    { name: 'HDMI-Kabel 2m', quantity: 3, condition: 'GOOD', locationId: tvSchrank.id },
-    { name: 'Der Herr der Ringe (Trilogie)', quantity: 1, condition: 'GOOD', locationId: buecherregal.id },
-    { name: 'Schraubendreher-Set (10-teilig)', quantity: 1, condition: 'GOOD', locationId: werkzeugSchrank.id },
-    { name: 'Winterjacke schwarz', quantity: 1, condition: 'GOOD', locationId: winterKarton.id },
-    { name: 'Weihnachtsbaumschmuck', description: 'Kugeln rot/gold + LED-Lichterkette 10m', quantity: 1, locationId: weihnachtenBox.id },
-    { name: 'Ibuprofen 400 mg', quantity: 8, unit: 'tablet', minQuantity: 10, locationId: medizinSchrank.id },
-    { name: 'Pflaster-Sortiment', quantity: 1, unit: 'pack', minQuantity: 1, locationId: medizinSchrank.id },
-    { name: 'Toilettenpapier', quantity: 4, unit: 'roll', minQuantity: 6, locationId: unterWaschbecken.id },
-  ]});
+  // ── Produkte ──────────────────────────────────────────────────────────
+  const [
+    pTomatendosen, pSpaghetti, pOlivenoel, pMilch,
+    pHdmi, pLotR, pSchrauber, pWinterjacke, pWeihnacht,
+    pIbu, pPflaster, pKlopapier,
+    pMacBook, pBohrmaschine, pKopfhoerer,
+  ] = await Promise.all([
+    prisma.product.create({ data: { name: 'Tomatendosen', tags: { create: [{ tagId: lebensmittel.id }] } } }),
+    prisma.product.create({ data: { name: 'Spaghetti', tags: { create: [{ tagId: lebensmittel.id }] } } }),
+    prisma.product.create({ data: { name: 'Olivenöl extra vergine', description: 'Kaltgepresst, 500ml', tags: { create: [{ tagId: lebensmittel.id }] } } }),
+    prisma.product.create({ data: { name: 'Milch', tags: { create: [{ tagId: lebensmittel.id }] } } }),
+    prisma.product.create({ data: { name: 'HDMI-Kabel 2m', tags: { create: [{ tagId: elektronik.id }] } } }),
+    prisma.product.create({ data: { name: 'Der Herr der Ringe (Trilogie)' } }),
+    prisma.product.create({ data: { name: 'Schraubendreher-Set (10-teilig)', tags: { create: [{ tagId: werkzeug.id }] } } }),
+    prisma.product.create({ data: { name: 'Winterjacke schwarz', tags: { create: [{ tagId: kleidung.id }, { tagId: saisonal.id }] } } }),
+    prisma.product.create({ data: { name: 'Weihnachtsbaumschmuck', description: 'Kugeln rot/gold + LED-Lichterkette 10m', tags: { create: [{ tagId: saisonal.id }] } } }),
+    prisma.product.create({ data: { name: 'Ibuprofen 400 mg', tags: { create: [{ tagId: medizin.id }] } } }),
+    prisma.product.create({ data: { name: 'Pflaster-Sortiment', tags: { create: [{ tagId: medizin.id }] } } }),
+    prisma.product.create({ data: { name: 'Toilettenpapier' } }),
+    prisma.product.create({ data: { name: 'MacBook Pro 14"', description: 'M3 Pro, 16 GB RAM, 512 GB SSD', tags: { create: [{ tagId: elektronik.id }] } } }),
+    prisma.product.create({ data: { name: 'Bosch PSB 1800 Akku-Bohrschrauber', description: '18V, inkl. 2 Akkus und Koffer', tags: { create: [{ tagId: werkzeug.id }] } } }),
+    prisma.product.create({ data: { name: 'Kopfhörer Sony WH-1000XM5', tags: { create: [{ tagId: elektronik.id }] } } }),
+  ]);
 
-  const laptop = await prisma.item.create({ data: {
-    name: 'MacBook Pro 14"', description: 'M3 Pro, 16 GB RAM, 512 GB SSD',
-    quantity: 1, condition: 'GOOD', serialNumber: 'FVFXC2XXXXX',
-    purchasePrice: 1999.00, purchaseDate: new Date('2024-01-15'), warrantyUntil: new Date('2027-01-15'),
-    purchaseUrl: 'https://www.apple.com/de/shop', locationId: tvSchrank.id,
-    tags: { create: [{ tagId: elektronik.id }] },
-  }});
-  const bohrmaschine = await prisma.item.create({ data: {
-    name: 'Bosch PSB 1800 Akku-Bohrschrauber', description: '18V, inkl. 2 Akkus und Koffer',
-    quantity: 1, condition: 'GOOD', purchasePrice: 129.99, purchaseDate: new Date('2022-03-10'),
-    locationId: werkzeugSchrank.id, tags: { create: [{ tagId: werkzeug.id }] },
-  }});
-  await prisma.item.create({ data: {
-    name: 'Kopfhörer Sony WH-1000XM5', quantity: 1, condition: 'GOOD',
-    purchasePrice: 349.00, purchaseDate: new Date('2023-11-24'), warrantyUntil: new Date('2025-11-24'),
-    serialNumber: 'SN-WH1000XM5-001', locationId: nachttisch.id,
-    tags: { create: [{ tagId: elektronik.id }] },
-  }});
+  // ── Instanzen ─────────────────────────────────────────────────────────
+  await prisma.instance.createMany({
+    data: [
+      { productId: pTomatendosen.id, quantity: 6, unit: 'can', minQuantity: 3, locationId: vorratsschrank.id },
+      { productId: pSpaghetti.id, quantity: 2, unit: 'pack', minQuantity: 2, locationId: vorratsschrank.id },
+      { productId: pOlivenoel.id, quantity: 1, unit: 'bottle', minQuantity: 1, purchaseUrl: 'https://www.amazon.de', locationId: vorratsschrank.id },
+      { productId: pMilch.id, quantity: 1, unit: 'liter', minQuantity: 2, locationId: kuehlschrank.id },
+      { productId: pHdmi.id, quantity: 3, condition: 'GOOD', locationId: tvSchrank.id },
+      { productId: pLotR.id, quantity: 1, condition: 'GOOD', locationId: buecherregal.id },
+      { productId: pSchrauber.id, quantity: 1, condition: 'GOOD', locationId: werkzeugSchrank.id },
+      { productId: pWinterjacke.id, quantity: 1, condition: 'GOOD', locationId: winterKarton.id },
+      { productId: pWeihnacht.id, quantity: 1, locationId: weihnachtenBox.id },
+      { productId: pIbu.id, quantity: 8, unit: 'tablet', minQuantity: 10, locationId: medizinSchrank.id },
+      { productId: pPflaster.id, quantity: 1, unit: 'pack', minQuantity: 1, locationId: medizinSchrank.id },
+      { productId: pKlopapier.id, quantity: 4, unit: 'roll', minQuantity: 6, locationId: unterWaschbecken.id },
+    ],
+  });
 
-  // Tags für createMany-Items nachträglich verknüpfen
-  const tagItems = await prisma.item.findMany({ where: { name: { in: ['Tomatendosen', 'Spaghetti', 'Olivenöl extra vergine', 'Milch'] } } });
-  const werkzeugItems = await prisma.item.findMany({ where: { name: { in: ['Schraubendreher-Set (10-teilig)'] } } });
-  const kleidungItems = await prisma.item.findMany({ where: { name: 'Winterjacke schwarz' } });
-  const saisonalItems = await prisma.item.findMany({ where: { name: { in: ['Winterjacke schwarz', 'Weihnachtsbaumschmuck'] } } });
-  const medizinItems = await prisma.item.findMany({ where: { name: { in: ['Ibuprofen 400 mg', 'Pflaster-Sortiment'] } } });
-  const hdmiItem = await prisma.item.findFirst({ where: { name: 'HDMI-Kabel 2m' } });
+  const laptop = await prisma.instance.create({
+    data: {
+      productId: pMacBook.id,
+      quantity: 1, condition: 'GOOD', serialNumber: 'FVFXC2XXXXX',
+      purchasePrice: 1999.00, purchaseDate: new Date('2024-01-15'), warrantyUntil: new Date('2027-01-15'),
+      purchaseUrl: 'https://www.apple.com/de/shop',
+      locationId: tvSchrank.id,
+    },
+  });
 
-  await prisma.itemTag.createMany({ data: [
-    ...tagItems.map((i) => ({ itemId: i.id, tagId: lebensmittel.id })),
-    ...werkzeugItems.map((i) => ({ itemId: i.id, tagId: werkzeug.id })),
-    ...kleidungItems.map((i) => ({ itemId: i.id, tagId: kleidung.id })),
-    ...saisonalItems.map((i) => ({ itemId: i.id, tagId: saisonal.id })),
-    ...medizinItems.map((i) => ({ itemId: i.id, tagId: medizin.id })),
-    ...(hdmiItem ? [{ itemId: hdmiItem.id, tagId: elektronik.id }] : []),
-  ]});
+  const bohrmaschine = await prisma.instance.create({
+    data: {
+      productId: pBohrmaschine.id,
+      quantity: 1, condition: 'GOOD',
+      purchasePrice: 129.99, purchaseDate: new Date('2022-03-10'),
+      locationId: werkzeugSchrank.id,
+    },
+  });
+
+  await prisma.instance.create({
+    data: {
+      productId: pKopfhoerer.id,
+      quantity: 1, condition: 'GOOD',
+      purchasePrice: 349.00, purchaseDate: new Date('2023-11-24'), warrantyUntil: new Date('2025-11-24'),
+      serialNumber: 'SN-WH1000XM5-001',
+      locationId: nachttisch.id,
+    },
+  });
 
   // ── Ausleihen ─────────────────────────────────────────────────────────
-  await prisma.lending.create({ data: { itemId: bohrmaschine.id, lentTo: 'Peter Müller', lentAt: new Date('2026-05-20'), note: 'Für Badezimmer-Renovierung' } });
-  await prisma.lending.create({ data: { itemId: laptop.id, lentTo: 'Anna Schmidt', lentAt: new Date('2026-04-01'), returnedAt: new Date('2026-04-10'), note: 'Für Präsentation geliehen' } });
+  await prisma.lending.create({
+    data: { instanceId: bohrmaschine.id, lentTo: 'Peter Müller', lentAt: new Date('2026-05-20'), note: 'Für Badezimmer-Renovierung' },
+  });
+  await prisma.lending.create({
+    data: { instanceId: laptop.id, lentTo: 'Anna Schmidt', lentAt: new Date('2026-04-01'), returnedAt: new Date('2026-04-10'), note: 'Für Präsentation geliehen' },
+  });
 
   console.log('✅ Seed abgeschlossen');
   console.log('   EDITOR:  test@home.local / test1234');

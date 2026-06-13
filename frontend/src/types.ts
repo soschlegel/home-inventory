@@ -64,17 +64,17 @@ export interface Location {
   parentId?: string | null;
   parent?: Pick<Location, 'id' | 'name'> | null;
   children?: Location[];
-  items?: Item[];
-  _count?: { items: number };
+  instances?: Instance[];
+  _count?: { items?: number; instances?: number };
 }
 
-export interface ItemTag {
+export interface ProductTag {
   tag: Pick<Tag, 'id' | 'key' | 'name'>;
 }
 
-export interface ItemDocument {
+export interface ProductDocument {
   id: string;
-  itemId: string;
+  productId: string;
   originalName: string;
   url: string;
   mimeType?: string | null;
@@ -82,35 +82,59 @@ export interface ItemDocument {
   createdAt: string;
 }
 
-export interface Item {
+export interface Product {
   id: string;
   name: string;
   description?: string | null;
+  imageUrl?: string | null;
+  barcode?: string | null;
+  tags?: ProductTag[];
+  documents?: ProductDocument[];
+  instances?: Instance[];
+  _count?: { instances: number };
+}
+
+export interface InstanceDocument {
+  id: string;
+  instanceId: string;
+  originalName: string;
+  url: string;
+  mimeType?: string | null;
+  size?: number | null;
+  createdAt: string;
+}
+
+export interface Instance {
+  id: string;
+  productId: string;
+  product: Pick<Product, 'id' | 'name' | 'imageUrl' | 'description' | 'barcode' | 'tags'>;
   quantity: number;
   unit?: string | null;
   minQuantity?: number | null;
   condition?: ItemCondition | null;
-  imageUrl?: string | null;
+  serialNumber?: string | null;
   purchaseUrl?: string | null;
   purchasePrice?: number | null;
   purchaseDate?: string | null;
   warrantyUntil?: string | null;
   expiryDate?: string | null;
   expiryWarningDays?: number | null;
-  serialNumber?: string | null;
-  barcode?: string | null;
-  locationId: string;
-  location?: Location & { room: Pick<Room, 'id' | 'key' | 'name'> };
-  tags?: ItemTag[];
+  locationId?: string | null;
+  location?: (Location & { room: Pick<Room, 'id' | 'key' | 'name'> }) | null;
+  assignedUserId?: string | null;
+  assignedUser?: Pick<User, 'id' | 'name' | 'email'> | null;
+  documents?: InstanceDocument[];
   lendings?: Lending[];
-  documents?: ItemDocument[];
+  _count?: { lendings: number };
 }
 
 export interface Lending {
   id: string;
-  itemId: string;
-  item?: Pick<Item, 'id' | 'name' | 'imageUrl'> & {
-    location: { room: Pick<Room, 'id' | 'key' | 'name'> };
+  instanceId: string;
+  instance?: {
+    id: string;
+    product: Pick<Product, 'id' | 'name' | 'imageUrl'>;
+    location: { room: Pick<Room, 'id' | 'key' | 'name'> } | null;
   };
   lentTo: string;
   lentAt: string;
@@ -118,21 +142,20 @@ export interface Lending {
   note?: string | null;
 }
 
-export interface ItemOverview {
+export interface InstanceOverview {
   id: string;
-  name: string;
+  productId: string;
+  product: Pick<Product, 'id' | 'name' | 'imageUrl' | 'description' | 'barcode' | 'tags'>;
   quantity: number;
   unit?: string | null;
   condition?: ItemCondition | null;
-  imageUrl?: string | null;
-  locationId: string;
+  locationId?: string | null;
   location: {
     id: string;
     name: string;
     room: Pick<Room, 'id' | 'key' | 'name'>;
     parent: Pick<Location, 'id' | 'name'> | null;
-  };
-  tags?: ItemTag[];
+  } | null;
   _count: { lendings: number };
 }
 

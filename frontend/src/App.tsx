@@ -8,7 +8,9 @@ import DashboardPage from './pages/DashboardPage';
 import RoomsPage from './pages/RoomsPage';
 import RoomDetailPage from './pages/RoomDetailPage';
 import LocationDetailPage from './pages/LocationDetailPage';
-import ItemDetailPage from './pages/ItemDetailPage';
+import ProductsPage from './pages/ProductsPage';
+import ProductDetailPage from './pages/ProductDetailPage';
+import InstanceDetailPage from './pages/InstanceDetailPage';
 import ContainerTypesPage from './pages/ContainerTypesPage';
 import UnitsPage from './pages/UnitsPage';
 import LendingsPage from './pages/LendingsPage';
@@ -19,6 +21,7 @@ import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
 import TranslationsPage from './pages/TranslationsPage';
 import ContainersPage from './pages/ContainersPage';
+import QRScannerPage from './pages/QRScannerPage';
 
 export default function App() {
   const { isLoading } = useAuth();
@@ -35,7 +38,10 @@ export default function App() {
           <Route path="/rooms/:id" element={<RoomDetailPage />} />
           <Route path="/containers" element={<ContainersPage />} />
           <Route path="/locations/:id" element={<LocationDetailPage />} />
-          <Route path="/items/:id" element={<ItemDetailPage />} />
+          <Route path="/products" element={<ProductsPage />} />
+          <Route path="/products/:id" element={<ProductDetailPage />} />
+          <Route path="/instances/:id" element={<InstanceDetailPage />} />
+          <Route path="/scan" element={<QRScannerPage />} />
           <Route path="/items-overview" element={<ItemsOverviewPage />} />
           <Route path="/lendings" element={<LendingsPage />} />
           <Route path="/container-types" element={<ContainerTypesPage />} />

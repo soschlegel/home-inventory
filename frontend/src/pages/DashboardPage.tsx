@@ -4,7 +4,7 @@ import { Home, ArrowRightLeft, AlertTriangle, Package, CalendarClock } from 'luc
 import { useTranslation } from 'react-i18next';
 import { getRooms } from '../api/rooms';
 import { getActiveLendings } from '../api/lendings';
-import { getLowStockItems, getExpiringSoonItems } from '../api/items';
+import { getLowStockInstances, getExpiringSoonInstances } from '../api/instances';
 import { locRoomName } from '../utils/localizedName';
 import Spinner from '../components/Spinner';
 
@@ -12,8 +12,8 @@ export default function DashboardPage() {
   const { t, i18n } = useTranslation();
   const rooms = useQuery({ queryKey: ['rooms'], queryFn: getRooms });
   const lendings = useQuery({ queryKey: ['lendings', 'active'], queryFn: getActiveLendings });
-  const lowStock = useQuery({ queryKey: ['items', 'low-stock'], queryFn: getLowStockItems });
-  const expiring = useQuery({ queryKey: ['items', 'expiring-soon'], queryFn: getExpiringSoonItems });
+  const lowStock = useQuery({ queryKey: ['instances', 'low-stock'], queryFn: getLowStockInstances });
+  const expiring = useQuery({ queryKey: ['instances', 'expiring-soon'], queryFn: getExpiringSoonInstances });
 
   const totalLocations = rooms.data?.reduce((s, r) => s + (r._count?.locations ?? 0), 0) ?? 0;
 
@@ -53,16 +53,16 @@ export default function DashboardPage() {
             <CalendarClock size={16} /> {t('dashboard.expiring_title')}
           </h2>
           <ul className="space-y-1">
-            {expiring.data?.map((item) => {
-              const isExpired = item.expiryDate && new Date(item.expiryDate) < new Date();
+            {expiring.data?.map((instance) => {
+              const isExpired = instance.expiryDate && new Date(instance.expiryDate) < new Date();
               return (
-                <li key={item.id} className="text-sm text-amber-700">
-                  <Link to={`/items/${item.id}`} className="hover:underline font-medium">
-                    {item.name}
+                <li key={instance.id} className="text-sm text-amber-700">
+                  <Link to={`/instances/${instance.id}`} className="hover:underline font-medium">
+                    {instance.product.name}
                   </Link>{' '}
                   — <span className={isExpired ? 'text-red-600 font-medium' : ''}>
                     {isExpired ? t('dashboard.expiring_expired') : t('dashboard.expiring_on')}{' '}
-                    {new Date(item.expiryDate!).toLocaleDateString(i18n.language)}
+                    {new Date(instance.expiryDate!).toLocaleDateString(i18n.language)}
                   </span>
                 </li>
               );
@@ -78,12 +78,12 @@ export default function DashboardPage() {
             <AlertTriangle size={16} /> {t('dashboard.low_stock_title')}
           </h2>
           <ul className="space-y-1">
-            {lowStock.data?.map((item) => (
-              <li key={item.id} className="text-sm text-red-700">
-                <Link to={`/items/${item.id}`} className="hover:underline font-medium">
-                  {item.name}
+            {lowStock.data?.map((instance) => (
+              <li key={instance.id} className="text-sm text-red-700">
+                <Link to={`/instances/${instance.id}`} className="hover:underline font-medium">
+                  {instance.product.name}
                 </Link>{' '}
-                — {item.quantity} {item.unit ?? t('common.piece')} (min. {item.minQuantity})
+                — {instance.quantity} {instance.unit ?? t('common.piece')} (min. {instance.minQuantity})
               </li>
             ))}
           </ul>
@@ -99,8 +99,8 @@ export default function DashboardPage() {
           <ul className="space-y-1">
             {lendings.data?.map((l) => (
               <li key={l.id} className="text-sm text-orange-700">
-                <Link to={`/items/${l.itemId}`} className="hover:underline font-medium">
-                  {l.item?.name}
+                <Link to={`/instances/${l.instanceId}`} className="hover:underline font-medium">
+                  {l.instance?.product?.name ?? l.instanceId}
                 </Link>{' '}
                 → <span className="font-medium">{l.lentTo}</span>
                 {' · '}
@@ -112,7 +112,7 @@ export default function DashboardPage() {
       )}
 
       {/* Rooms overview */}
-      <h2 className="text-lg font-semibold text-gray-800 mb-3">{t('dashboard.rooms_section')}</h2>
+      <h2 className="text-lg font-semibold text.gray-800 mb-3">{t('dashboard.rooms_section')}</h2>
       {rooms.isLoading ? (
         <Spinner />
       ) : (

@@ -19,13 +19,14 @@ enum UserRole {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  name         String?
-  role         UserRole @default(EDITOR)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                String     @id @default(cuid())
+  email             String     @unique
+  passwordHash      String
+  name              String?
+  role              UserRole   @default(EDITOR)
+  assignedInstances Instance[]
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
 }
 
 // Einheitenliste – geteilt zwischen allen Nutzern, dient als Vorschlagsliste
@@ -74,42 +75,75 @@ model Location {
   parentId        String?
   parent          Location?      @relation("LocationChildren", fields: [parentId], references: [id])
   children        Location[]     @relation("LocationChildren")
-  items           Item[]
+  instances       Instance[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 }
 
-// Ein Gegenstand an einem Aufbewahrungsort
-model Item {
-  id            String         @id @default(cuid())
-  name          String
-  description   String?
-  quantity      Float          @default(1)
-  unit          String?
-  minQuantity   Float?
-  condition     ItemCondition?
-  imageUrl      String?
-  purchaseUrl   String?
-  purchasePrice Float?
-  purchaseDate  DateTime?
+// Produkt = Stammdaten (was ist dieser Gegenstand?)
+model Product {
+  id          String            @id @default(cuid())
+  name        String
+  description String?
+  imageUrl    String?
+  barcode     String?
+  tags        ProductTag[]
+  documents   ProductDocument[]
+  instances   Instance[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model ProductTag {
+  productId String
+  tagId     String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tagId])
+}
+
+model ProductDocument {
+  id           String   @id @default(cuid())
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  originalName String
+  url          String
+  mimeType     String?
+  size         Int?
+  createdAt    DateTime @default(now())
+}
+
+// Exemplar = ein konkretes physisches Objekt
+model Instance {
+  id                String             @id @default(cuid())
+  productId         String
+  product           Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity          Float              @default(1)
+  unit              String?
+  minQuantity       Float?
+  condition         ItemCondition?
+  serialNumber      String?
+  purchaseDate      DateTime?
+  purchasePrice     Float?
+  purchaseUrl       String?
   warrantyUntil     DateTime?
   expiryDate        DateTime?
   expiryWarningDays Int?
-  serialNumber      String?
-  barcode           String?
-  locationId    String
-  location      Location       @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  tags          ItemTag[]
-  lendings      Lending[]
-  documents     ItemDocument[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  locationId        String?
+  location          Location?          @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  assignedUserId    String?
+  assignedUser      User?              @relation(fields: [assignedUserId], references: [id], onDelete: SetNull)
+  documents         InstanceDocument[]
+  lendings          Lending[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 }
 
-model ItemDocument {
+model InstanceDocument {
   id           String   @id @default(cuid())
-  itemId       String
-  item         Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  instanceId   String
+  instance     Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   originalName String
   url          String
   mimeType     String?
@@ -119,8 +153,8 @@ model ItemDocument {
 
 model Lending {
   id         String    @id @default(cuid())
-  itemId     String
-  item       Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  instanceId String
+  instance   Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   lentTo     String
   lentAt     DateTime  @default(now())
   returnedAt DateTime?
@@ -129,12 +163,12 @@ model Lending {
 }
 
 model Tag {
-  id           String    @id @default(cuid())
-  key          String    @unique
-  name         String    @unique
+  id           String       @id @default(cuid())
+  key          String       @unique
+  name         String       @unique
   translations Json?
-  items        ItemTag[]
-  createdAt    DateTime  @default(now())
+  products     ProductTag[]
+  createdAt    DateTime     @default(now())
 }
 
 // Anwendungseinstellungen (key-value)
@@ -142,13 +176,4 @@ model Setting {
   key       String   @id
   value     String
   updatedAt DateTime @updatedAt
-}
-
-model ItemTag {
-  itemId String
-  tagId  String
-  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@id([itemId, tagId])
 }

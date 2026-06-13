@@ -1,4 +1,4 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import { randomUUID } from 'crypto';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
@@ -31,7 +31,7 @@ const TagUpdateBody = z.object({
 router.get('/', async (_req, res, next) => {
   try {
     const tags = await prisma.tag.findMany({
-      include: { _count: { select: { items: true } } },
+      include: { _count: { select: { products: true } } },
       orderBy: { name: 'asc' },
     });
     res.json(tags);
@@ -48,7 +48,7 @@ router.post('/', requireEditor, async (req, res, next) => {
     if (existing) { res.status(409).json({ error: 'Tag bereits vorhanden' }); return; }
     const tag = await prisma.tag.create({
       data: { ...rest, key: randomUUID(), translations: jsonField(translations) },
-      include: { _count: { select: { items: true } } },
+      include: { _count: { select: { products: true } } },
     });
     res.status(201).json(tag);
   } catch (err) {
@@ -65,7 +65,7 @@ router.put('/:id', requireEditor, async (req, res, next) => {
     const tag = await prisma.tag.update({
       where: { id: req.params.id },
       data: { ...rest, ...(translations !== undefined ? { translations: jsonField(translations) } : {}) },
-      include: { _count: { select: { items: true } } },
+      include: { _count: { select: { products: true } } },
     });
     res.json(tag);
   } catch (err) {

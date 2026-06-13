@@ -1,4 +1,4 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import { randomUUID } from 'crypto';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
@@ -74,15 +74,15 @@ router.get('/tree', async (_req, res, next) => {
           where: { parentId: null },
           include: {
             containerType: true,
-            _count: { select: { items: true } },
+            _count: { select: { instances: true } },
             children: {
               include: {
                 containerType: true,
-                _count: { select: { items: true } },
+                _count: { select: { instances: true } },
                 children: {
                   include: {
                     containerType: true,
-                    _count: { select: { items: true } },
+                    _count: { select: { instances: true } },
                   },
                   orderBy: { name: 'asc' },
                 },
@@ -114,10 +114,10 @@ router.get('/:id', async (req, res, next) => {
             children: {
               include: {
                 containerType: true,
-                _count: { select: { items: true } },
+                _count: { select: { instances: true } },
               },
             },
-            _count: { select: { items: true } },
+            _count: { select: { instances: true } },
           },
           orderBy: { name: 'asc' },
         },
@@ -166,8 +166,8 @@ router.get('/:roomId/locations', async (req, res, next) => {
     const locations = await prisma.location.findMany({
       where: { roomId: req.params.roomId, parentId: null },
       include: {
-        children: { include: { _count: { select: { items: true } } } },
-        _count: { select: { items: true } },
+        children: { include: { _count: { select: { instances: true } } } },
+        _count: { select: { instances: true } },
       },
       orderBy: { name: 'asc' },
     });

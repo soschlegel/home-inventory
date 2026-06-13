@@ -18,11 +18,10 @@ router.get('/active', async (_req, res, next) => {
     const lendings = await prisma.lending.findMany({
       where: { returnedAt: null },
       include: {
-        item: {
+        instance: {
           select: {
             id: true,
-            name: true,
-            imageUrl: true,
+            product: { select: { id: true, name: true, imageUrl: true } },
             location: { include: { room: { select: { id: true, key: true, name: true } } } },
           },
         },
@@ -40,7 +39,7 @@ router.get('/:id', async (req, res, next) => {
   try {
     const lending = await prisma.lending.findFirst({
       where: { id: req.params.id },
-      include: { item: { select: { id: true, name: true } } },
+      include: { instance: { select: { id: true, product: { select: { id: true, name: true } } } } },
     });
     if (!lending) { res.status(404).json({ error: 'Ausleihe nicht gefunden' }); return; }
     res.json(lending);
@@ -49,14 +48,14 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-// POST /api/items/:itemId/lend
-router.post('/items/:itemId/lend', requireEditor, async (req, res, next) => {
+// POST /api/instances/:instanceId/lend
+router.post('/instances/:instanceId/lend', requireEditor, async (req, res, next) => {
   try {
-    const item = await prisma.item.findFirst({ where: { id: req.params.itemId } });
-    if (!item) { res.status(404).json({ error: 'Gegenstand nicht gefunden' }); return; }
+    const instance = await prisma.instance.findFirst({ where: { id: req.params.instanceId } });
+    if (!instance) { res.status(404).json({ error: 'Exemplar nicht gefunden' }); return; }
     const data = LendBody.parse(req.body);
     const lending = await prisma.lending.create({
-      data: { ...data, itemId: req.params.itemId },
+      data: { ...data, instanceId: req.params.instanceId },
     });
     res.status(201).json(lending);
   } catch (err) {
@@ -83,13 +82,13 @@ router.put('/:id/return', requireEditor, async (req, res, next) => {
   }
 });
 
-// GET /api/items/:itemId/lendings
-router.get('/items/:itemId/lendings', async (req, res, next) => {
+// GET /api/instances/:instanceId/lendings
+router.get('/instances/:instanceId/lendings', async (req, res, next) => {
   try {
-    const item = await prisma.item.findFirst({ where: { id: req.params.itemId } });
-    if (!item) { res.status(404).json({ error: 'Gegenstand nicht gefunden' }); return; }
+    const instance = await prisma.instance.findFirst({ where: { id: req.params.instanceId } });
+    if (!instance) { res.status(404).json({ error: 'Exemplar nicht gefunden' }); return; }
     const lendings = await prisma.lending.findMany({
-      where: { itemId: req.params.itemId },
+      where: { instanceId: req.params.instanceId },
       orderBy: { lentAt: 'desc' },
     });
     res.json(lendings);

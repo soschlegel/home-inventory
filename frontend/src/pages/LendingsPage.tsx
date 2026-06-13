@@ -35,13 +35,13 @@ export default function LendingsPage() {
             <div key={l.id} className="flex items-center gap-4 px-4 py-4">
               <div className="flex-1 min-w-0">
                 <Link
-                  to={`/items/${l.itemId}`}
+                  to={`/instances/${l.instanceId}`}
                   className="font-medium text-gray-900 hover:text-indigo-600 text-sm"
                 >
-                  {l.item?.name}
+                  {l.instance?.product?.name ?? l.instanceId}
                 </Link>
                 <div className="text-xs text-gray-500 mt-0.5">
-                  {l.item?.location?.room?.name}
+                  {l.instance?.location?.room?.name}
                 </div>
               </div>
               <div className="text-sm text-gray-700 font-medium">{l.lentTo}</div>
@@ -50,6 +50,7 @@ export default function LendingsPage() {
               </div>
               {l.note && <div className="text-xs text-gray-400 italic truncate max-w-32">{l.note}</div>}
               <button
+                type="button"
                 onClick={() => returnMut.mutate(l.id)}
                 disabled={returnMut.isPending}
                 className="flex items-center gap-1.5 text-xs text-green-600 hover:text-green-700 font-medium"

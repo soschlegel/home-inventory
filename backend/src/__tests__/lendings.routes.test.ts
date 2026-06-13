@@ -12,7 +12,7 @@ vi.mock('../lib/prisma', () => ({
       create: vi.fn(),
       update: vi.fn(),
     },
-    item: {
+    instance: {
       findFirst: vi.fn(),
     },
   },
@@ -29,6 +29,7 @@ vi.mock('../middleware/auth', () => ({
 
 import lendingsRouter from '../routes/lendings';
 import { prisma } from '../lib/prisma';
+const mockPrisma = prisma as any;
 
 const app = express();
 app.use(express.json());
@@ -36,11 +37,11 @@ app.use('/api/lendings', lendingsRouter);
 app.use('/api', lendingsRouter);
 app.use(errorHandler);
 
-const mockItem = { id: 'item-1', name: 'Hammer' };
+const mockInstance = { id: 'inst-1', productId: 'prod-1', product: { name: 'Hammer' } };
 
 const mockLending = {
   id: 'lending-1',
-  itemId: 'item-1',
+  instanceId: 'inst-1',
   lentTo: 'Klaus Müller',
   lentAt: new Date(),
   returnedAt: null,
@@ -50,7 +51,7 @@ const mockLending = {
 
 describe('GET /api/lendings/active', () => {
   it('gibt alle aktiven Ausleihen zurück', async () => {
-    vi.mocked(prisma.lending.findMany).mockResolvedValue([mockLending] as any);
+    mockPrisma.lending.findMany.mockResolvedValue([mockLending]);
 
     const res = await request(app).get('/api/lendings/active');
 
@@ -63,7 +64,7 @@ describe('GET /api/lendings/active', () => {
 
 describe('GET /api/lendings/:id', () => {
   it('gibt eine einzelne Ausleihe zurück', async () => {
-    vi.mocked(prisma.lending.findFirst).mockResolvedValue(mockLending as any);
+    mockPrisma.lending.findFirst.mockResolvedValue(mockLending);
 
     const res = await request(app).get('/api/lendings/lending-1');
 
@@ -72,7 +73,7 @@ describe('GET /api/lendings/:id', () => {
   });
 
   it('gibt 404 zurück wenn Ausleihe nicht gefunden', async () => {
-    vi.mocked(prisma.lending.findFirst).mockResolvedValue(null);
+    mockPrisma.lending.findFirst.mockResolvedValue(null);
 
     const res = await request(app).get('/api/lendings/nonexistent');
 
@@ -80,13 +81,13 @@ describe('GET /api/lendings/:id', () => {
   });
 });
 
-describe('POST /api/items/:itemId/lend', () => {
+describe('POST /api/instances/:instanceId/lend', () => {
   it('erstellt eine Ausleihe und gibt 201 zurück', async () => {
-    vi.mocked(prisma.item.findFirst).mockResolvedValue(mockItem as any);
-    vi.mocked(prisma.lending.create).mockResolvedValue(mockLending as any);
+    mockPrisma.instance.findFirst.mockResolvedValue(mockInstance);
+    mockPrisma.lending.create.mockResolvedValue(mockLending);
 
     const res = await request(app)
-      .post('/api/items/item-1/lend')
+      .post('/api/instances/inst-1/lend')
       .send({ lentTo: 'Klaus Müller', note: 'Für Renovierung' });
 
     expect(res.status).toBe(201);
@@ -95,16 +96,16 @@ describe('POST /api/items/:itemId/lend', () => {
 
   it('gibt 400 zurück wenn lentTo fehlt', async () => {
     const res = await request(app)
-      .post('/api/items/item-1/lend')
+      .post('/api/instances/inst-1/lend')
       .send({});
     expect(res.status).toBe(400);
   });
 
-  it('gibt 404 zurück wenn Item nicht gefunden', async () => {
-    vi.mocked(prisma.item.findFirst).mockResolvedValue(null);
+  it('gibt 404 zurück wenn Instanz nicht gefunden', async () => {
+    mockPrisma.instance.findFirst.mockResolvedValue(null);
 
     const res = await request(app)
-      .post('/api/items/nonexistent/lend')
+      .post('/api/instances/nonexistent/lend')
       .send({ lentTo: 'Klaus Müller' });
 
     expect(res.status).toBe(404);
@@ -113,9 +114,8 @@ describe('POST /api/items/:itemId/lend', () => {
 
 describe('PUT /api/lendings/:id/return', () => {
   it('markiert eine Ausleihe als zurückgegeben', async () => {
-    vi.mocked(prisma.lending.findFirst).mockResolvedValue(mockLending as any);
-    const returned = { ...mockLending, returnedAt: new Date() };
-    vi.mocked(prisma.lending.update).mockResolvedValue(returned as any);
+    mockPrisma.lending.findFirst.mockResolvedValue(mockLending);
+    mockPrisma.lending.update.mockResolvedValue({ ...mockLending, returnedAt: new Date() });
 
     const res = await request(app).put('/api/lendings/lending-1/return');
 
@@ -124,10 +124,7 @@ describe('PUT /api/lendings/:id/return', () => {
   });
 
   it('gibt 409 zurück wenn bereits zurückgegeben', async () => {
-    vi.mocked(prisma.lending.findFirst).mockResolvedValue({
-      ...mockLending,
-      returnedAt: new Date(),
-    } as any);
+    mockPrisma.lending.findFirst.mockResolvedValue({ ...mockLending, returnedAt: new Date() });
 
     const res = await request(app).put('/api/lendings/lending-1/return');
 
@@ -135,7 +132,7 @@ describe('PUT /api/lendings/:id/return', () => {
   });
 
   it('gibt 404 zurück wenn Ausleihe nicht gefunden', async () => {
-    vi.mocked(prisma.lending.findFirst).mockResolvedValue(null);
+    mockPrisma.lending.findFirst.mockResolvedValue(null);
 
     const res = await request(app).put('/api/lendings/nonexistent/return');
 
@@ -143,21 +140,21 @@ describe('PUT /api/lendings/:id/return', () => {
   });
 });
 
-describe('GET /api/items/:itemId/lendings', () => {
+describe('GET /api/instances/:instanceId/lendings', () => {
   it('gibt Verleihistorie zurück', async () => {
-    vi.mocked(prisma.item.findFirst).mockResolvedValue(mockItem as any);
-    vi.mocked(prisma.lending.findMany).mockResolvedValue([mockLending] as any);
+    mockPrisma.instance.findFirst.mockResolvedValue(mockInstance);
+    mockPrisma.lending.findMany.mockResolvedValue([mockLending]);
 
-    const res = await request(app).get('/api/items/item-1/lendings');
+    const res = await request(app).get('/api/instances/inst-1/lendings');
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
   });
 
-  it('gibt 404 zurück wenn Item nicht gefunden', async () => {
-    vi.mocked(prisma.item.findFirst).mockResolvedValue(null);
+  it('gibt 404 zurück wenn Instanz nicht gefunden', async () => {
+    mockPrisma.instance.findFirst.mockResolvedValue(null);
 
-    const res = await request(app).get('/api/items/nonexistent/lendings');
+    const res = await request(app).get('/api/instances/nonexistent/lendings');
 
     expect(res.status).toBe(404);
   });
