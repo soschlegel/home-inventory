@@ -33,7 +33,7 @@ Technische Details: [TECHNICAL.md](TECHNICAL.md)
 ```bash
 # 1. Nur drei Dateien herunterladen (kein git clone nötig)
 mkdir home-inventory && cd home-inventory
-curl -O https://raw.githubusercontent.com/soschlegel/home-inventory/main/docker-compose.server.yml
+curl -O https://raw.githubusercontent.com/soschlegel/home-inventory/main/docker-compose.yml
 curl -O https://raw.githubusercontent.com/soschlegel/home-inventory/main/.env.example
 mkdir nginx && curl -o nginx/nginx.conf https://raw.githubusercontent.com/soschlegel/home-inventory/main/nginx/nginx.conf
 
@@ -42,7 +42,7 @@ cp .env.example .env
 # DB_PASSWORD, JWT_SECRET und JWT_REFRESH_SECRET in .env setzen!
 
 # 3. Starten (Images werden von Docker Hub geladen, kein Build)
-docker compose -f docker-compose.server.yml up -d
+docker compose up -d
 
 # 4. App öffnen
 open http://localhost:3000
@@ -60,10 +60,10 @@ cp .env.example .env
 # DB_PASSWORD, JWT_SECRET und JWT_REFRESH_SECRET in .env setzen!
 
 # 3. Container bauen und starten
-docker compose up -d --build
+docker compose -f docker-compose.dev.yml up -d --build
 
 # 4. Testdaten einspielen
-docker compose exec backend npm run db:seed
+docker compose -f docker-compose.dev.yml exec backend npm run db:seed
 
 # 5. App öffnen
 open http://localhost:3000
@@ -204,11 +204,15 @@ cd frontend && npm test
 | `nginx` | `nginx:alpine` | **3000** (öffentlich) | Reverse Proxy |
 
 ```bash
-docker compose up -d --build        # Starten (mit Build)
+# Produktivserver (Standard)
+docker compose up -d                # Starten
 docker compose logs -f backend      # Logs
 docker compose restart backend      # Einzelnen Service neu starten
 docker compose down                 # Stoppen
 docker compose down -v              # Stoppen + alle Daten löschen
+
+# Lokale Entwicklung
+docker compose -f docker-compose.dev.yml up -d --build
 ```
 
 ---
@@ -260,8 +264,8 @@ Das Script:
 bash scripts/backup.sh
 
 # 2. Neue Images laden und Container neu starten
-docker compose -f docker-compose.server.yml pull
-docker compose -f docker-compose.server.yml up -d
+docker compose pull
+docker compose up -d
 ```
 
 `prisma db push` läuft automatisch beim Backend-Start und wendet neue Schemaänderungen an. Rein additive Änderungen (neue Tabellen, neue optionale Spalten) sind dabei immer sicher. Sobald eine Version Spalten umbenennt oder entfernt, steht das explizit in den Release-Notes.
@@ -270,8 +274,8 @@ docker compose -f docker-compose.server.yml up -d
 
 ```bash
 # Alte Version pinnen
-TAG=1.0.0 docker compose -f docker-compose.server.yml pull
-TAG=1.0.0 docker compose -f docker-compose.server.yml up -d
+TAG=1.0.0 docker compose pull
+TAG=1.0.0 docker compose up -d
 
 # Falls nötig: Daten aus Backup zurückspielen
 bash scripts/restore.sh ./backups/<timestamp>

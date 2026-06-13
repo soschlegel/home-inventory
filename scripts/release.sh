@@ -10,10 +10,10 @@ if [[ -z "$VERSION" ]]; then
 fi
 
 echo "==> Images bauen..."
-docker compose build
+docker compose -f docker-compose.dev.yml build
 
 echo "==> Als :latest pushen..."
-docker compose push
+docker compose -f docker-compose.dev.yml push
 
 echo "==> Versionstag :$VERSION setzen und pushen..."
 docker tag soschlegel/home-inventory-backend:latest soschlegel/home-inventory-backend:"$VERSION"
@@ -23,7 +23,7 @@ docker push soschlegel/home-inventory-frontend:"$VERSION"
 
 echo "==> Git-Tag v$VERSION setzen..."
 git tag -a "v$VERSION" -m "Release v$VERSION"
-git push origin "v$VERSION"
+git push home-inventory "v$VERSION"
 
 echo ""
 echo "Release v$VERSION fertig."

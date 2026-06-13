@@ -15,7 +15,6 @@ services:
       retries: 5
 
   backend:
-    build: ./backend
     image: soschlegel/home-inventory-backend:latest
     restart: unless-stopped
     depends_on:
@@ -28,10 +27,9 @@ services:
       NODE_ENV: production
       UPLOAD_DIR: /app/uploads
     volumes:
-      - uploads:/app/uploads
+      - ${UPLOADS_DIR:-/opt/home-inventory/uploads}:/app/uploads
 
   frontend:
-    build: ./frontend
     image: soschlegel/home-inventory-frontend:latest
     restart: unless-stopped
     depends_on:
@@ -47,8 +45,7 @@ services:
       - "${PORT:-3000}:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - uploads:/app/uploads:ro
+      - ${UPLOADS_DIR:-/opt/home-inventory/uploads}:/app/uploads:ro
 
 volumes:
   postgres_data:
-  uploads:

@@ -24,8 +24,8 @@ Betrieb und Quickstart: [README.md](README.md)
 ```text
 home-inventory/
 ├── .env.example
-├── docker-compose.yml            Lokale Entwicklung (baut Images lokal)
-├── docker-compose.server.yml     Produktiv-Deployment (nutzt Docker Hub Images)
+├── docker-compose.yml            Produktiv-Deployment (Standard, nutzt Docker Hub Images)
+├── docker-compose.dev.yml        Lokale Entwicklung (baut Images lokal)
 ├── nginx/
 │   └── nginx.conf
 ├── scripts/

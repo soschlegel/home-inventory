@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.server.yml}"
+COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
 BACKUP_PATH="${1:-}"
 
 if [[ -z "$BACKUP_PATH" ]]; then
