@@ -33,6 +33,8 @@ export interface ContainerType {
   id: string;
   key?: string | null;
   name: string;
+  nameDe?: string | null;
+  nameEn?: string | null;
   icon?: string | null;
   color?: string | null;
   _count?: { locations: number };

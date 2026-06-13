@@ -41,6 +41,8 @@ model ContainerType {
   id        String     @id @default(cuid())
   key       String?    @unique
   name      String     @unique
+  nameDe    String?
+  nameEn    String?
   icon      String?
   color     String?
   locations Location[]

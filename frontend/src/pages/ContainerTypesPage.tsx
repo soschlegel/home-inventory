@@ -22,16 +22,24 @@ export default function ContainerTypesPage() {
 
   const [showForm, setShowForm] = useState(false);
   const [newKey, setNewKey] = useState('');
-  const [newName, setNewName] = useState('');
+  const [newNameDe, setNewNameDe] = useState('');
+  const [newNameEn, setNewNameEn] = useState('');
   const [newIcon, setNewIcon] = useState('');
 
   const createMut = useMutation({
     mutationFn: () =>
-      createContainerType({ key: newKey || undefined, name: newName, icon: newIcon || undefined }),
+      createContainerType({
+        key: newKey || undefined,
+        name: newNameDe,
+        nameDe: newNameDe || undefined,
+        nameEn: newNameEn || undefined,
+        icon: newIcon || undefined,
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['container-types'] });
       setNewKey('');
-      setNewName('');
+      setNewNameDe('');
+      setNewNameEn('');
       setNewIcon('');
       setShowForm(false);
     },
@@ -44,14 +52,17 @@ export default function ContainerTypesPage() {
 
   const [editId, setEditId] = useState<string | null>(null);
   const [editKey, setEditKey] = useState('');
-  const [editName, setEditName] = useState('');
+  const [editNameDe, setEditNameDe] = useState('');
+  const [editNameEn, setEditNameEn] = useState('');
   const [editIcon, setEditIcon] = useState('');
 
   const updateMut = useMutation({
     mutationFn: () =>
       updateContainerType(editId!, {
         key: editKey || undefined,
-        name: editName,
+        name: editNameDe,
+        nameDe: editNameDe || undefined,
+        nameEn: editNameEn || undefined,
         icon: editIcon || undefined,
       }),
     onSuccess: () => {
@@ -89,17 +100,30 @@ export default function ContainerTypesPage() {
               placeholder={t('containerTypes.key_placeholder')}
               className="w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
             />
-            <input
-              aria-label={t('containerTypes.edit_name_label')}
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder={t('containerTypes.name_placeholder')}
-              className="flex-1 min-w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+            <div className="relative flex-1 min-w-32">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm">🇩🇪</span>
+              <input
+                aria-label={t('containerTypes.name_de_label')}
+                value={newNameDe}
+                onChange={(e) => setNewNameDe(e.target.value)}
+                placeholder={t('containerTypes.name_de_placeholder')}
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div className="relative flex-1 min-w-32">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm">🇬🇧</span>
+              <input
+                aria-label={t('containerTypes.name_en_label')}
+                value={newNameEn}
+                onChange={(e) => setNewNameEn(e.target.value)}
+                placeholder={t('containerTypes.name_en_placeholder')}
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
             <button
               type="button"
               onClick={() => createMut.mutate()}
-              disabled={!newName || createMut.isPending}
+              disabled={!newNameDe || createMut.isPending}
               className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
             >
               {t('common.save')}
@@ -132,17 +156,29 @@ export default function ContainerTypesPage() {
                       placeholder={t('containerTypes.key_placeholder')}
                       className="w-28 border border-gray-300 rounded-lg px-3 py-1 text-sm font-mono"
                     />
-                    <input
-                      aria-label={t('containerTypes.edit_name_label')}
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-1 text-sm"
-                    />
+                    <div className="relative flex-1 min-w-28">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm">🇩🇪</span>
+                      <input
+                        aria-label={t('containerTypes.name_de_label')}
+                        value={editNameDe}
+                        onChange={(e) => setEditNameDe(e.target.value)}
+                        className="w-full pl-8 pr-2 py-1 border border-gray-300 rounded-lg text-sm"
+                      />
+                    </div>
+                    <div className="relative flex-1 min-w-28">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm">🇬🇧</span>
+                      <input
+                        aria-label={t('containerTypes.name_en_label')}
+                        value={editNameEn}
+                        onChange={(e) => setEditNameEn(e.target.value)}
+                        className="w-full pl-8 pr-2 py-1 border border-gray-300 rounded-lg text-sm"
+                      />
+                    </div>
                     <button
                       type="button"
                       aria-label={t('containerTypes.save_label')}
                       onClick={() => updateMut.mutate()}
-                      disabled={!editName}
+                      disabled={!editNameDe}
                       className="p-1.5 text-green-600 hover:text-green-700"
                     >
                       <Check size={16} />
@@ -167,6 +203,11 @@ export default function ContainerTypesPage() {
                         </span>
                       )}
                     </span>
+                    {(ct.nameDe || ct.nameEn) && (
+                      <span className="text-xs text-gray-400">
+                        {ct.nameDe && '🇩🇪'}{ct.nameEn && ' 🇬🇧'}
+                      </span>
+                    )}
                     <span className="text-xs text-gray-400">
                       {t('common.container_count', { count: ct._count?.locations ?? 0 })}
                     </span>
@@ -176,7 +217,8 @@ export default function ContainerTypesPage() {
                       onClick={() => {
                         setEditId(ct.id);
                         setEditKey(ct.key ?? '');
-                        setEditName(ct.name);
+                        setEditNameDe(ct.nameDe ?? ct.name);
+                        setEditNameEn(ct.nameEn ?? '');
                         setEditIcon(ct.icon ?? '');
                       }}
                       className="p-1.5 text-gray-400 hover:text-indigo-600"
