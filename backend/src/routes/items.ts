@@ -25,12 +25,8 @@ const ItemBody = z.object({
   tags: z.array(z.string()).optional(),
 });
 
-async function upsertTags(tagNames: string[]) {
-  return Promise.all(
-    tagNames.map((name) =>
-      prisma.tag.upsert({ where: { name }, create: { name }, update: {} }),
-    ),
-  );
+async function findTagsByKeys(keys: string[]) {
+  return prisma.tag.findMany({ where: { key: { in: keys } } });
 }
 
 function deleteImageFile(imageUrl: string) {
@@ -38,6 +34,30 @@ function deleteImageFile(imageUrl: string) {
   const filename = path.basename(imageUrl);
   try { fs.unlinkSync(path.join(uploadDir, filename)); } catch { /* ignore */ }
 }
+
+// GET /api/items
+router.get('/', async (_req, res, next) => {
+  try {
+    const items = await prisma.item.findMany({
+      include: {
+        location: {
+          include: {
+            room: { select: { id: true, name: true } },
+            parent: { select: { id: true, name: true } },
+          },
+        },
+        tags: { include: { tag: true } },
+        _count: {
+          select: { lendings: { where: { returnedAt: null } } },
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+    res.json(items);
+  } catch (err) {
+    next(err);
+  }
+});
 
 // GET /api/items/search?q=...
 router.get('/search', async (req, res, next) => {
@@ -108,8 +128,8 @@ router.put('/:id', requireEditor, async (req, res, next) => {
   try {
     const existing = await prisma.item.findFirst({ where: { id: req.params.id } });
     if (!existing) { res.status(404).json({ error: 'Gegenstand nicht gefunden' }); return; }
-    const { tags: tagNames, ...data } = ItemBody.partial().parse(req.body);
-    const tags = tagNames !== undefined ? await upsertTags(tagNames) : undefined;
+    const { tags: tagKeys, ...data } = ItemBody.partial().parse(req.body);
+    const tags = tagKeys !== undefined ? await findTagsByKeys(tagKeys) : undefined;
     const item = await prisma.item.update({
       where: { id: req.params.id },
       data: {

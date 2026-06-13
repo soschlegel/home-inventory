@@ -29,12 +29,8 @@ const ItemBody = z.object({
   tags: z.array(z.string()).optional(),
 });
 
-async function upsertTags(tagNames: string[]) {
-  return Promise.all(
-    tagNames.map((name) =>
-      prisma.tag.upsert({ where: { name }, create: { name }, update: {} }),
-    ),
-  );
+async function findTagsByKeys(keys: string[]) {
+  return prisma.tag.findMany({ where: { key: { in: keys } } });
 }
 
 // GET /api/locations/:locationId/items
@@ -58,8 +54,8 @@ router.post('/:locationId/items', requireEditor, async (req, res, next) => {
   try {
     const location = await prisma.location.findFirst({ where: { id: req.params.locationId } });
     if (!location) { res.status(404).json({ error: 'Ort nicht gefunden' }); return; }
-    const { tags: tagNames, ...data } = ItemBody.parse(req.body);
-    const tags = tagNames?.length ? await upsertTags(tagNames) : [];
+    const { tags: tagKeys, ...data } = ItemBody.parse(req.body);
+    const tags = tagKeys?.length ? await findTagsByKeys(tagKeys) : [];
     const item = await prisma.item.create({
       data: {
         ...data,

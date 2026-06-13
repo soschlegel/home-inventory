@@ -14,6 +14,8 @@ import ContainerTypesPage from './pages/ContainerTypesPage';
 import UnitsPage from './pages/UnitsPage';
 import LendingsPage from './pages/LendingsPage';
 import UsersPage from './pages/UsersPage';
+import ItemsOverviewPage from './pages/ItemsOverviewPage';
+import TagsPage from './pages/TagsPage';
 
 export default function App() {
   const { isLoading } = useAuth();
@@ -30,10 +32,12 @@ export default function App() {
           <Route path="/rooms/:id" element={<RoomDetailPage />} />
           <Route path="/locations/:id" element={<LocationDetailPage />} />
           <Route path="/items/:id" element={<ItemDetailPage />} />
+          <Route path="/items-overview" element={<ItemsOverviewPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/lendings" element={<LendingsPage />} />
           <Route path="/container-types" element={<ContainerTypesPage />} />
           <Route path="/units" element={<UnitsPage />} />
+          <Route path="/tags" element={<TagsPage />} />
           <Route path="/users" element={<UsersPage />} />
         </Route>
       </Route>

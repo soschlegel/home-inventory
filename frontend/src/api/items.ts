@@ -1,5 +1,7 @@
 import { api } from './client';
-import type { Item } from '../types';
+import type { Item, ItemOverview } from '../types';
+
+export const getAllItems = () => api.get<ItemOverview[]>('/items').then((r) => r.data);
 
 export const getItem = (id: string) => api.get<Item>(`/items/${id}`).then((r) => r.data);
 

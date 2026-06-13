@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Plus, Package, Folder, Trash2 } from 'lucide-react';
+import { ChevronRight, Plus, Package, Folder, Trash2, Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { getLocation, getLocationItems, createItem, deleteLocation } from '../api/locations';
+import { getLocation, getLocationItems, createItem, deleteLocation, updateLocation } from '../api/locations';
 import { createLocation } from '../api/rooms';
 import { getContainerTypes } from '../api/containerTypes';
 import { getUnits } from '../api/units';
+import { useAuth } from '../contexts/AuthContext';
 import type { ItemCondition } from '../types';
 import { CONDITION_COLORS } from '../types';
 import Spinner from '../components/Spinner';
@@ -14,8 +15,10 @@ import Spinner from '../components/Spinner';
 export default function LocationDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const isEditor = user?.role === 'EDITOR';
 
   const { data: location, isLoading } = useQuery({
     queryKey: ['locations', id],
@@ -30,6 +33,26 @@ export default function LocationDetailPage() {
     queryFn: getContainerTypes,
   });
   const { data: units } = useQuery({ queryKey: ['units'], queryFn: getUnits });
+
+  // Edit location
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editType, setEditType] = useState('');
+
+  const editMut = useMutation({
+    mutationFn: () =>
+      updateLocation(id!, { name: editName, containerTypeId: editType || undefined }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['locations', id] });
+      setIsEditing(false);
+    },
+  });
+
+  const startEdit = () => {
+    setEditName(location!.name);
+    setEditType(location!.containerTypeId ?? '');
+    setIsEditing(true);
+  };
 
   // Add item form
   const [showItemForm, setShowItemForm] = useState(false);
@@ -98,44 +121,108 @@ export default function LocationDetailPage() {
         <span className="text-gray-900 font-medium">{location.name}</span>
       </div>
 
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{location.name}</h1>
-          {location.containerType && (
-            <span className="text-sm text-gray-500">
-              {location.containerType.icon} {location.containerType.name}
-            </span>
+      {isEditing ? (
+        <div className="mb-6 bg-white border border-indigo-400 rounded-xl p-4">
+          <h2 className="font-medium text-gray-800 mb-3">{t('location.edit_title')}</h2>
+          <div className="flex gap-3 flex-wrap">
+            <input
+              aria-label={t('common.name')}
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && editName) editMut.mutate();
+                if (e.key === 'Escape') setIsEditing(false);
+              }}
+              placeholder={t('location.name_placeholder')}
+              className="flex-1 min-w-40 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              autoFocus
+            />
+            <select
+              aria-label={t('common.type_select')}
+              value={editType}
+              onChange={(e) => setEditType(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="">{t('common.type_select')}</option>
+              {containerTypes?.map((ct) => (
+                <option key={ct.id} value={ct.id}>{ct.icon} {ct.name}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => editMut.mutate()}
+              disabled={!editName || editMut.isPending}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {t('common.save')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsEditing(false)}
+              className="border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-50"
+            >
+              {t('common.cancel')}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-gray-900">{location.name}</h1>
+              {isEditor && (
+                <button
+                  type="button"
+                  aria-label={t('common.edit')}
+                  onClick={startEdit}
+                  className="p-1 text-gray-400 hover:text-indigo-600 rounded transition-colors"
+                >
+                  <Pencil size={16} />
+                </button>
+              )}
+            </div>
+            {location.containerType && (
+              <span className="text-sm text-gray-500">
+                {location.containerType.icon} {location.containerType.name}
+              </span>
+            )}
+          </div>
+          {isEditor && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowLocForm(!showLocForm)}
+                className="flex items-center gap-2 border border-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+              >
+                <Folder size={15} /> {t('location.add_subcontainer')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowItemForm(!showItemForm)}
+                className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+              >
+                <Plus size={16} /> {t('location.add_item')}
+              </button>
+            </div>
           )}
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowLocForm(!showLocForm)}
-            className="flex items-center gap-2 border border-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
-          >
-            <Folder size={15} /> {t('location.add_subcontainer')}
-          </button>
-          <button
-            onClick={() => setShowItemForm(!showItemForm)}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
-          >
-            <Plus size={16} /> {t('location.add_item')}
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Sub-location form */}
-      {showLocForm && (
+      {isEditor && showLocForm && (
         <div className="mb-4 bg-white border border-gray-200 rounded-xl p-4">
           <h2 className="font-medium text-gray-800 mb-3">{t('location.new_subcontainer')}</h2>
           <div className="flex gap-3 flex-wrap">
             <input
+              aria-label={t('common.name')}
               value={locName}
               onChange={(e) => setLocName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && locName) createLocMut.mutate(); }}
               placeholder={t('location.name_placeholder')}
               className="flex-1 min-w-40 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <select
-              aria-label="Container-Typ"
+              aria-label={t('common.type_select')}
               value={locType}
               onChange={(e) => setLocType(e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
@@ -146,6 +233,7 @@ export default function LocationDetailPage() {
               ))}
             </select>
             <button
+              type="button"
               onClick={() => createLocMut.mutate()}
               disabled={!locName || createLocMut.isPending}
               className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
@@ -157,17 +245,20 @@ export default function LocationDetailPage() {
       )}
 
       {/* Item form */}
-      {showItemForm && (
+      {isEditor && showItemForm && (
         <div className="mb-4 bg-white border border-gray-200 rounded-xl p-4">
           <h2 className="font-medium text-gray-800 mb-3">{t('location.new_item')}</h2>
           <div className="flex gap-3 flex-wrap">
             <input
+              aria-label={t('common.name')}
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && itemName) createItemMut.mutate(); }}
               placeholder={t('location.name_placeholder')}
               className="flex-1 min-w-40 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <input
+              aria-label={t('common.quantity')}
               value={itemQty}
               onChange={(e) => setItemQty(e.target.value)}
               type="number"
@@ -176,17 +267,21 @@ export default function LocationDetailPage() {
               placeholder={t('location.qty_placeholder')}
               className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm"
             />
-            <input
-              list="units-list"
+            <select
+              aria-label={t('common.unit')}
               value={itemUnit}
               onChange={(e) => setItemUnit(e.target.value)}
-              placeholder={t('location.unit_placeholder')}
-              className="w-28 border border-gray-300 rounded-lg px-3 py-2 text-sm"
-            />
-            <datalist id="units-list">
-              {units?.map((u) => <option key={u.id} value={u.name} />)}
-            </datalist>
+              className="w-36 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="">{t('location.unit_placeholder')}</option>
+              {units?.map((u) => (
+                <option key={u.id} value={u.key}>
+                  {t(`unitNames.${u.key}`, { defaultValue: u.name })}
+                </option>
+              ))}
+            </select>
             <button
+              type="button"
               onClick={() => createItemMut.mutate()}
               disabled={!itemName || createItemMut.isPending}
               className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
@@ -244,7 +339,7 @@ export default function LocationDetailPage() {
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-gray-900 text-sm">{item.name}</div>
                 <div className="text-xs text-gray-500">
-                  {item.quantity} {item.unit ?? t('common.piece')}
+                  {item.quantity}{item.unit ? ` ${t(`unitNames.${item.unit}`, { defaultValue: item.unit })}` : ''}
                   {item.minQuantity !== null && item.quantity < (item.minQuantity ?? Infinity) && (
                     <span className="ml-2 text-red-500">{t('location.below_minimum')}</span>
                   )}
@@ -267,17 +362,20 @@ export default function LocationDetailPage() {
       )}
 
       {/* Delete location */}
-      <div className="mt-8 pt-6 border-t border-gray-200">
-        <button
-          onClick={() => {
-            if (confirm(t('location.confirm_delete', { name: location.name })))
-              deleteMut.mutate();
-          }}
-          className="flex items-center gap-2 text-sm text-red-500 hover:text-red-700"
-        >
-          <Trash2 size={15} /> {t('location.delete_btn')}
-        </button>
-      </div>
+      {isEditor && (
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <button
+            type="button"
+            onClick={() => {
+              if (confirm(t('location.confirm_delete', { name: location.name })))
+                deleteMut.mutate();
+            }}
+            className="flex items-center gap-2 text-sm text-red-500 hover:text-red-700"
+          >
+            <Trash2 size={15} /> {t('location.delete_btn')}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

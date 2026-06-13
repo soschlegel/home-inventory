@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { getItem, updateItem, deleteItem, uploadItemImage } from '../api/items';
 import { lendItem, returnItem } from '../api/lendings';
 import { getUnits } from '../api/units';
+import { getTags } from '../api/tags';
 import { useAuth } from '../contexts/AuthContext';
 import type { ItemCondition } from '../types';
 import { CONDITION_COLORS } from '../types';
@@ -24,6 +25,7 @@ export default function ItemDetailPage() {
     queryFn: () => getItem(id!),
   });
   const { data: units } = useQuery({ queryKey: ['units'], queryFn: getUnits });
+  const { data: allTags } = useQuery({ queryKey: ['tags'], queryFn: getTags });
 
   // ── Edit state ──────────────────────────────────────────────────────
   const [isEditing, setIsEditing] = useState(false);
@@ -39,7 +41,7 @@ export default function ItemDetailPage() {
   const [editPurchasePrice, setEditPurchasePrice] = useState('');
   const [editPurchaseDate, setEditPurchaseDate] = useState('');
   const [editWarrantyUntil, setEditWarrantyUntil] = useState('');
-  const [editTags, setEditTags] = useState('');
+  const [editTagKeys, setEditTagKeys] = useState<string[]>([]);
 
   function startEditing() {
     if (!item) return;
@@ -55,8 +57,14 @@ export default function ItemDetailPage() {
     setEditPurchasePrice(item.purchasePrice != null ? String(item.purchasePrice) : '');
     setEditPurchaseDate(item.purchaseDate ? item.purchaseDate.slice(0, 10) : '');
     setEditWarrantyUntil(item.warrantyUntil ? item.warrantyUntil.slice(0, 10) : '');
-    setEditTags(item.tags?.map(({ tag }) => tag.name).join(', ') ?? '');
+    setEditTagKeys(item.tags?.map(({ tag }) => tag.key) ?? []);
     setIsEditing(true);
+  }
+
+  function toggleTag(key: string) {
+    setEditTagKeys((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
   }
 
   const updateMut = useMutation({
@@ -73,7 +81,7 @@ export default function ItemDetailPage() {
       purchasePrice: editPurchasePrice ? parseFloat(editPurchasePrice) : undefined,
       purchaseDate: editPurchaseDate || undefined,
       warrantyUntil: editWarrantyUntil || undefined,
-      tags: editTags ? editTags.split(',').map((t) => t.trim()).filter(Boolean) : [],
+      tags: editTagKeys,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['items', id] });
@@ -119,6 +127,9 @@ export default function ItemDetailPage() {
   const activeLending = item.lendings?.find((l) => !l.returnedAt);
   const fmt = (date?: string | null) =>
     date ? new Date(date).toLocaleDateString(i18n.language) : '–';
+
+  const unitLabel = (key?: string | null) =>
+    key ? t(`unitNames.${key}`, { defaultValue: key }) : '';
 
   return (
     <div>
@@ -189,10 +200,19 @@ export default function ItemDetailPage() {
                 </label>
                 <label className="label-wrap">
                   <span className="label">{t('item.field_unit')}</span>
-                  <input list="item-units-list" value={editUnit} onChange={(e) => setEditUnit(e.target.value)} placeholder={t('item.field_unit_placeholder')} className="input" />
-                  <datalist id="item-units-list">
-                    {units?.map((u) => <option key={u.id} value={u.name} />)}
-                  </datalist>
+                  <select
+                    value={editUnit}
+                    onChange={(e) => setEditUnit(e.target.value)}
+                    className="input"
+                    aria-label={t('item.field_unit')}
+                  >
+                    <option value="">{t('item.tags_none')}</option>
+                    {units?.map((u) => (
+                      <option key={u.id} value={u.key}>
+                        {t(`unitNames.${u.key}`, { defaultValue: u.name })}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="label-wrap">
                   <span className="label">{t('item.field_min_quantity')}</span>
@@ -217,6 +237,32 @@ export default function ItemDetailPage() {
                 </label>
               </div>
 
+              {/* Tag picker */}
+              {allTags && allTags.length > 0 && (
+                <div>
+                  <span className="block text-xs text-gray-500 uppercase tracking-wide mb-2">{t('item.field_tags')}</span>
+                  <div className="flex flex-wrap gap-2">
+                    {allTags.map((tag) => {
+                      const selected = editTagKeys.includes(tag.key);
+                      return (
+                        <button
+                          key={tag.key}
+                          type="button"
+                          onClick={() => toggleTag(tag.key)}
+                          className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                            selected
+                              ? 'bg-indigo-600 text-white border-indigo-600'
+                              : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
+                          }`}
+                        >
+                          {t(`tagNames.${tag.key}`, { defaultValue: tag.name })}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <hr className="border-gray-100" />
               <h3 className="text-sm font-medium text-gray-700">{t('item.purchase_section')}</h3>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -235,10 +281,6 @@ export default function ItemDetailPage() {
                 <label className="label-wrap">
                   <span className="label">{t('item.field_warranty')}</span>
                   <input type="date" value={editWarrantyUntil} onChange={(e) => setEditWarrantyUntil(e.target.value)} className="input" />
-                </label>
-                <label className="label-wrap">
-                  <span className="label">{t('item.field_tags')}</span>
-                  <input value={editTags} onChange={(e) => setEditTags(e.target.value)} placeholder={t('item.tags_placeholder')} className="input" />
                 </label>
               </div>
 
@@ -279,11 +321,13 @@ export default function ItemDetailPage() {
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <Field label={t('item.field_quantity')}>{item.quantity} {item.unit ?? t('common.piece')}</Field>
+                <Field label={t('item.field_quantity')}>
+                  {item.quantity}{unitLabel(item.unit) ? ` ${unitLabel(item.unit)}` : ''}
+                </Field>
                 {item.minQuantity != null && (
                   <Field label={t('item.field_min_quantity')}>
                     <span className={item.quantity < (item.minQuantity ?? Infinity) ? 'text-red-600 font-medium' : ''}>
-                      {item.minQuantity} {item.unit ?? t('common.piece')}
+                      {item.minQuantity}{unitLabel(item.unit) ? ` ${unitLabel(item.unit)}` : ''}
                     </span>
                   </Field>
                 )}
@@ -295,7 +339,7 @@ export default function ItemDetailPage() {
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {item.tags.map(({ tag }) => (
                     <span key={tag.id} className="bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1 rounded-full">
-                      {tag.name}
+                      {t(`tagNames.${tag.key}`, { defaultValue: tag.name })}
                     </span>
                   ))}
                 </div>

@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum ItemCondition {
@@ -32,6 +31,7 @@ model User {
 // Einheitenliste – geteilt zwischen allen Nutzern, dient als Vorschlagsliste
 model Unit {
   id        String   @id @default(cuid())
+  key       String   @unique
   name      String   @unique
   createdAt DateTime @default(now())
 }
@@ -110,9 +110,11 @@ model Lending {
 }
 
 model Tag {
-  id    String    @id @default(cuid())
-  name  String    @unique
-  items ItemTag[]
+  id        String    @id @default(cuid())
+  key       String    @unique
+  name      String    @unique
+  items     ItemTag[]
+  createdAt DateTime  @default(now())
 }
 
 model ItemTag {

@@ -2,10 +2,12 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Home,
+  Table2,
   Search,
   ArrowRightLeft,
   Box,
   Ruler,
+  Tag,
   Users,
   LogOut,
 } from 'lucide-react';
@@ -32,10 +34,12 @@ export default function Layout() {
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: t('nav.dashboard'), show: true },
     { to: '/rooms', icon: Home, label: t('nav.rooms'), show: true },
+    { to: '/items-overview', icon: Table2, label: t('nav.items_overview'), show: true },
     { to: '/search', icon: Search, label: t('nav.search'), show: true },
     { to: '/lendings', icon: ArrowRightLeft, label: t('nav.lendings'), show: true },
     { to: '/container-types', icon: Box, label: t('nav.container_types'), show: isEditor },
     { to: '/units', icon: Ruler, label: t('nav.units'), show: isEditor },
+    { to: '/tags', icon: Tag, label: t('nav.tags'), show: isEditor },
     { to: '/users', icon: Users, label: t('nav.users'), show: isEditor },
   ];
 

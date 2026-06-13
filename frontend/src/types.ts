@@ -2,7 +2,16 @@ export type UserRole = 'EDITOR' | 'VIEWER';
 
 export interface Unit {
   id: string;
+  key: string;
   name: string;
+}
+
+export interface Tag {
+  id: string;
+  key: string;
+  name: string;
+  _count?: { items: number };
+  createdAt?: string;
 }
 
 export interface User {
@@ -54,7 +63,7 @@ export interface Location {
 }
 
 export interface ItemTag {
-  tag: { id: string; name: string };
+  tag: Pick<Tag, 'id' | 'key' | 'name'>;
 }
 
 export interface Item {
@@ -88,6 +97,24 @@ export interface Lending {
   lentAt: string;
   returnedAt?: string | null;
   note?: string | null;
+}
+
+export interface ItemOverview {
+  id: string;
+  name: string;
+  quantity: number;
+  unit?: string | null;
+  condition?: ItemCondition | null;
+  imageUrl?: string | null;
+  locationId: string;
+  location: {
+    id: string;
+    name: string;
+    room: Pick<Room, 'id' | 'name'>;
+    parent: Pick<Location, 'id' | 'name'> | null;
+  };
+  tags?: ItemTag[];
+  _count: { lendings: number };
 }
 
 export interface AuthResponse {

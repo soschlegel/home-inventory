@@ -1,7 +1,12 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pg from 'pg';
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   await prisma.itemTag.deleteMany();
@@ -36,23 +41,23 @@ async function main() {
   // ── Einheiten ─────────────────────────────────────────────────────────
   await prisma.unit.createMany({
     data: [
-      { name: 'Stück' },
-      { name: 'Packung' },
-      { name: 'Paar' },
-      { name: 'Set' },
-      { name: 'Box' },
-      { name: 'Dose' },
-      { name: 'Flasche' },
-      { name: 'Rollen' },
-      { name: 'Karton' },
-      { name: 'kg' },
-      { name: 'g' },
-      { name: 'mg' },
-      { name: 'L' },
-      { name: 'ml' },
-      { name: 'm' },
-      { name: 'cm' },
-      { name: 'Tabletten' },
+      { key: 'piece', name: 'Stück' },
+      { key: 'pack', name: 'Packung' },
+      { key: 'pair', name: 'Paar' },
+      { key: 'set', name: 'Set' },
+      { key: 'box', name: 'Box' },
+      { key: 'can', name: 'Dose' },
+      { key: 'bottle', name: 'Flasche' },
+      { key: 'roll', name: 'Rollen' },
+      { key: 'carton', name: 'Karton' },
+      { key: 'kg', name: 'kg' },
+      { key: 'g', name: 'g' },
+      { key: 'mg', name: 'mg' },
+      { key: 'liter', name: 'L' },
+      { key: 'ml', name: 'ml' },
+      { key: 'meter', name: 'm' },
+      { key: 'cm', name: 'cm' },
+      { key: 'tablet', name: 'Tabletten' },
     ],
   });
 
@@ -67,12 +72,12 @@ async function main() {
 
   // ── Tags ──────────────────────────────────────────────────────────────
   const [lebensmittel, werkzeug, elektronik, kleidung, saisonal, medizin] = await Promise.all([
-    prisma.tag.create({ data: { name: 'Lebensmittel' } }),
-    prisma.tag.create({ data: { name: 'Werkzeug' } }),
-    prisma.tag.create({ data: { name: 'Elektronik' } }),
-    prisma.tag.create({ data: { name: 'Kleidung' } }),
-    prisma.tag.create({ data: { name: 'Saisonal' } }),
-    prisma.tag.create({ data: { name: 'Medizin' } }),
+    prisma.tag.create({ data: { key: 'food', name: 'Lebensmittel' } }),
+    prisma.tag.create({ data: { key: 'tool', name: 'Werkzeug' } }),
+    prisma.tag.create({ data: { key: 'electronics', name: 'Elektronik' } }),
+    prisma.tag.create({ data: { key: 'clothing', name: 'Kleidung' } }),
+    prisma.tag.create({ data: { key: 'seasonal', name: 'Saisonal' } }),
+    prisma.tag.create({ data: { key: 'medicine', name: 'Medizin' } }),
   ]);
 
   // ── Räume (geteilt, ohne userId) ──────────────────────────────────────
@@ -99,18 +104,18 @@ async function main() {
 
   // ── Items ─────────────────────────────────────────────────────────────
   await prisma.item.createMany({ data: [
-    { name: 'Tomatendosen', quantity: 6, unit: 'Dose', minQuantity: 3, locationId: vorratsschrank.id },
-    { name: 'Spaghetti', quantity: 2, unit: 'Packung', minQuantity: 2, locationId: vorratsschrank.id },
-    { name: 'Olivenöl extra vergine', description: 'Kaltgepresst, 500ml', quantity: 1, unit: 'Flasche', minQuantity: 1, purchaseUrl: 'https://www.amazon.de', locationId: vorratsschrank.id },
-    { name: 'Milch', quantity: 1, unit: 'Liter', minQuantity: 2, locationId: kuehlschrank.id },
+    { name: 'Tomatendosen', quantity: 6, unit: 'can', minQuantity: 3, locationId: vorratsschrank.id },
+    { name: 'Spaghetti', quantity: 2, unit: 'pack', minQuantity: 2, locationId: vorratsschrank.id },
+    { name: 'Olivenöl extra vergine', description: 'Kaltgepresst, 500ml', quantity: 1, unit: 'bottle', minQuantity: 1, purchaseUrl: 'https://www.amazon.de', locationId: vorratsschrank.id },
+    { name: 'Milch', quantity: 1, unit: 'liter', minQuantity: 2, locationId: kuehlschrank.id },
     { name: 'HDMI-Kabel 2m', quantity: 3, condition: 'GOOD', locationId: tvSchrank.id },
     { name: 'Der Herr der Ringe (Trilogie)', quantity: 1, condition: 'GOOD', locationId: buecherregal.id },
     { name: 'Schraubendreher-Set (10-teilig)', quantity: 1, condition: 'GOOD', locationId: werkzeugSchrank.id },
     { name: 'Winterjacke schwarz', quantity: 1, condition: 'GOOD', locationId: winterKarton.id },
     { name: 'Weihnachtsbaumschmuck', description: 'Kugeln rot/gold + LED-Lichterkette 10m', quantity: 1, locationId: weihnachtenBox.id },
-    { name: 'Ibuprofen 400 mg', quantity: 8, unit: 'Tabletten', minQuantity: 10, locationId: medizinSchrank.id },
-    { name: 'Pflaster-Sortiment', quantity: 1, unit: 'Packung', minQuantity: 1, locationId: medizinSchrank.id },
-    { name: 'Toilettenpapier', quantity: 4, unit: 'Rollen', minQuantity: 6, locationId: unterWaschbecken.id },
+    { name: 'Ibuprofen 400 mg', quantity: 8, unit: 'tablet', minQuantity: 10, locationId: medizinSchrank.id },
+    { name: 'Pflaster-Sortiment', quantity: 1, unit: 'pack', minQuantity: 1, locationId: medizinSchrank.id },
+    { name: 'Toilettenpapier', quantity: 4, unit: 'roll', minQuantity: 6, locationId: unterWaschbecken.id },
   ]});
 
   const laptop = await prisma.item.create({ data: {
@@ -160,4 +165,7 @@ async function main() {
 
 main()
   .catch(console.error)
-  .finally(() => prisma.$disconnect());
+  .finally(async () => {
+    await prisma.$disconnect();
+    await pool.end();
+  });

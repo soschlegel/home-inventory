@@ -13,7 +13,7 @@ vi.mock('../lib/prisma', () => ({
       delete: vi.fn(),
     },
     tag: {
-      upsert: vi.fn(),
+      findMany: vi.fn(),
     },
   },
 }));
@@ -59,6 +59,49 @@ const mockItem = {
   createdAt: new Date(),
   updatedAt: new Date(),
 };
+
+describe('GET /api/items', () => {
+  it('gibt alle Items mit Location-Info zurück', async () => {
+    const itemWithLocation = {
+      ...mockItem,
+      location: {
+        id: 'loc-1',
+        name: 'Kühlschrank',
+        room: { id: 'room-1', name: 'Küche' },
+        parent: null,
+      },
+      _count: { lendings: 0 },
+    };
+    vi.mocked(prisma.item.findMany).mockResolvedValue([itemWithLocation] as any);
+
+    const res = await request(app).get('/api/items');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].name).toBe('Hammer');
+    expect(res.body[0].location.room.name).toBe('Küche');
+    expect(res.body[0]._count.lendings).toBe(0);
+  });
+
+  it('gibt aktive Ausleihen im _count mit', async () => {
+    const lentItem = {
+      ...mockItem,
+      location: {
+        id: 'loc-1',
+        name: 'Schrank',
+        room: { id: 'room-1', name: 'Wohnzimmer' },
+        parent: null,
+      },
+      _count: { lendings: 1 },
+    };
+    vi.mocked(prisma.item.findMany).mockResolvedValue([lentItem] as any);
+
+    const res = await request(app).get('/api/items');
+
+    expect(res.status).toBe(200);
+    expect(res.body[0]._count.lendings).toBe(1);
+  });
+});
 
 describe('GET /api/items/search', () => {
   it('gibt Suchergebnisse zurück', async () => {
