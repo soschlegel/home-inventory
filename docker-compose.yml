@@ -46,5 +46,14 @@ services:
     volumes:
       - ${UPLOADS_DIR:-/opt/home-inventory/uploads}:/app/uploads:ro
 
+  watchtower:
+    image: containrrr/watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      WATCHTOWER_POLL_INTERVAL: 300
+      WATCHTOWER_CLEANUP: "true"
+
 volumes:
   postgres_data:
