@@ -1,20 +1,32 @@
 import { useRef, useState } from 'react';
 import type { AxiosError } from 'axios';
-import { Download, Upload, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Download, Upload, AlertTriangle, CheckCircle, UserPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { exportData, importData } from '../api/admin';
+import { getSettings, updateSettings } from '../api/settings';
 
 export default function AdminPage() {
   const { t } = useTranslation();
+  const qc = useQueryClient();
 
+  // --- Export ---
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
+  // --- Import ---
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [importSuccess, setImportSuccess] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // --- Settings ---
+  const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: getSettings });
+  const settingsMut = useMutation({
+    mutationFn: updateSettings,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['settings'] }),
+  });
 
   const handleExport = async () => {
     setExporting(true);
@@ -38,7 +50,6 @@ export default function AdminPage() {
   const handleImport = async () => {
     if (!selectedFile) return;
     if (!confirm(t('admin.import_confirm'))) return;
-
     setImporting(true);
     setImportError(null);
     setImportSuccess(false);
@@ -63,6 +74,49 @@ export default function AdminPage() {
       </div>
 
       <div className="space-y-6">
+        {/* Registrierung */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5">
+          <div className="flex items-start gap-4">
+            <div className="p-2 bg-gray-50 rounded-lg">
+              <UserPlus size={20} className="text-gray-600" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="font-semibold text-gray-900">{t('admin.registration_title')}</h2>
+                  <p className="text-sm text-gray-500 mt-0.5">{t('admin.registration_desc')}</p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={String(settings?.registration_enabled ?? true) as 'true' | 'false'}
+                  aria-label={t('admin.registration_toggle_label')}
+                  onClick={() =>
+                    settingsMut.mutate({
+                      registration_enabled: !(settings?.registration_enabled ?? true),
+                    })
+                  }
+                  disabled={settingsMut.isPending}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 ${
+                    (settings?.registration_enabled ?? true) ? 'bg-indigo-600' : 'bg-gray-200'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
+                      (settings?.registration_enabled ?? true) ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-gray-400">
+                {(settings?.registration_enabled ?? true)
+                  ? t('admin.registration_on')
+                  : t('admin.registration_off')}
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Export */}
         <div className="bg-white border border-gray-200 rounded-xl p-5">
           <div className="flex items-start gap-4">
@@ -73,6 +127,7 @@ export default function AdminPage() {
               <h2 className="font-semibold text-gray-900">{t('admin.export_title')}</h2>
               <p className="text-sm text-gray-500 mt-0.5">{t('admin.export_desc')}</p>
               <button
+                type="button"
                 onClick={handleExport}
                 disabled={exporting}
                 className="mt-3 flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
@@ -80,9 +135,7 @@ export default function AdminPage() {
                 <Download size={15} />
                 {exporting ? t('admin.exporting') : t('admin.export_btn')}
               </button>
-              {exportError && (
-                <p className="mt-2 text-sm text-red-600">{exportError}</p>
-              )}
+              {exportError && <p className="mt-2 text-sm text-red-600">{exportError}</p>}
             </div>
           </div>
         </div>
@@ -111,6 +164,7 @@ export default function AdminPage() {
                 </label>
                 {selectedFile && (
                   <button
+                    type="button"
                     onClick={handleImport}
                     disabled={importing}
                     className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-700 disabled:opacity-50 transition-colors"
@@ -132,9 +186,7 @@ export default function AdminPage() {
                   {t('admin.import_success')}
                 </div>
               )}
-              {importError && (
-                <p className="mt-2 text-sm text-red-600">{importError}</p>
-              )}
+              {importError && <p className="mt-2 text-sm text-red-600">{importError}</p>}
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import EmojiPickerInput from '../components/EmojiPickerInput';
 import { getRooms, createRoom, updateRoom, deleteRoom } from '../api/rooms';
 import { useAuth } from '../contexts/AuthContext';
 import Spinner from '../components/Spinner';
@@ -73,13 +74,7 @@ export default function RoomsPage() {
         <div className="mb-6 bg-white border border-gray-200 rounded-xl p-4">
           <h2 className="font-medium text-gray-800 mb-3">{t('rooms.new_title')}</h2>
           <div className="flex gap-3">
-            <input
-              aria-label={t('common.emoji_placeholder')}
-              value={icon}
-              onChange={(e) => setIcon(e.target.value)}
-              placeholder={t('rooms.icon_placeholder')}
-              className="w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+            <EmojiPickerInput value={icon} onChange={setIcon} />
             <input
               aria-label={t('common.name')}
               value={name}
@@ -106,13 +101,7 @@ export default function RoomsPage() {
             <div key={room.id} className="bg-white border border-indigo-400 rounded-xl p-4">
               <div className="text-xs font-medium text-gray-500 mb-2">{t('rooms.edit_title')}</div>
               <div className="flex gap-2 mb-2">
-                <input
-                  aria-label={t('common.emoji_placeholder')}
-                  value={editIcon}
-                  onChange={(e) => setEditIcon(e.target.value)}
-                  placeholder={t('rooms.icon_placeholder')}
-                  className="w-16 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
+                <EmojiPickerInput value={editIcon} onChange={setEditIcon} />
                 <input
                   aria-label={t('common.name')}
                   value={editName}

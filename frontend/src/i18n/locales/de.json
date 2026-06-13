@@ -232,9 +232,20 @@
     "items_count_other": "{{count}} Gegenstände",
     "key_hint": "Nur Kleinbuchstaben und Unterstriche (z.B. werkzeug)"
   },
+  "emojiPicker": {
+    "open": "Emoji auswählen",
+    "search_placeholder": "Suchen (z.B. küche, werkzeug…)",
+    "no_results": "Keine Emojis gefunden",
+    "remove": "Emoji entfernen"
+  },
   "admin": {
     "title": "Administration",
     "subtitle": "Datensicherung und Wiederherstellung für Editoren",
+    "registration_title": "Öffentliche Registrierung",
+    "registration_desc": "Erlaubt es neuen Nutzern, sich selbst zu registrieren.",
+    "registration_toggle_label": "Registrierung ein-/ausschalten",
+    "registration_on": "Registrierung ist aktiviert — jeder kann sich einen Account anlegen.",
+    "registration_off": "Registrierung ist deaktiviert — neue Accounts nur über die Nutzerverwaltung.",
     "export_title": "Daten exportieren",
     "export_desc": "Exportiert alle Räume, Container, Gegenstände, Tags, Einheiten und Ausleihhistorie als JSON-Datei.",
     "export_btn": "Backup herunterladen",

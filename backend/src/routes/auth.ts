@@ -20,6 +20,11 @@ const LoginSchema = z.object({
 // POST /api/auth/register
 router.post('/register', async (req, res, next) => {
   try {
+    const setting = await prisma.setting.findUnique({ where: { key: 'registration_enabled' } });
+    if (setting?.value === 'false') {
+      res.status(403).json({ error: 'Registrierung ist deaktiviert' });
+      return;
+    }
     const { email, password, name } = RegisterSchema.parse(req.body);
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {

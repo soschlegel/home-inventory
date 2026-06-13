@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, Pencil, Check, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import EmojiPickerInput from '../components/EmojiPickerInput';
 import {
   getContainerTypes,
   createContainerType,
@@ -69,12 +70,7 @@ export default function ContainerTypesPage() {
       {showForm && (
         <div className="mb-6 bg-white border border-gray-200 rounded-xl p-4">
           <div className="flex gap-3">
-            <input
-              value={newIcon}
-              onChange={(e) => setNewIcon(e.target.value)}
-              placeholder={t('common.emoji_placeholder')}
-              className="w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+            <EmojiPickerInput value={newIcon} onChange={setNewIcon} />
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
@@ -105,12 +101,7 @@ export default function ContainerTypesPage() {
               <div key={ct.id} className="flex items-center gap-3 px-4 py-3">
                 {editId === ct.id ? (
                   <>
-                    <input
-                      value={editIcon}
-                      onChange={(e) => setEditIcon(e.target.value)}
-                      placeholder={t('common.emoji_placeholder')}
-                      className="w-16 border border-gray-300 rounded-lg px-2 py-1 text-sm"
-                    />
+                    <EmojiPickerInput value={editIcon} onChange={setEditIcon} />
                     <input
                       aria-label={t('containerTypes.edit_name_label')}
                       value={editName}

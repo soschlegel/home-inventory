@@ -11,6 +11,9 @@ vi.mock('../lib/prisma', () => ({
       findUnique: vi.fn(),
       create: vi.fn(),
     },
+    setting: {
+      findUnique: vi.fn().mockResolvedValue(null), // Registrierung standardmäßig erlaubt
+    },
   },
 }));
 

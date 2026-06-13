@@ -232,9 +232,20 @@
     "items_count_other": "{{count}} items",
     "key_hint": "Lowercase letters and underscores only (e.g. tools)"
   },
+  "emojiPicker": {
+    "open": "Pick emoji",
+    "search_placeholder": "Search (e.g. kitchen, tools…)",
+    "no_results": "No emojis found",
+    "remove": "Remove emoji"
+  },
   "admin": {
     "title": "Administration",
     "subtitle": "Data backup and restore for editors",
+    "registration_title": "Public registration",
+    "registration_desc": "Allows new users to register themselves.",
+    "registration_toggle_label": "Toggle registration",
+    "registration_on": "Registration is enabled — anyone can create an account.",
+    "registration_off": "Registration is disabled — new accounts via user management only.",
     "export_title": "Export data",
     "export_desc": "Exports all rooms, containers, items, tags, units and lending history as a JSON file.",
     "export_btn": "Download backup",

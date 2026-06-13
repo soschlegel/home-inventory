@@ -117,6 +117,13 @@ model Tag {
   createdAt DateTime  @default(now())
 }
 
+// Anwendungseinstellungen (key-value)
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
 model ItemTag {
   itemId String
   tagId  String
