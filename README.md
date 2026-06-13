@@ -28,11 +28,31 @@ Technische Details: [TECHNICAL.md](TECHNICAL.md)
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) mit Docker Compose v2
 
-### Starten
+### Option A — Produktivserver (fertige Images von Docker Hub)
+
+```bash
+# 1. Nur drei Dateien herunterladen (kein git clone nötig)
+mkdir home-inventory && cd home-inventory
+curl -O https://raw.githubusercontent.com/soschlegel/home-inventory/main/docker-compose.server.yml
+curl -O https://raw.githubusercontent.com/soschlegel/home-inventory/main/.env.example
+mkdir nginx && curl -o nginx/nginx.conf https://raw.githubusercontent.com/soschlegel/home-inventory/main/nginx/nginx.conf
+
+# 2. Umgebungsvariablen anlegen
+cp .env.example .env
+# DB_PASSWORD, JWT_SECRET und JWT_REFRESH_SECRET in .env setzen!
+
+# 3. Starten (Images werden von Docker Hub geladen, kein Build)
+docker compose -f docker-compose.server.yml up -d
+
+# 4. App öffnen
+open http://localhost:3000
+```
+
+### Option B — Lokale Entwicklung (mit Build aus Quellcode)
 
 ```bash
 # 1. Repository klonen
-git clone <repo-url>
+git clone https://github.com/soschlegel/home-inventory.git
 cd home-inventory
 
 # 2. Umgebungsvariablen anlegen
@@ -43,7 +63,7 @@ cp .env.example .env
 docker compose up -d --build
 
 # 4. Testdaten einspielen
-docker compose exec backend sh -c "npx prisma db seed"
+docker compose exec backend npm run db:seed
 
 # 5. App öffnen
 open http://localhost:3000

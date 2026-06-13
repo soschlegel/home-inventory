@@ -24,11 +24,15 @@ Betrieb und Quickstart: [README.md](README.md)
 ```text
 home-inventory/
 ├── .env.example
-├── docker-compose.yml
+├── docker-compose.yml            Lokale Entwicklung (baut Images lokal)
+├── docker-compose.server.yml     Produktiv-Deployment (nutzt Docker Hub Images)
 ├── nginx/
 │   └── nginx.conf
 ├── scripts/
-│   └── test.sh                   Backend + Frontend Tests kombiniert
+│   ├── test.sh                   Backend + Frontend Tests kombiniert
+│   ├── backup.sh                 Datenbank + Uploads sichern
+│   ├── restore.sh                Wiederherstellung aus Backup
+│   └── release.sh                Versionierter Docker-Build + Push + Git-Tag
 │
 ├── backend/
 │   ├── Dockerfile                Multi-Stage Build
