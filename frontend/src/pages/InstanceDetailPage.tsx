@@ -197,7 +197,7 @@ export default function InstanceDetailPage() {
           </>
         )}
         <ChevronRight size={14} />
-        <span className="text-gray-900 font-medium">{t('instance.title')}</span>
+        <span className="text-gray-900 font-medium">{t('instance.breadcrumb')}</span>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

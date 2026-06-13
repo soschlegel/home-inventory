@@ -1,14 +1,28 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Upload, Pencil, X, Check, FileText, Trash2, Package } from 'lucide-react';
+import { ChevronRight, Upload, Pencil, X, Check, FileText, Trash2, Package, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getProduct, updateProduct, deleteProduct, uploadProductImage, uploadProductDocument, deleteProductDocument } from '../api/products';
 import { getTags } from '../api/tags';
+import { getRooms, getRoom } from '../api/rooms';
+import { createInstance } from '../api/locations';
+import { getUnits } from '../api/units';
 import { useAuth } from '../contexts/AuthContext';
 import { CONDITION_COLORS } from '../types';
-import type { ItemCondition } from '../types';
+import type { ItemCondition, Location } from '../types';
 import Spinner from '../components/Spinner';
+
+function flattenLocations(locations: Location[], prefix = ''): { id: string; label: string }[] {
+  const result: { id: string; label: string }[] = [];
+  for (const loc of locations) {
+    result.push({ id: loc.id, label: prefix + loc.name });
+    if (loc.children?.length) {
+      result.push(...flattenLocations(loc.children, prefix + loc.name + ' › '));
+    }
+  }
+  return result;
+}
 
 export default function ProductDetailPage() {
   const { t } = useTranslation();
@@ -23,6 +37,43 @@ export default function ProductDetailPage() {
     queryFn: () => getProduct(id!),
   });
   const { data: allTags } = useQuery({ queryKey: ['tags'], queryFn: getTags });
+  const { data: units } = useQuery({ queryKey: ['units'], queryFn: getUnits });
+
+  // ── Add Instance form ────────────────────────────────────────────────
+  const [showAddInstance, setShowAddInstance] = useState(false);
+  const [addRoomId, setAddRoomId] = useState('');
+  const [addLocationId, setAddLocationId] = useState('');
+  const [addQty, setAddQty] = useState('1');
+  const [addUnit, setAddUnit] = useState('');
+
+  const { data: allRooms } = useQuery({
+    queryKey: ['rooms'],
+    queryFn: getRooms,
+    enabled: showAddInstance,
+  });
+  const { data: addRoom } = useQuery({
+    queryKey: ['room', addRoomId],
+    queryFn: () => getRoom(addRoomId),
+    enabled: !!addRoomId,
+  });
+  const addLocations = addRoom ? flattenLocations(addRoom.locations ?? []) : [];
+
+  const addInstanceMut = useMutation({
+    mutationFn: () =>
+      createInstance(addLocationId, {
+        productId: id!,
+        quantity: parseFloat(addQty) || 1,
+        unit: addUnit || undefined,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['products', id] });
+      setShowAddInstance(false);
+      setAddRoomId('');
+      setAddLocationId('');
+      setAddQty('1');
+      setAddUnit('');
+    },
+  });
 
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
@@ -251,7 +302,86 @@ export default function ProductDetailPage() {
               <h2 className="font-medium text-gray-800 flex items-center gap-2">
                 <Package size={16} /> {t('products.instances_section')}
               </h2>
+              {isEditor && (
+                <button
+                  type="button"
+                  onClick={() => setShowAddInstance(!showAddInstance)}
+                  className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                >
+                  <Plus size={14} /> {t('products.add_instance_btn')}
+                </button>
+              )}
             </div>
+
+            {/* Add Instance form */}
+            {isEditor && showAddInstance && (
+              <div className="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-3">
+                <h3 className="text-sm font-medium text-indigo-900">{t('products.add_instance_title')}</h3>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label className="label-wrap">
+                    <span className="label">{t('instance.move_room_label')}</span>
+                    <select
+                      value={addRoomId}
+                      onChange={(e) => { setAddRoomId(e.target.value); setAddLocationId(''); }}
+                      className="input"
+                      aria-label={t('instance.move_room_label')}
+                    >
+                      <option value="">{t('instance.move_select_room')}</option>
+                      {allRooms?.map((r) => (
+                        <option key={r.id} value={r.id}>{r.icon} {r.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="label-wrap">
+                    <span className="label">{t('instance.move_container_label')}</span>
+                    <select
+                      value={addLocationId}
+                      onChange={(e) => setAddLocationId(e.target.value)}
+                      disabled={!addRoomId}
+                      className="input disabled:opacity-50"
+                      aria-label={t('instance.move_container_label')}
+                    >
+                      <option value="">{t('instance.move_select_container')}</option>
+                      {addLocations.map((l) => (
+                        <option key={l.id} value={l.id}>{l.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="label-wrap">
+                    <span className="label">{t('instance.field_quantity')}</span>
+                    <input
+                      type="number" min="0.1" step="0.1"
+                      value={addQty}
+                      onChange={(e) => setAddQty(e.target.value)}
+                      className="input"
+                    />
+                  </label>
+                  <label className="label-wrap">
+                    <span className="label">{t('instance.field_unit')}</span>
+                    <select value={addUnit} onChange={(e) => setAddUnit(e.target.value)} className="input" aria-label={t('instance.field_unit')}>
+                      <option value="">{t('location.unit_placeholder')}</option>
+                      {units?.map((u) => (
+                        <option key={u.id} value={u.key}>{t(`unitNames.${u.key}`, { defaultValue: u.name })}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => addInstanceMut.mutate()}
+                    disabled={!addLocationId || addInstanceMut.isPending}
+                    className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    <Check size={14} /> {addInstanceMut.isPending ? t('common.saving') : t('common.save')}
+                  </button>
+                  <button type="button" onClick={() => setShowAddInstance(false)} className="px-4 py-2 rounded-lg text-sm border border-gray-300 hover:bg-gray-50">
+                    {t('common.cancel')}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {!product.instances?.length ? (
               <p className="text-sm text-gray-400">{t('products.no_instances')}</p>
             ) : (

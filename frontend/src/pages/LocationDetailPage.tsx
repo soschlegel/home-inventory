@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Plus, Package, Folder, Trash2, Pencil } from 'lucide-react';
+import { ChevronRight, Plus, Package, Folder, Trash2, Pencil, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getLocation, getLocationInstances, createInstance, deleteLocation, updateLocation } from '../api/locations';
 import { createLocation } from '../api/rooms';
 import { getContainerTypes } from '../api/containerTypes';
 import { getUnits } from '../api/units';
+import { searchProducts } from '../api/products';
 import { useAuth } from '../contexts/AuthContext';
 import { locContainerTypeName, locRoomName } from '../utils/localizedName';
-import type { ItemCondition } from '../types';
+import type { ItemCondition, Product } from '../types';
 import { CONDITION_COLORS } from '../types';
 import Spinner from '../components/Spinner';
 
@@ -58,15 +59,49 @@ export default function LocationDetailPage() {
   // Add instance form
   const [showItemForm, setShowItemForm] = useState(false);
   const [itemName, setItemName] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState<Pick<Product, 'id' | 'name'> | null>(null);
   const [itemQty, setItemQty] = useState('1');
   const [itemUnit, setItemUnit] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const itemSearchRef = useRef<HTMLDivElement>(null);
+
+  // Debounced product search
+  const [debouncedItemName, setDebouncedItemName] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedItemName(itemName), 250);
+    return () => clearTimeout(t);
+  }, [itemName]);
+
+  const { data: productSuggestions } = useQuery({
+    queryKey: ['products', 'search', debouncedItemName],
+    queryFn: () => searchProducts(debouncedItemName),
+    enabled: debouncedItemName.length >= 2 && !selectedProduct,
+    staleTime: 10_000,
+  });
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (itemSearchRef.current && !itemSearchRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const createInstanceMut = useMutation({
     mutationFn: () =>
-      createInstance(id!, { name: itemName, quantity: parseFloat(itemQty) || 1, unit: itemUnit || undefined }),
+      createInstance(id!, {
+        productId: selectedProduct?.id,
+        name: selectedProduct ? undefined : (itemName || undefined),
+        quantity: parseFloat(itemQty) || 1,
+        unit: itemUnit || undefined,
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['locations', id, 'instances'] });
       setItemName('');
+      setSelectedProduct(null);
       setItemQty('1');
       setItemUnit('');
       setShowItemForm(false);
@@ -245,14 +280,72 @@ export default function LocationDetailPage() {
         <div className="mb-4 bg-white border border-gray-200 rounded-xl p-4">
           <h2 className="font-medium text-gray-800 mb-3">{t('location.new_item')}</h2>
           <div className="flex gap-3 flex-wrap">
-            <input
-              aria-label={t('common.name')}
-              value={itemName}
-              onChange={(e) => setItemName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && itemName) createInstanceMut.mutate(); }}
-              placeholder={t('location.name_placeholder')}
-              className="flex-1 min-w-40 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+            {/* Product search combobox */}
+            <div ref={itemSearchRef} className="relative flex-1 min-w-48">
+              {selectedProduct ? (
+                <div className="flex items-center gap-2 border border-indigo-400 bg-indigo-50 rounded-lg px-3 py-2 text-sm">
+                  <Package size={14} className="text-indigo-500 flex-shrink-0" />
+                  <span className="flex-1 font-medium text-indigo-800 truncate">{selectedProduct.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedProduct(null); setItemName(''); }}
+                    className="text-indigo-400 hover:text-indigo-700 flex-shrink-0"
+                    aria-label={t('common.cancel')}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <input
+                  aria-label={t('location.product_search_placeholder')}
+                  value={itemName}
+                  onChange={(e) => { setItemName(e.target.value); setShowSuggestions(true); }}
+                  onFocus={() => setShowSuggestions(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (selectedProduct || itemName)) createInstanceMut.mutate();
+                    if (e.key === 'Escape') setShowSuggestions(false);
+                  }}
+                  placeholder={t('location.product_search_placeholder')}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  autoFocus
+                />
+              )}
+              {/* Suggestions dropdown */}
+              {!selectedProduct && showSuggestions && (productSuggestions?.length ?? 0) > 0 && (
+                <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                  {productSuggestions!.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => { setSelectedProduct({ id: p.id, name: p.name }); setItemName(''); setShowSuggestions(false); }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-indigo-50 text-left text-sm"
+                    >
+                      {p.imageUrl ? (
+                        <img src={p.imageUrl} alt={p.name} className="w-7 h-7 object-cover rounded flex-shrink-0" />
+                      ) : (
+                        <div className="w-7 h-7 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
+                          <Package size={13} className="text-gray-400" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-800 truncate">{p.name}</div>
+                        {p.barcode && <div className="text-xs text-gray-400 font-mono">{p.barcode}</div>}
+                      </div>
+                    </button>
+                  ))}
+                  {itemName && (
+                    <button
+                      type="button"
+                      onClick={() => setShowSuggestions(false)}
+                      className="w-full px-3 py-2 text-left text-xs text-indigo-600 border-t border-gray-100 hover:bg-indigo-50"
+                    >
+                      + {t('location.create_new_product', { name: itemName })}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
             <input
               aria-label={t('common.quantity')}
               value={itemQty}
@@ -279,7 +372,7 @@ export default function LocationDetailPage() {
             <button
               type="button"
               onClick={() => createInstanceMut.mutate()}
-              disabled={!itemName || createInstanceMut.isPending}
+              disabled={(!selectedProduct && !itemName) || createInstanceMut.isPending}
               className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
             >
               {t('common.save')}

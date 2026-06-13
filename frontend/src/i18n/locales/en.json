@@ -108,7 +108,9 @@
     "delete_btn": "Delete container",
     "name_placeholder": "Name",
     "qty_placeholder": "Quantity",
-    "unit_placeholder": "Unit"
+    "unit_placeholder": "Unit",
+    "product_search_placeholder": "Search product…",
+    "create_new_product": "Create new product"
   },
   "item": {
     "not_found": "Item not found.",
@@ -358,7 +360,9 @@
     "no_instances": "No instances yet.",
     "instance_no_location": "No location",
     "instances_count_one": "{{count}} instance",
-    "instances_count_other": "{{count}} instances"
+    "instances_count_other": "{{count}} instances",
+    "add_instance_btn": "Add instance",
+    "add_instance_title": "Add new instance"
   },
   "qrscanner": {
     "title": "QR / Barcode Scanner",
@@ -405,7 +409,8 @@
     "move_room_label": "Room",
     "move_container_label": "Container",
     "move_select_room": "Select room…",
-    "move_select_container": "Select container…"
+    "move_select_container": "Select container…",
+    "breadcrumb": "Instance"
   },
   "containerTypeNames": {
     "drawer": "Drawer",
