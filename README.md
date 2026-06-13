@@ -179,6 +179,7 @@ cd frontend && npm test
 | `JWT_SECRET` | `changeme_jwt_secret_please` | Secret für Access Tokens (min. 32 Zeichen) |
 | `JWT_REFRESH_SECRET` | `changeme_refresh_secret_please` | Secret für Refresh Tokens (verschieden von JWT_SECRET) |
 | `PORT` | `3000` | Öffentlicher Nginx-Port |
+| `UPLOADS_DIR` | `/opt/home-inventory/uploads` | Pfad auf dem Host für hochgeladene Bilder |
 
 ### Backend `backend/.env` (lokale Entwicklung)
 
