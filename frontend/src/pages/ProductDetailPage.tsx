@@ -82,6 +82,7 @@ export default function ProductDetailPage() {
   const [editBarcode, setEditBarcode] = useState('');
   const [editPurchaseUrl, setEditPurchaseUrl] = useState('');
   const [editMinQty, setEditMinQty] = useState('');
+  const [editExpiryWarningDays, setEditExpiryWarningDays] = useState('');
   const [editTagKeys, setEditTagKeys] = useState<string[]>([]);
 
   function startEditing() {
@@ -91,6 +92,7 @@ export default function ProductDetailPage() {
     setEditBarcode(product.barcode ?? '');
     setEditPurchaseUrl(product.purchaseUrl ?? '');
     setEditMinQty(product.minQuantity != null ? String(product.minQuantity) : '');
+    setEditExpiryWarningDays(product.expiryWarningDays != null ? String(product.expiryWarningDays) : '');
     setEditTagKeys(product.tags?.map(({ tag }) => tag.key) ?? []);
     setIsEditing(true);
   }
@@ -102,6 +104,7 @@ export default function ProductDetailPage() {
       barcode: editBarcode || undefined,
       purchaseUrl: editPurchaseUrl || '',
       minQuantity: editMinQty ? parseFloat(editMinQty) : null,
+      expiryWarningDays: editExpiryWarningDays ? parseInt(editExpiryWarningDays) : null,
       tags: editTagKeys,
     }),
     onSuccess: () => {
@@ -193,6 +196,10 @@ export default function ProductDetailPage() {
                   <span className="label">{t('products.field_min_quantity')}</span>
                   <input type="number" min="0" step="0.1" value={editMinQty} onChange={(e) => setEditMinQty(e.target.value)} placeholder="–" className="input" />
                 </label>
+                <label className="label-wrap">
+                  <span className="label">{t('products.field_expiry_warning_days')}</span>
+                  <input type="number" min="1" step="1" value={editExpiryWarningDays} onChange={(e) => setEditExpiryWarningDays(e.target.value)} placeholder="30" className="input" />
+                </label>
                 <label className="sm:col-span-2 label-wrap">
                   <span className="label">{t('products.field_purchase_url')}</span>
                   <input type="url" value={editPurchaseUrl} onChange={(e) => setEditPurchaseUrl(e.target.value)} placeholder="https://…" className="input" />
@@ -243,6 +250,9 @@ export default function ProductDetailPage() {
                   )}
                   {product.minQuantity != null && (
                     <p className="text-xs text-gray-500 mt-1">{t('products.field_min_quantity')}: {product.minQuantity}</p>
+                  )}
+                  {product.expiryWarningDays != null && (
+                    <p className="text-xs text-gray-500 mt-1">{t('products.field_expiry_warning_days')}: {product.expiryWarningDays} d</p>
                   )}
                   {product.purchaseUrl && (
                     <a href={product.purchaseUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline mt-1">

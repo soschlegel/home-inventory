@@ -87,9 +87,10 @@ model Product {
   description String?
   imageUrl    String?
   barcode     String?
-  purchaseUrl String?
-  minQuantity Float?
-  tags        ProductTag[]
+  purchaseUrl       String?
+  minQuantity       Float?
+  expiryWarningDays Int?
+  tags              ProductTag[]
   documents   ProductDocument[]
   instances   Instance[]
   createdAt   DateTime          @default(now())
@@ -129,7 +130,6 @@ model Instance {
   purchasePrice     Float?
   warrantyUntil     DateTime?
   expiryDate        DateTime?
-  expiryWarningDays Int?
   locationId        String?
   location          Location?          @relation(fields: [locationId], references: [id], onDelete: SetNull)
   assignedUserId    String?

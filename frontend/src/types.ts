@@ -90,6 +90,7 @@ export interface Product {
   barcode?: string | null;
   purchaseUrl?: string | null;
   minQuantity?: number | null;
+  expiryWarningDays?: number | null;
   tags?: ProductTag[];
   documents?: ProductDocument[];
   instances?: Instance[];
@@ -109,7 +110,7 @@ export interface InstanceDocument {
 export interface Instance {
   id: string;
   productId: string;
-  product: Pick<Product, 'id' | 'name' | 'imageUrl' | 'description' | 'barcode' | 'minQuantity' | 'tags'>;
+  product: Pick<Product, 'id' | 'name' | 'imageUrl' | 'description' | 'barcode' | 'minQuantity' | 'expiryWarningDays' | 'tags'>;
   quantity: number;
   unit?: string | null;
   condition?: ItemCondition | null;
@@ -118,7 +119,6 @@ export interface Instance {
   purchaseDate?: string | null;
   warrantyUntil?: string | null;
   expiryDate?: string | null;
-  expiryWarningDays?: number | null;
   locationId?: string | null;
   location?: (Location & { room: Pick<Room, 'id' | 'key' | 'name'> }) | null;
   assignedUserId?: string | null;
@@ -145,7 +145,7 @@ export interface Lending {
 export interface InstanceOverview {
   id: string;
   productId: string;
-  product: Pick<Product, 'id' | 'name' | 'imageUrl' | 'description' | 'barcode' | 'minQuantity' | 'tags'>;
+  product: Pick<Product, 'id' | 'name' | 'imageUrl' | 'description' | 'barcode' | 'minQuantity' | 'expiryWarningDays' | 'tags'>;
   quantity: number;
   unit?: string | null;
   condition?: ItemCondition | null;

@@ -15,6 +15,7 @@ const ProductBody = z.object({
   barcode: z.string().optional(),
   purchaseUrl: z.string().url().optional().or(z.literal('')),
   minQuantity: z.coerce.number().nonnegative().optional(),
+  expiryWarningDays: z.coerce.number().int().positive().optional(),
   tags: z.array(z.string()).optional(),
 });
 

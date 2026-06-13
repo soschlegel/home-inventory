@@ -364,6 +364,7 @@
     "add_instance_btn": "Add instance",
     "add_instance_title": "Add new instance",
     "field_min_quantity": "Min. stock",
+    "field_expiry_warning_days": "Expiry warning (days)",
     "field_purchase_url": "Purchase link (URL)"
   },
   "qrscanner": {

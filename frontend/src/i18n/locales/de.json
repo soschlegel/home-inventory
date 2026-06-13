@@ -364,6 +364,7 @@
     "add_instance_btn": "Exemplar hinzufügen",
     "add_instance_title": "Neues Exemplar anlegen",
     "field_min_quantity": "Mindestbestand",
+    "field_expiry_warning_days": "Ablaufwarnung (Tage vorher)",
     "field_purchase_url": "Kauflink (URL)"
   },
   "qrscanner": {

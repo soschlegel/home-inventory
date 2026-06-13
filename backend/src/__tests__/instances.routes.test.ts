@@ -54,7 +54,7 @@ app.use(errorHandler);
 const mockInstance = {
   id: 'inst-1',
   productId: 'prod-1',
-  product: { id: 'prod-1', name: 'Hammer', imageUrl: null, description: null, barcode: null, minQuantity: null, tags: [] },
+  product: { id: 'prod-1', name: 'Hammer', imageUrl: null, description: null, barcode: null, minQuantity: null, expiryWarningDays: null, tags: [] },
   quantity: 1,
   unit: null,
   condition: null,
@@ -63,7 +63,6 @@ const mockInstance = {
   purchaseDate: null,
   warrantyUntil: null,
   expiryDate: null,
-  expiryWarningDays: null,
   locationId: 'loc-1',
   assignedUserId: null,
   createdAt: new Date(),
@@ -159,7 +158,7 @@ describe('GET /api/instances/expiring-soon', () => {
   it('gibt Instanzen zurück die innerhalb des Warnfensters ablaufen', async () => {
     const soon = new Date();
     soon.setDate(soon.getDate() + 5);
-    const expiring = { ...mockInstance, expiryDate: soon, expiryWarningDays: 30 };
+    const expiring = { ...mockInstance, expiryDate: soon, product: { ...mockInstance.product, expiryWarningDays: 30 } };
     mockPrisma.instance.findMany.mockResolvedValue([expiring]);
 
     const res = await request(app).get('/api/instances/expiring-soon');
@@ -171,7 +170,7 @@ describe('GET /api/instances/expiring-soon', () => {
   it('gibt leere Liste zurück wenn nichts ablaufend', async () => {
     const far = new Date();
     far.setFullYear(far.getFullYear() + 2);
-    const ok = { ...mockInstance, expiryDate: far, expiryWarningDays: 30 };
+    const ok = { ...mockInstance, expiryDate: far, product: { ...mockInstance.product, expiryWarningDays: 30 } };
     mockPrisma.instance.findMany.mockResolvedValue([ok]);
 
     const res = await request(app).get('/api/instances/expiring-soon');
@@ -183,7 +182,7 @@ describe('GET /api/instances/expiring-soon', () => {
   it('berücksichtigt bereits abgelaufene Instanzen', async () => {
     const past = new Date();
     past.setDate(past.getDate() - 1);
-    const expired = { ...mockInstance, expiryDate: past, expiryWarningDays: 30 };
+    const expired = { ...mockInstance, expiryDate: past, product: { ...mockInstance.product, expiryWarningDays: 30 } };
     mockPrisma.instance.findMany.mockResolvedValue([expired]);
 
     const res = await request(app).get('/api/instances/expiring-soon');

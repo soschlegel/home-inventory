@@ -33,7 +33,7 @@ router.get('/:locationId/instances', async (req, res, next) => {
     const instances = await prisma.instance.findMany({
       where: { locationId: req.params.locationId },
       include: {
-        product: { select: { id: true, name: true, imageUrl: true, minQuantity: true, tags: { include: { tag: true } } } },
+        product: { select: { id: true, name: true, imageUrl: true, minQuantity: true, expiryWarningDays: true, tags: { include: { tag: true } } } },
         lendings: { where: { returnedAt: null }, take: 1 },
       },
       orderBy: { product: { name: 'asc' } },
@@ -76,7 +76,7 @@ router.post('/:locationId/instances', requireEditor, async (req, res, next) => {
         locationId: req.params.locationId,
       },
       include: {
-        product: { select: { id: true, name: true, imageUrl: true, minQuantity: true, tags: { include: { tag: true } } } },
+        product: { select: { id: true, name: true, imageUrl: true, minQuantity: true, expiryWarningDays: true, tags: { include: { tag: true } } } },
         lendings: { where: { returnedAt: null }, take: 1 },
       },
     });

@@ -47,7 +47,6 @@ export default function InstanceDetailPage() {
   const [editPurchaseDate, setEditPurchaseDate] = useState('');
   const [editWarrantyUntil, setEditWarrantyUntil] = useState('');
   const [editExpiryDate, setEditExpiryDate] = useState('');
-  const [editExpiryWarningDays, setEditExpiryWarningDays] = useState('');
 
   function startEditing() {
     if (!instance) return;
@@ -59,7 +58,6 @@ export default function InstanceDetailPage() {
     setEditPurchaseDate(instance.purchaseDate ? instance.purchaseDate.slice(0, 10) : '');
     setEditWarrantyUntil(instance.warrantyUntil ? instance.warrantyUntil.slice(0, 10) : '');
     setEditExpiryDate(instance.expiryDate ? instance.expiryDate.slice(0, 10) : '');
-    setEditExpiryWarningDays(instance.expiryWarningDays != null ? String(instance.expiryWarningDays) : '');
     setIsEditing(true);
   }
 
@@ -73,7 +71,6 @@ export default function InstanceDetailPage() {
       purchaseDate: editPurchaseDate || undefined,
       warrantyUntil: editWarrantyUntil || undefined,
       expiryDate: editExpiryDate || undefined,
-      expiryWarningDays: editExpiryWarningDays ? parseInt(editExpiryWarningDays) : undefined,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['instances', id] });
@@ -275,10 +272,6 @@ export default function InstanceDetailPage() {
                   <span className="label">{t('item.field_expiry_date')}</span>
                   <input type="date" value={editExpiryDate} onChange={(e) => setEditExpiryDate(e.target.value)} className="input" />
                 </label>
-                <label className="label-wrap">
-                  <span className="label">{t('item.field_expiry_warning_days')}</span>
-                  <input type="number" min="1" value={editExpiryWarningDays} onChange={(e) => setEditExpiryWarningDays(e.target.value)} placeholder="30" className="input" />
-                </label>
               </div>
 
               <div className="flex gap-2 pt-1">
@@ -412,7 +405,7 @@ export default function InstanceDetailPage() {
 
           {/* Ablaufdatum-Warnung */}
           {!isEditing && instance.expiryDate && (() => {
-            const status = expiryStatus(instance.expiryDate, instance.expiryWarningDays);
+            const status = expiryStatus(instance.expiryDate, instance.product.expiryWarningDays);
             if (!status || status === 'ok') return null;
             return (
               <div className={`p-3 rounded-lg border text-sm flex items-center gap-2 ${status === 'expired' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
@@ -439,7 +432,7 @@ export default function InstanceDetailPage() {
                 {instance.expiryDate && (
                   <Field label={t('item.field_expiry_date')}>
                     {(() => {
-                      const status = expiryStatus(instance.expiryDate, instance.expiryWarningDays);
+                      const status = expiryStatus(instance.expiryDate, instance.product.expiryWarningDays);
                       return (
                         <span className={status === 'expired' ? 'text-red-600 font-medium' : status === 'warning' ? 'text-amber-600 font-medium' : ''}>
                           {fmt(instance.expiryDate)}

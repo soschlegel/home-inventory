@@ -18,7 +18,6 @@ const InstanceBody = z.object({
   purchaseDate: z.coerce.date().optional(),
   warrantyUntil: z.coerce.date().optional(),
   expiryDate: z.coerce.date().optional(),
-  expiryWarningDays: z.coerce.number().int().positive().optional(),
   locationId: z.string().nullable().optional(),
   assignedUserId: z.string().nullable().optional(),
 });
@@ -36,6 +35,7 @@ const productSelect = {
   imageUrl: true,
   barcode: true,
   minQuantity: true,
+  expiryWarningDays: true,
   tags: { include: { tag: true } },
 } as const;
 
@@ -131,13 +131,13 @@ router.get('/expiring-soon', async (_req, res, next) => {
     const instances = await prisma.instance.findMany({
       where: { expiryDate: { not: null } },
       include: {
-        product: { select: { id: true, name: true, imageUrl: true } },
+        product: { select: { id: true, name: true, imageUrl: true, expiryWarningDays: true } },
         location: { include: { room: { select: { id: true, name: true } } } },
       },
     });
     const expiringSoon = instances.filter((inst) => {
       if (!inst.expiryDate) return false;
-      const days = inst.expiryWarningDays ?? 30;
+      const days = inst.product.expiryWarningDays ?? 30;
       const threshold = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
       return inst.expiryDate <= threshold;
     });
