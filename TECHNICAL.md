@@ -49,9 +49,9 @@ home-inventory/
 │       │   └── errorHandler.ts
 │       ├── routes/
 │       │   ├── auth.ts
-│       │   ├── rooms.ts
+│       │   ├── rooms.ts          CRUD + /tree Endpunkt (Baumstruktur)
 │       │   ├── locations.ts
-│       │   ├── items.ts          CRUD + Bildupload + Suche + Low-Stock
+│       │   ├── items.ts          CRUD + Bildupload + Dokumentupload + Suche + Low-Stock
 │       │   ├── lendings.ts
 │       │   ├── tags.ts           Tag-CRUD (key + name)
 │       │   ├── containerTypes.ts
@@ -59,8 +59,8 @@ home-inventory/
 │       │   └── users.ts
 │       ├── utils/
 │       │   ├── jwt.ts
-│       │   └── upload.ts
-│       └── __tests__/            13 Testdateien (124 Tests)
+│       │   └── upload.ts         Multer: upload (Bilder 10 MB) + uploadDocument (PDF/Bild 20 MB)
+│       └── __tests__/            14 Testdateien (~147 Tests)
 │
 └── frontend/
     └── src/
@@ -90,26 +90,27 @@ home-inventory/
         │   └── Spinner.tsx
         ├── pages/
         │   ├── LoginPage.tsx
-        │   ├── DashboardPage.tsx
+        │   ├── DashboardPage.tsx     Stat-Cards verlinken zu /rooms und /containers
         │   ├── RoomsPage.tsx
         │   ├── RoomDetailPage.tsx
         │   ├── LocationDetailPage.tsx
-        │   ├── ItemDetailPage.tsx    Tag-Picker (Chips) + Unit-Select
+        │   ├── ContainersPage.tsx    Baumansicht aller Räume → Container → Sub-Container
+        │   ├── ItemDetailPage.tsx    Tag-Picker + Unit-Select + Dokumentupload
         │   ├── ItemsOverviewPage.tsx Multi-Tag-Filter (Set<string> IDs, OR-Logik)
         │   ├── LendingsPage.tsx
-        │   ├── ContainerTypesPage.tsx  DE/EN Eingabe → translations JSON
+        │   ├── ContainerTypesPage.tsx  DE-Eingabe; EN via TranslationsPage
         │   ├── TagsPage.tsx      Tag-Verwaltung, key auto-generiert (EDITOR only)
-        │   ├── UnitsPage.tsx     Einheitenverwaltung mit Key-Badge (EDITOR only)
+        │   ├── UnitsPage.tsx     Einheitenverwaltung, key auto-generiert aus Name (EDITOR only)
         │   ├── TranslationsPage.tsx  Zentrale Übersetzungspflege (Tab-UI)
         │   ├── UsersPage.tsx     inkl. Passwort-Reset anderer Nutzer (EDITOR only)
         │   ├── AdminPage.tsx     Export/Import/Registrierungstoggle (EDITOR only)
         │   └── ProfilePage.tsx   Eigenes Profil (Name + Passwort)
         ├── utils/
         │   └── localizedName.ts  locRoomName / locContainerTypeName / locTagName / locUnitName
-        └── __tests__/            3 Testdateien
+        └── __tests__/            4 Testdateien
 ```
 
-> **Tests gesamt:** 14 Backend-Testdateien · 3 Frontend-Testdateien
+> **Tests gesamt:** 14 Backend-Testdateien · 4 Frontend-Testdateien
 
 ---
 
@@ -189,7 +190,8 @@ Room  ← key? (optional, z.B. "kitchen"), name, icon
            ├── warrantyUntil / serialNumber / barcode
            ├── imageUrl
            ├── tags (ItemTag many-to-many)
-           └── lendings (lentTo, lentAt, returnedAt, note)
+           ├── lendings (lentTo, lentAt, returnedAt, note)
+           └── documents (ItemDocument: originalName, url, mimeType, size)
 ```
 
 **`translations Json?`** speichert Übersetzungen als JSON-Objekt mit ISO-639-1-Codes als Keys: `{ "de": "Küche", "en": "Kitchen", "fr": "Cuisine" }`. Neue Sprachen erfordern keine Schema-Änderung.
@@ -296,6 +298,20 @@ Wird ein Typ gelöscht, verlieren zugeordnete Locations ihren Typ (`onDelete: Se
 | `returnedAt` | `DateTime?` | null = noch ausgeliehen |
 | `note` | `String?` | |
 
+### ItemDocument
+
+Dateianhänge (PDFs, Bilder) zu einem Item — z. B. Anleitungen, Rechnungen.
+
+| Feld | Typ | |
+|------|-----|-|
+| `id` | `String` (cuid) | |
+| `itemId` | `String` | → Item (onDelete: Cascade) |
+| `originalName` | `String` | ursprünglicher Dateiname |
+| `url` | `String` | Serverpfad `/uploads/<hash>.<ext>` |
+| `mimeType` | `String?` | z. B. `application/pdf`, `image/jpeg` |
+| `size` | `Int?` | Dateigröße in Bytes |
+| `createdAt` | `DateTime` | Standard: now() |
+
 ---
 
 ## API-Dokumentation
@@ -319,6 +335,7 @@ Alle Endpunkte außer Auth erfordern `Authorization: Bearer <accessToken>`.
 | `PUT` | `/api/users/:id/password` | 🔒 | Passwort eines anderen Nutzers zurücksetzen |
 | `DELETE` | `/api/users/:id` | 🔒 | Nutzer löschen |
 | `GET` | `/api/rooms` | ✓ | Alle Räume (inkl. `translations`) |
+| `GET` | `/api/rooms/tree` | ✓ | Alle Räume mit verschachtelten Containern (3 Ebenen) |
 | `POST` | `/api/rooms` | 🔒 | Raum anlegen (`name`, `translations?`, `icon?`) |
 | `GET` | `/api/rooms/:id` | ✓ | Raum mit Locations |
 | `PUT` | `/api/rooms/:id` | 🔒 | Raum bearbeiten |
@@ -337,6 +354,8 @@ Alle Endpunkte außer Auth erfordern `Authorization: Bearer <accessToken>`.
 | `PUT` | `/api/items/:id` | 🔒 | Item bearbeiten (inkl. `tags: string[]` IDs) |
 | `DELETE` | `/api/items/:id` | 🔒 | Item löschen |
 | `POST` | `/api/items/:id/image` | 🔒 | Bild hochladen |
+| `POST` | `/api/items/:id/documents` | 🔒 | Dokument hochladen (PDF/Bild, max. 20 MB) |
+| `DELETE` | `/api/items/:id/documents/:docId` | 🔒 | Dokument löschen (Datei + DB-Eintrag) |
 | `POST` | `/api/items/:id/lend` | 🔒 | Item verleihen |
 | `GET` | `/api/items/:id/lendings` | ✓ | Verleihistorie |
 | `GET` | `/api/lendings/active` | ✓ | Aktive Ausleihen |
@@ -412,7 +431,7 @@ frontend/src/i18n/
     en.json           Englisch
 ```
 
-**Namespaces:** `common`, `nav`, `login`, `dashboard`, `rooms`, `roomDetail`, `location`, `item`, `condition`, `search`, `lendings`, `containerTypes`, `units`, `tags`, `users`, `itemsOverview`, `translations`, `emojiPicker`, `admin`, `profile`, `tagNames`, `unitNames`, `containerTypeNames`, `roomNames`
+**Namespaces:** `common`, `nav`, `login`, `dashboard`, `rooms`, `containers`, `roomDetail`, `location`, `item`, `condition`, `search`, `lendings`, `containerTypes`, `units`, `tags`, `users`, `itemsOverview`, `translations`, `emojiPicker`, `admin`, `profile`, `tagNames`, `unitNames`, `containerTypeNames`, `roomNames`
 
 **Sprachumschalter:** Button in der Sidebar-Footer-Leiste. Speichert Auswahl in `localStorage('lang')`.
 
@@ -440,6 +459,10 @@ Die **TranslationsPage** (`/translations`) erlaubt das zentrale Bearbeiten von D
 
 ## Datei-Upload
 
+Zwei separate Multer-Instanzen in `backend/src/utils/upload.ts`:
+
+### Bildupload
+
 Upload via `POST /api/items/:id/image` (`multipart/form-data`, Feld `image`).
 
 - Max. Dateigröße: **10 MB**
@@ -449,6 +472,17 @@ Upload via `POST /api/items/:id/image` (`multipart/form-data`, Feld `image`).
 - Nginx serviert `/uploads/*` direkt mit `Cache-Control: public, immutable, max-age=30d`
 
 Altes Bild wird beim Überschreiben oder Item-Löschen automatisch entfernt.
+
+### Dokumentupload
+
+Upload via `POST /api/items/:id/documents` (`multipart/form-data`, Feld `document`).
+
+- Max. Dateigröße: **20 MB**
+- Erlaubte MIME-Types: `image/*` und `application/pdf`
+- Dateiname: 16 zufällige Hex-Bytes + Original-Erweiterung
+- Speicherort: gleicher `UPLOAD_DIR`
+- Metadaten (originalName, mimeType, size, url) werden in der `ItemDocument`-Tabelle gespeichert
+- Beim Löschen (`DELETE /api/items/:id/documents/:docId`) wird die Datei von der Festplatte entfernt
 
 ---
 
@@ -508,7 +542,7 @@ Erstellt (löscht vorher alle Daten):
 
 ## Tests
 
-**Backend** — 14 Dateien (Vitest + supertest)
+**Backend** — 14 Dateien · ~147 Tests (Vitest + supertest)
 
 | Test-Datei | Was wird getestet |
 |------------|-------------------|
@@ -516,9 +550,9 @@ Erstellt (löscht vorher alle Daten):
 | `auth.middleware.test.ts` | `authenticate` + `requireEditor` Middleware |
 | `errorHandler.test.ts` | ZodError → 400, generische Fehler → 500 |
 | `auth.routes.test.ts` | Register, Login, Refresh-Token |
-| `rooms.routes.test.ts` | CRUD Räume, `translations`-Objekt, 404 |
+| `rooms.routes.test.ts` | CRUD Räume, `/tree`-Endpunkt, `translations`-Objekt, 404 |
 | `locations.routes.test.ts` | GET, PUT (Name + Typ), DELETE, Items-Endpunkte |
-| `items.routes.test.ts` | Suche, Low-Stock, CRUD, purchaseUrl-Clearing |
+| `items.routes.test.ts` | Suche, Low-Stock, CRUD, purchaseUrl-Clearing, Dokumentupload/-löschen |
 | `containerTypes.routes.test.ts` | CRUD, `translations` inkl. Drittsprache, Farbvalidierung |
 | `lendings.routes.test.ts` | Verleihen, Rückgabe, Doppelrückgabe (409), Historie |
 | `tags.routes.test.ts` | Tags CRUD, `translations`, 409 bei Duplikat |
@@ -527,13 +561,14 @@ Erstellt (löscht vorher alle Daten):
 | `admin.routes.test.ts` | Export/Import |
 | `openapi.test.ts` | Spec-Struktur, alle Pfade und Schemas vorhanden |
 
-**Frontend** — 3 Dateien (Vitest + jsdom)
+**Frontend** — 4 Dateien · ~30 Tests (Vitest + jsdom)
 
 | Test-Datei | Was wird getestet |
 |------------|-------------------|
 | `AuthContext.test.tsx` | Login, Logout, Register, localStorage |
 | `PrivateRoute.test.tsx` | Redirect ohne Session, Inhalt mit Session |
 | `localizedName.test.ts` | `locRoomName`, `locContainerTypeName`, `locTagName`, `locUnitName` — translations/Fallback/Drittsprachen |
+| `types.test.ts` | `CONDITION_LABELS` und `CONDITION_COLORS` — alle Zustände, deutsche Labels, Tailwind-Klassen |
 
 ---
 
