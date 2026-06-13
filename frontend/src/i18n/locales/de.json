@@ -219,8 +219,8 @@
     "col_condition": "Zustand",
     "no_items": "Keine Gegenstände gefunden.",
     "summary": "{{total}} Einträge · {{unique}} unterschiedliche Bezeichnungen",
-    "search_results_one": "{{count}} Treffer für „{{query}}"",
-    "search_results_other": "{{count}} Treffer für „{{query}}"",
+    "search_results_one": "{{count}} Treffer fuer \"{{query}}\"",
+    "search_results_other": "{{count}} Treffer fuer \"{{query}}\"",
     "lent_badge": "Ausgeliehen",
     "locations_count": "{{count}}× vorhanden"
   },

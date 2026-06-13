@@ -91,9 +91,11 @@ describe('locTagName', () => {
     expect(mockT).toHaveBeenCalledWith('tagNames.tool', { defaultValue: 'Werkzeug' });
   });
 
-  it('gibt name zurück wenn weder translations noch key', () => {
-    const tag = { key: null, name: 'Eigener Tag', translations: null };
-    expect(locTagName(mockT as any, tag)).toBe('Eigener Tag');
+  it('nutzt tagNames i18n-Schlüssel wenn keine translations für aktuelle Sprache', () => {
+    mockI18n.language = 'fr';
+    const tag = { key: 'custom_tag', name: 'Eigener Tag', translations: { de: 'Eigener Tag' } };
+    locTagName(mockT as any, tag);
+    expect(mockT).toHaveBeenCalledWith('tagNames.custom_tag', { defaultValue: 'Eigener Tag' });
   });
 });
 

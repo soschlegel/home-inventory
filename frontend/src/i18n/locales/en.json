@@ -219,8 +219,8 @@
     "col_condition": "Condition",
     "no_items": "No items found.",
     "summary": "{{total}} entries · {{unique}} distinct names",
-    "search_results_one": "{{count}} result for "{{query}}"",
-    "search_results_other": "{{count}} results for "{{query}}"",
+    "search_results_one": "{{count}} result for \"{{query}}\"",
+    "search_results_other": "{{count}} results for \"{{query}}\"",
     "lent_badge": "Lent out",
     "locations_count": "×{{count}}"
   },
