@@ -236,6 +236,44 @@ describe('DELETE /api/items/:id', () => {
   });
 });
 
+describe('GET /api/items/expiring-soon', () => {
+  it('gibt Items zurück die innerhalb des Warnfensters ablaufen', async () => {
+    const soon = new Date();
+    soon.setDate(soon.getDate() + 5);
+    const expiringItem = { ...mockItem, expiryDate: soon, expiryWarningDays: 30 };
+    vi.mocked(prisma.item.findMany).mockResolvedValue([expiringItem] as any);
+
+    const res = await request(app).get('/api/items/expiring-soon');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+  });
+
+  it('gibt leere Liste zurück wenn kein Item ablaufend ist', async () => {
+    const far = new Date();
+    far.setFullYear(far.getFullYear() + 2);
+    const okItem = { ...mockItem, expiryDate: far, expiryWarningDays: 30 };
+    vi.mocked(prisma.item.findMany).mockResolvedValue([okItem] as any);
+
+    const res = await request(app).get('/api/items/expiring-soon');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(0);
+  });
+
+  it('berücksichtigt bereits abgelaufene Items', async () => {
+    const past = new Date();
+    past.setDate(past.getDate() - 1);
+    const expiredItem = { ...mockItem, expiryDate: past, expiryWarningDays: 30 };
+    vi.mocked(prisma.item.findMany).mockResolvedValue([expiredItem] as any);
+
+    const res = await request(app).get('/api/items/expiring-soon');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+  });
+});
+
 describe('POST /api/items/:id/documents', () => {
   const mockDoc = {
     id: 'doc-1',

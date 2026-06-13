@@ -57,7 +57,11 @@
     "stat_container": "Containers",
     "stat_lent": "Lent out",
     "stat_low_stock": "Low stock",
+    "stat_expiring": "Expiring",
     "low_stock_title": "Below minimum stock",
+    "expiring_title": "Expiring soon",
+    "expiring_expired": "Expired on",
+    "expiring_on": "Expires on",
     "lent_title": "Currently lent out",
     "rooms_section": "Rooms"
   },
@@ -149,7 +153,12 @@
     "documents_section": "Documents",
     "documents_upload": "Upload document",
     "documents_empty": "No documents uploaded yet.",
-    "documents_delete_confirm": "Really delete this document?"
+    "documents_delete_confirm": "Really delete this document?",
+    "expiry_section": "Expiry / Best before",
+    "field_expiry_date": "Expiry date (best before)",
+    "field_expiry_warning_days": "Warning (days before)",
+    "expiry_expired": "Expired on",
+    "expiry_soon": "Expires on"
   },
   "condition": {
     "NEW": "New",

@@ -57,7 +57,11 @@
     "stat_container": "Container",
     "stat_lent": "Ausgeliehen",
     "stat_low_stock": "Mindestbestand",
+    "stat_expiring": "Ablaufend",
     "low_stock_title": "Mindestbestand unterschritten",
+    "expiring_title": "Demnächst ablaufend",
+    "expiring_expired": "Abgelaufen am",
+    "expiring_on": "Läuft ab am",
     "lent_title": "Aktuell ausgeliehen",
     "rooms_section": "Räume"
   },
@@ -149,7 +153,12 @@
     "documents_section": "Dokumente",
     "documents_upload": "Dokument hochladen",
     "documents_empty": "Noch keine Dokumente hochgeladen.",
-    "documents_delete_confirm": "Dokument wirklich löschen?"
+    "documents_delete_confirm": "Dokument wirklich löschen?",
+    "expiry_section": "Haltbarkeit / Ablaufdatum",
+    "field_expiry_date": "Ablaufdatum (MHD)",
+    "field_expiry_warning_days": "Warnung (Tage vorher)",
+    "expiry_expired": "Abgelaufen am",
+    "expiry_soon": "Läuft ab am"
   },
   "condition": {
     "NEW": "Neu",

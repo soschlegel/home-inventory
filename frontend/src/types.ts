@@ -95,6 +95,8 @@ export interface Item {
   purchasePrice?: number | null;
   purchaseDate?: string | null;
   warrantyUntil?: string | null;
+  expiryDate?: string | null;
+  expiryWarningDays?: number | null;
   serialNumber?: string | null;
   barcode?: string | null;
   locationId: string;

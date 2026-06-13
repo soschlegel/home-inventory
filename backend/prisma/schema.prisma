@@ -92,9 +92,11 @@ model Item {
   purchaseUrl   String?
   purchasePrice Float?
   purchaseDate  DateTime?
-  warrantyUntil DateTime?
-  serialNumber  String?
-  barcode       String?
+  warrantyUntil     DateTime?
+  expiryDate        DateTime?
+  expiryWarningDays Int?
+  serialNumber      String?
+  barcode           String?
   locationId    String
   location      Location       @relation(fields: [locationId], references: [id], onDelete: Cascade)
   tags          ItemTag[]

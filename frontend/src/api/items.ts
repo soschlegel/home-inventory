@@ -14,6 +14,9 @@ export const searchItemsOverview = (q: string) =>
 export const getLowStockItems = () =>
   api.get<Item[]>('/items/low-stock').then((r) => r.data);
 
+export const getExpiringSoonItems = () =>
+  api.get<Item[]>('/items/expiring-soon').then((r) => r.data);
+
 export const updateItem = (id: string, data: Omit<Partial<Item>, 'tags'> & { tags?: string[] }) =>
   api.put<Item>(`/items/${id}`, data).then((r) => r.data);
 

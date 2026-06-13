@@ -20,6 +20,8 @@ const ItemBody = z.object({
   purchasePrice: z.coerce.number().nonnegative().optional(),
   purchaseDate: z.coerce.date().optional(),
   warrantyUntil: z.coerce.date().optional(),
+  expiryDate: z.coerce.date().optional(),
+  expiryWarningDays: z.coerce.number().int().positive().optional(),
   serialNumber: z.string().optional(),
   barcode: z.string().optional(),
   locationId: z.string().optional(),
@@ -107,6 +109,26 @@ router.get('/low-stock', async (_req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+// GET /api/items/expiring-soon
+router.get('/expiring-soon', async (_req, res, next) => {
+  try {
+    const now = new Date();
+    const items = await prisma.item.findMany({
+      where: { expiryDate: { not: null } },
+      include: {
+        location: { include: { room: { select: { id: true, name: true } } } },
+      },
+    });
+    const expiringSoon = items.filter((item) => {
+      if (!item.expiryDate) return false;
+      const days = item.expiryWarningDays ?? 30;
+      const threshold = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+      return item.expiryDate <= threshold;
+    });
+    res.json(expiringSoon);
+  } catch (err) { next(err); }
 });
 
 // GET /api/items/:id

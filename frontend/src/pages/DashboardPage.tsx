@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Home, ArrowRightLeft, AlertTriangle, Package } from 'lucide-react';
+import { Home, ArrowRightLeft, AlertTriangle, Package, CalendarClock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getRooms } from '../api/rooms';
 import { getActiveLendings } from '../api/lendings';
-import { getLowStockItems } from '../api/items';
+import { getLowStockItems, getExpiringSoonItems } from '../api/items';
 import { locRoomName } from '../utils/localizedName';
 import Spinner from '../components/Spinner';
 
@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const rooms = useQuery({ queryKey: ['rooms'], queryFn: getRooms });
   const lendings = useQuery({ queryKey: ['lendings', 'active'], queryFn: getActiveLendings });
   const lowStock = useQuery({ queryKey: ['items', 'low-stock'], queryFn: getLowStockItems });
+  const expiring = useQuery({ queryKey: ['items', 'expiring-soon'], queryFn: getExpiringSoonItems });
 
   const totalLocations = rooms.data?.reduce((s, r) => s + (r._count?.locations ?? 0), 0) ?? 0;
 
@@ -37,7 +38,38 @@ export default function DashboardPage() {
           value={lowStock.data?.length ?? '…'}
           color="red"
         />
+        <StatCard
+          icon={<CalendarClock size={20} />}
+          label={t('dashboard.stat_expiring')}
+          value={expiring.data?.length ?? '…'}
+          color="amber"
+        />
       </div>
+
+      {/* Expiry warning */}
+      {(expiring.data?.length ?? 0) > 0 && (
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <h2 className="font-medium text-amber-800 mb-2 flex items-center gap-2">
+            <CalendarClock size={16} /> {t('dashboard.expiring_title')}
+          </h2>
+          <ul className="space-y-1">
+            {expiring.data?.map((item) => {
+              const isExpired = item.expiryDate && new Date(item.expiryDate) < new Date();
+              return (
+                <li key={item.id} className="text-sm text-amber-700">
+                  <Link to={`/items/${item.id}`} className="hover:underline font-medium">
+                    {item.name}
+                  </Link>{' '}
+                  — <span className={isExpired ? 'text-red-600 font-medium' : ''}>
+                    {isExpired ? t('dashboard.expiring_expired') : t('dashboard.expiring_on')}{' '}
+                    {new Date(item.expiryDate!).toLocaleDateString(i18n.language)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       {/* Low stock warning */}
       {(lowStock.data?.length ?? 0) > 0 && (
@@ -114,7 +146,7 @@ function StatCard({
   icon: React.ReactNode;
   label: string;
   value: string | number;
-  color: 'indigo' | 'blue' | 'orange' | 'red';
+  color: 'indigo' | 'blue' | 'orange' | 'red' | 'amber';
   href?: string;
 }) {
   const colors = {
@@ -122,6 +154,7 @@ function StatCard({
     blue: 'bg-blue-50 text-blue-600',
     orange: 'bg-orange-50 text-orange-600',
     red: 'bg-red-50 text-red-600',
+    amber: 'bg-amber-50 text-amber-600',
   };
   const card = (
     <div className="bg-white border border-gray-200 rounded-xl p-4">

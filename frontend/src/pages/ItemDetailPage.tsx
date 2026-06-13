@@ -53,6 +53,8 @@ export default function ItemDetailPage() {
   const [editPurchasePrice, setEditPurchasePrice] = useState('');
   const [editPurchaseDate, setEditPurchaseDate] = useState('');
   const [editWarrantyUntil, setEditWarrantyUntil] = useState('');
+  const [editExpiryDate, setEditExpiryDate] = useState('');
+  const [editExpiryWarningDays, setEditExpiryWarningDays] = useState('');
   const [editTagKeys, setEditTagKeys] = useState<string[]>([]);
 
   function startEditing() {
@@ -69,6 +71,8 @@ export default function ItemDetailPage() {
     setEditPurchasePrice(item.purchasePrice != null ? String(item.purchasePrice) : '');
     setEditPurchaseDate(item.purchaseDate ? item.purchaseDate.slice(0, 10) : '');
     setEditWarrantyUntil(item.warrantyUntil ? item.warrantyUntil.slice(0, 10) : '');
+    setEditExpiryDate(item.expiryDate ? item.expiryDate.slice(0, 10) : '');
+    setEditExpiryWarningDays(item.expiryWarningDays != null ? String(item.expiryWarningDays) : '');
     setEditTagKeys(item.tags?.map(({ tag }) => tag.key) ?? []);
     setIsEditing(true);
   }
@@ -93,6 +97,8 @@ export default function ItemDetailPage() {
       purchasePrice: editPurchasePrice ? parseFloat(editPurchasePrice) : undefined,
       purchaseDate: editPurchaseDate || undefined,
       warrantyUntil: editWarrantyUntil || undefined,
+      expiryDate: editExpiryDate || undefined,
+      expiryWarningDays: editExpiryWarningDays ? parseInt(editExpiryWarningDays) : undefined,
       tags: editTagKeys,
     }),
     onSuccess: () => {
@@ -185,6 +191,17 @@ export default function ItemDetailPage() {
   const activeLending = item.lendings?.find((l) => !l.returnedAt);
   const fmt = (date?: string | null) =>
     date ? new Date(date).toLocaleDateString(i18n.language) : '–';
+
+  const expiryStatus = (expiryDate?: string | null, warningDays?: number | null) => {
+    if (!expiryDate) return null;
+    const now = new Date();
+    const exp = new Date(expiryDate);
+    const days = warningDays ?? 30;
+    const threshold = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+    if (exp < now) return 'expired' as const;
+    if (exp <= threshold) return 'warning' as const;
+    return 'ok' as const;
+  };
 
   const unitLabel = (key?: string | null) =>
     key ? t(`unitNames.${key}`, { defaultValue: key }) : '';
@@ -342,6 +359,19 @@ export default function ItemDetailPage() {
                 </label>
               </div>
 
+              <hr className="border-gray-100" />
+              <h3 className="text-sm font-medium text-gray-700">{t('item.expiry_section')}</h3>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="label-wrap">
+                  <span className="label">{t('item.field_expiry_date')}</span>
+                  <input type="date" value={editExpiryDate} onChange={(e) => setEditExpiryDate(e.target.value)} className="input" />
+                </label>
+                <label className="label-wrap">
+                  <span className="label">{t('item.field_expiry_warning_days')}</span>
+                  <input type="number" min="1" value={editExpiryWarningDays} onChange={(e) => setEditExpiryWarningDays(e.target.value)} placeholder="30" className="input" />
+                </label>
+              </div>
+
               <div className="flex gap-2 pt-1">
                 <button
                   type="button"
@@ -475,8 +505,24 @@ export default function ItemDetailPage() {
             </div>
           )}
 
+          {/* Ablaufdatum-Warnung (nur im Anzeigemodus) */}
+          {!isEditing && item.expiryDate && (() => {
+            const status = expiryStatus(item.expiryDate, item.expiryWarningDays);
+            if (!status || status === 'ok') return null;
+            return (
+              <div className={`p-3 rounded-lg border text-sm flex items-center gap-2 ${status === 'expired' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+                <span>⚠️</span>
+                <span>
+                  {status === 'expired'
+                    ? t('item.expiry_expired', { date: fmt(item.expiryDate) })
+                    : t('item.expiry_soon', { date: fmt(item.expiryDate) })}
+                </span>
+              </div>
+            );
+          })()}
+
           {/* Kaufinfos (nur im Anzeigemodus) */}
-          {!isEditing && (item.purchaseUrl || item.purchasePrice || item.purchaseDate || item.warrantyUntil) && (
+          {!isEditing && (item.purchaseUrl || item.purchasePrice || item.purchaseDate || item.warrantyUntil || item.expiryDate) && (
             <div className="bg-white border border-gray-200 rounded-xl p-5">
               <h2 className="font-medium text-gray-800 mb-3">{t('item.purchase_section')}</h2>
               <div className="grid grid-cols-2 gap-3 text-sm">
@@ -487,6 +533,18 @@ export default function ItemDetailPage() {
                     <span className={new Date(item.warrantyUntil) < new Date() ? 'text-red-500' : ''}>
                       {fmt(item.warrantyUntil)}
                     </span>
+                  </Field>
+                )}
+                {item.expiryDate && (
+                  <Field label={t('item.field_expiry_date')}>
+                    {(() => {
+                      const status = expiryStatus(item.expiryDate, item.expiryWarningDays);
+                      return (
+                        <span className={status === 'expired' ? 'text-red-600 font-medium' : status === 'warning' ? 'text-amber-600 font-medium' : ''}>
+                          {fmt(item.expiryDate)}
+                        </span>
+                      );
+                    })()}
                   </Field>
                 )}
               </div>

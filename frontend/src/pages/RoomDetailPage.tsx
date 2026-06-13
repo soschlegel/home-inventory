@@ -21,11 +21,14 @@ function LocationNode({ loc, depth = 0 }: { loc: Location; depth?: number }) {
         to={`/locations/${loc.id}`}
         className="flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-gray-100 group"
       >
-        <Folder size={16} className="text-indigo-400 flex-shrink-0" />
+        {loc.containerType?.icon
+          ? <span className="text-base flex-shrink-0 w-5 text-center">{loc.containerType.icon}</span>
+          : <Folder size={16} className="text-indigo-400 flex-shrink-0" />
+        }
         <span className="flex-1 text-gray-800 text-sm font-medium">{loc.name}</span>
         {loc.containerType && (
           <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-            {loc.containerType.icon} {locContainerTypeName(t, loc.containerType)}
+            {locContainerTypeName(t, loc.containerType)}
           </span>
         )}
         <span className="text-xs text-gray-400">{t('common.items_count', { count: loc._count?.items ?? 0 })}</span>
