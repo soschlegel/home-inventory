@@ -8,6 +8,7 @@ import { createLocation } from '../api/rooms';
 import { getContainerTypes } from '../api/containerTypes';
 import { getUnits } from '../api/units';
 import { useAuth } from '../contexts/AuthContext';
+import { locContainerTypeName, locRoomName } from '../utils/localizedName';
 import type { ItemCondition } from '../types';
 import { CONDITION_COLORS } from '../types';
 import Spinner from '../components/Spinner';
@@ -107,7 +108,7 @@ export default function LocationDetailPage() {
         <Link to="/rooms" className="hover:text-indigo-600">{t('nav.rooms')}</Link>
         <ChevronRight size={14} />
         <Link to={`/rooms/${location.room?.id}`} className="hover:text-indigo-600">
-          {location.room?.name}
+          {location.room ? locRoomName(t, location.room) : ''}
         </Link>
         {location.parent && (
           <>
@@ -145,7 +146,7 @@ export default function LocationDetailPage() {
             >
               <option value="">{t('common.type_select')}</option>
               {containerTypes?.map((ct) => (
-                <option key={ct.id} value={ct.id}>{ct.icon} {ct.name}</option>
+                <option key={ct.id} value={ct.id}>{ct.icon} {locContainerTypeName(t, ct)}</option>
               ))}
             </select>
             <button
@@ -183,7 +184,7 @@ export default function LocationDetailPage() {
             </div>
             {location.containerType && (
               <span className="text-sm text-gray-500">
-                {location.containerType.icon} {location.containerType.name}
+                {location.containerType.icon} {locContainerTypeName(t, location.containerType)}
               </span>
             )}
           </div>
@@ -229,7 +230,7 @@ export default function LocationDetailPage() {
             >
               <option value="">{t('common.type_select')}</option>
               {containerTypes?.map((ct) => (
-                <option key={ct.id} value={ct.id}>{ct.icon} {ct.name}</option>
+                <option key={ct.id} value={ct.id}>{ct.icon} {locContainerTypeName(t, ct)}</option>
               ))}
             </select>
             <button

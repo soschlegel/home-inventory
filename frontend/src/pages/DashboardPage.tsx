@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { getRooms } from '../api/rooms';
 import { getActiveLendings } from '../api/lendings';
 import { getLowStockItems } from '../api/items';
+import { locRoomName } from '../utils/localizedName';
 import Spinner from '../components/Spinner';
 
 export default function DashboardPage() {
@@ -91,7 +92,7 @@ export default function DashboardPage() {
               className="bg-white border border-gray-200 rounded-xl p-4 hover:border-indigo-400 hover:shadow-sm transition-all"
             >
               <div className="text-2xl mb-1">{room.icon ?? '🏠'}</div>
-              <div className="font-medium text-gray-900">{room.name}</div>
+              <div className="font-medium text-gray-900">{locRoomName(t, room)}</div>
               <div className="text-xs text-gray-500 mt-0.5">
                 {t('common.container_count', { count: room._count?.locations ?? 0 })}
               </div>

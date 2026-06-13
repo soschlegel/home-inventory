@@ -39,6 +39,7 @@ model Unit {
 // Benutzerdefinierter Container-Typ – geteilt zwischen allen Nutzern
 model ContainerType {
   id        String     @id @default(cuid())
+  key       String?    @unique
   name      String     @unique
   icon      String?
   color     String?
@@ -49,6 +50,7 @@ model ContainerType {
 // Raum im Haus – geteilt zwischen allen Nutzern
 model Room {
   id          String     @id @default(cuid())
+  key         String?    @unique
   name        String
   description String?
   icon        String?

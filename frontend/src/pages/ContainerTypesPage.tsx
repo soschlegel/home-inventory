@@ -9,6 +9,7 @@ import {
   updateContainerType,
   deleteContainerType,
 } from '../api/containerTypes';
+import { locContainerTypeName } from '../utils/localizedName';
 import Spinner from '../components/Spinner';
 
 export default function ContainerTypesPage() {
@@ -20,13 +21,16 @@ export default function ContainerTypesPage() {
   });
 
   const [showForm, setShowForm] = useState(false);
+  const [newKey, setNewKey] = useState('');
   const [newName, setNewName] = useState('');
   const [newIcon, setNewIcon] = useState('');
 
   const createMut = useMutation({
-    mutationFn: () => createContainerType({ name: newName, icon: newIcon || undefined }),
+    mutationFn: () =>
+      createContainerType({ key: newKey || undefined, name: newName, icon: newIcon || undefined }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['container-types'] });
+      setNewKey('');
       setNewName('');
       setNewIcon('');
       setShowForm(false);
@@ -39,11 +43,17 @@ export default function ContainerTypesPage() {
   });
 
   const [editId, setEditId] = useState<string | null>(null);
+  const [editKey, setEditKey] = useState('');
   const [editName, setEditName] = useState('');
   const [editIcon, setEditIcon] = useState('');
 
   const updateMut = useMutation({
-    mutationFn: () => updateContainerType(editId!, { name: editName, icon: editIcon || undefined }),
+    mutationFn: () =>
+      updateContainerType(editId!, {
+        key: editKey || undefined,
+        name: editName,
+        icon: editIcon || undefined,
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['container-types'] });
       setEditId(null);
@@ -60,6 +70,7 @@ export default function ContainerTypesPage() {
           </p>
         </div>
         <button
+          type="button"
           onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700"
         >
@@ -69,15 +80,24 @@ export default function ContainerTypesPage() {
 
       {showForm && (
         <div className="mb-6 bg-white border border-gray-200 rounded-xl p-4">
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             <EmojiPickerInput value={newIcon} onChange={setNewIcon} />
             <input
+              aria-label={t('containerTypes.key_label')}
+              value={newKey}
+              onChange={(e) => setNewKey(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+              placeholder={t('containerTypes.key_placeholder')}
+              className="w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+            />
+            <input
+              aria-label={t('containerTypes.edit_name_label')}
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder={t('containerTypes.name_placeholder')}
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="flex-1 min-w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <button
+              type="button"
               onClick={() => createMut.mutate()}
               disabled={!newName || createMut.isPending}
               className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
@@ -85,6 +105,7 @@ export default function ContainerTypesPage() {
               {t('common.save')}
             </button>
           </div>
+          <p className="text-xs text-gray-400 mt-1.5 ml-1">{t('containerTypes.key_hint')}</p>
         </div>
       )}
 
@@ -103,6 +124,15 @@ export default function ContainerTypesPage() {
                   <>
                     <EmojiPickerInput value={editIcon} onChange={setEditIcon} />
                     <input
+                      aria-label={t('containerTypes.key_label')}
+                      value={editKey}
+                      onChange={(e) =>
+                        setEditKey(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
+                      }
+                      placeholder={t('containerTypes.key_placeholder')}
+                      className="w-28 border border-gray-300 rounded-lg px-3 py-1 text-sm font-mono"
+                    />
+                    <input
                       aria-label={t('containerTypes.edit_name_label')}
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
@@ -117,19 +147,38 @@ export default function ContainerTypesPage() {
                     >
                       <Check size={16} />
                     </button>
-                    <button type="button" aria-label={t('containerTypes.cancel_label')} onClick={() => setEditId(null)} className="p-1.5 text-gray-400 hover:text-gray-600">
+                    <button
+                      type="button"
+                      aria-label={t('containerTypes.cancel_label')}
+                      onClick={() => setEditId(null)}
+                      className="p-1.5 text-gray-400 hover:text-gray-600"
+                    >
                       <X size={16} />
                     </button>
                   </>
                 ) : (
                   <>
                     <span className="text-xl w-8">{ct.icon ?? '📦'}</span>
-                    <span className="flex-1 font-medium text-gray-800 text-sm">{ct.name}</span>
-                    <span className="text-xs text-gray-400">{t('common.container_count', { count: ct._count?.locations ?? 0 })}</span>
+                    <span className="flex-1 font-medium text-gray-800 text-sm">
+                      {locContainerTypeName(t, ct)}
+                      {ct.key && (
+                        <span className="ml-2 text-xs text-gray-400 font-mono font-normal">
+                          {ct.key}
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {t('common.container_count', { count: ct._count?.locations ?? 0 })}
+                    </span>
                     <button
                       type="button"
                       aria-label={t('containerTypes.edit_label')}
-                      onClick={() => { setEditId(ct.id); setEditName(ct.name); setEditIcon(ct.icon ?? ''); }}
+                      onClick={() => {
+                        setEditId(ct.id);
+                        setEditKey(ct.key ?? '');
+                        setEditName(ct.name);
+                        setEditIcon(ct.icon ?? '');
+                      }}
                       className="p-1.5 text-gray-400 hover:text-indigo-600"
                     >
                       <Pencil size={15} />

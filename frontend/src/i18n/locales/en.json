@@ -34,6 +34,7 @@
     "units": "Units",
     "tags": "Tags",
     "admin": "Administration",
+    "profile": "My Profile",
     "lang_toggle": "DE"
   },
   "login": {
@@ -64,6 +65,9 @@
     "new_title": "New room",
     "edit_title": "Edit room",
     "icon_placeholder": "Emoji (e.g. 🍳)",
+    "key_label": "Key",
+    "key_placeholder": "e.g. kitchen, basement",
+    "key_hint": "Lowercase letters and underscores only",
     "name_placeholder": "Room name",
     "confirm_delete": "Really delete room \"{{name}}\"?",
     "not_found": "Room not found."
@@ -153,6 +157,9 @@
     "subtitle": "Define custom types for your containers (cabinet, drawer, box…)",
     "add_btn": "New type",
     "emoji_placeholder": "Emoji",
+    "key_label": "Key",
+    "key_placeholder": "e.g. drawer, cabinet",
+    "key_hint": "Lowercase letters and underscores only",
     "name_placeholder": "Name (e.g. Drawer)",
     "no_types": "No types yet. Create one!",
     "confirm_delete": "Delete type \"{{name}}\"? Containers will no longer keep their type.",
@@ -260,6 +267,38 @@
     "import_warning": "All existing data will be overwritten on import. Create a backup first!",
     "import_success": "Import successful. Reload the page to see the changes.",
     "import_error": "Import failed. Please check the file format."
+  },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "Manage your account details and password",
+    "section_info": "Account Details",
+    "section_password": "Change Password",
+    "field_name": "Name (optional)",
+    "field_email": "Email",
+    "field_role": "Role",
+    "field_current_password": "Current password",
+    "field_new_password": "New password (min. 8 chars)",
+    "field_confirm_password": "Confirm new password",
+    "save_name": "Save name",
+    "save_password": "Change password",
+    "success_name": "Name updated.",
+    "success_password": "Password changed successfully.",
+    "error_mismatch": "Passwords do not match.",
+    "error_wrong_password": "Current password is incorrect."
+  },
+  "containerTypeNames": {
+    "drawer": "Drawer",
+    "cabinet": "Cabinet",
+    "shelf": "Shelf",
+    "box": "Box",
+    "carton": "Carton"
+  },
+  "roomNames": {
+    "kitchen": "Kitchen",
+    "living_room": "Living Room",
+    "basement": "Basement",
+    "bathroom": "Bathroom",
+    "bedroom": "Bedroom"
   },
   "tagNames": {
     "food": "Food",

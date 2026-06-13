@@ -6,12 +6,12 @@ export const getRooms = () => api.get<Room[]>('/rooms').then((r) => r.data);
 export const getRoom = (id: string) =>
   api.get<Room & { locations: Location[] }>(`/rooms/${id}`).then((r) => r.data);
 
-export const createRoom = (data: { name: string; description?: string; icon?: string }) =>
+export const createRoom = (data: { key?: string; name: string; description?: string; icon?: string }) =>
   api.post<Room>('/rooms', data).then((r) => r.data);
 
 export const updateRoom = (
   id: string,
-  data: { name?: string; description?: string; icon?: string },
+  data: { key?: string; name?: string; description?: string; icon?: string },
 ) => api.put<Room>(`/rooms/${id}`, data).then((r) => r.data);
 
 export const deleteRoom = (id: string) => api.delete(`/rooms/${id}`);

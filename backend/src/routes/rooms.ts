@@ -7,6 +7,7 @@ const router = Router();
 router.use(authenticate);
 
 const RoomBody = z.object({
+  key: z.string().regex(/^[a-z][a-z0-9_]*$/).optional(),
   name: z.string().min(1).max(100),
   description: z.string().optional(),
   icon: z.string().optional(),
@@ -52,7 +53,13 @@ router.get('/:id', async (req, res, next) => {
         locations: {
           where: { parentId: null },
           include: {
-            children: { include: { _count: { select: { items: true } } } },
+            containerType: true,
+            children: {
+              include: {
+                containerType: true,
+                _count: { select: { items: true } },
+              },
+            },
             _count: { select: { items: true } },
           },
           orderBy: { name: 'asc' },

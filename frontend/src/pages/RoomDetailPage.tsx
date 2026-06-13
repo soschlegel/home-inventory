@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { getRoom, createLocation, updateRoom } from '../api/rooms';
 import { getContainerTypes } from '../api/containerTypes';
 import { useAuth } from '../contexts/AuthContext';
+import { locContainerTypeName, locRoomName } from '../utils/localizedName';
 import type { Location } from '../types';
 import Spinner from '../components/Spinner';
 
@@ -24,7 +25,7 @@ function LocationNode({ loc, depth = 0 }: { loc: Location; depth?: number }) {
         <span className="flex-1 text-gray-800 text-sm font-medium">{loc.name}</span>
         {loc.containerType && (
           <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-            {loc.containerType.icon} {loc.containerType.name}
+            {loc.containerType.icon} {locContainerTypeName(t, loc.containerType)}
           </span>
         )}
         <span className="text-xs text-gray-400">{t('common.items_count', { count: loc._count?.items ?? 0 })}</span>
@@ -94,7 +95,7 @@ export default function RoomDetailPage() {
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
         <Link to="/rooms" className="hover:text-indigo-600">{t('nav.rooms')}</Link>
         <ChevronRight size={14} />
-        <span className="text-gray-900 font-medium">{room.name}</span>
+        <span className="text-gray-900 font-medium">{locRoomName(t, room)}</span>
       </div>
 
       {isEditing ? (
@@ -139,7 +140,7 @@ export default function RoomDetailPage() {
       ) : (
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-gray-900">{room.icon} {room.name}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{room.icon} {locRoomName(t, room)}</h1>
             {isEditor && (
               <button
                 type="button"
@@ -184,7 +185,7 @@ export default function RoomDetailPage() {
               <option value="">{t('common.type_select')}</option>
               {containerTypes?.map((ct) => (
                 <option key={ct.id} value={ct.id}>
-                  {ct.icon} {ct.name}
+                  {ct.icon} {locContainerTypeName(t, ct)}
                 </option>
               ))}
             </select>

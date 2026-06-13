@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import type { AxiosError } from 'axios';
-import { Download, Upload, AlertTriangle, CheckCircle, UserPlus } from 'lucide-react';
+import { Download, Upload, AlertTriangle, CheckCircle, UserPlus, Info } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { exportData, importData } from '../api/admin';
@@ -187,6 +187,18 @@ export default function AdminPage() {
                 </div>
               )}
               {importError && <p className="mt-2 text-sm text-red-600">{importError}</p>}
+            </div>
+          </div>
+        </div>
+        {/* Version */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5">
+          <div className="flex items-start gap-4">
+            <div className="p-2 bg-gray-50 rounded-lg">
+              <Info size={20} className="text-gray-600" />
+            </div>
+            <div className="flex-1">
+              <h2 className="font-semibold text-gray-900">Version</h2>
+              <p className="text-sm text-gray-500 mt-0.5 font-mono">v{__APP_VERSION__}</p>
             </div>
           </div>
         </div>

@@ -77,9 +77,15 @@ router.get('/:id', async (req, res, next) => {
     const location = await prisma.location.findFirst({
       where: { id: req.params.id },
       include: {
-        room: { select: { id: true, name: true } },
+        room: { select: { id: true, key: true, name: true } },
         parent: { select: { id: true, name: true } },
-        children: { include: { _count: { select: { items: true } } } },
+        containerType: true,
+        children: {
+          include: {
+            containerType: true,
+            _count: { select: { items: true } },
+          },
+        },
         items: {
           include: { tags: { include: { tag: true } } },
           orderBy: { name: 'asc' },

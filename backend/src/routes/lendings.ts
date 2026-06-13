@@ -23,7 +23,7 @@ router.get('/active', async (_req, res, next) => {
             id: true,
             name: true,
             imageUrl: true,
-            location: { include: { room: { select: { id: true, name: true } } } },
+            location: { include: { room: { select: { id: true, key: true, name: true } } } },
           },
         },
       },

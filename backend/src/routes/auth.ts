@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { signAccess, signRefresh, verifyRefresh } from '../utils/jwt';
+import { authenticate } from '../middleware/auth';
 
 const router = Router();
 
@@ -79,6 +80,44 @@ router.post('/refresh', async (req, res, next) => {
       return;
     }
     res.json({ accessToken: signAccess(user.id, user.role) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/auth/me — eigenes Profil aktualisieren (Name und/oder Passwort)
+router.put('/me', authenticate, async (req, res, next) => {
+  try {
+    const { name, currentPassword, newPassword } = z
+      .object({
+        name: z.string().optional(),
+        currentPassword: z.string().optional(),
+        newPassword: z.string().min(8).optional(),
+      })
+      .parse(req.body);
+
+    if (newPassword) {
+      if (!currentPassword) {
+        res.status(400).json({ error: 'Aktuelles Passwort erforderlich' });
+        return;
+      }
+      const existing = await prisma.user.findUnique({ where: { id: req.userId } });
+      if (!existing || !(await bcrypt.compare(currentPassword, existing.passwordHash))) {
+        res.status(400).json({ error: 'Aktuelles Passwort falsch' });
+        return;
+      }
+    }
+
+    const updateData: { name?: string; passwordHash?: string } = {};
+    if (name !== undefined) updateData.name = name;
+    if (newPassword) updateData.passwordHash = await bcrypt.hash(newPassword, 12);
+
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data: updateData,
+      select: { id: true, email: true, name: true, role: true },
+    });
+    res.json({ user });
   } catch (err) {
     next(err);
   }

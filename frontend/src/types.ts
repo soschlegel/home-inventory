@@ -31,6 +31,7 @@ export interface UserListEntry {
 
 export interface ContainerType {
   id: string;
+  key?: string | null;
   name: string;
   icon?: string | null;
   color?: string | null;
@@ -39,6 +40,7 @@ export interface ContainerType {
 
 export interface Room {
   id: string;
+  key?: string | null;
   name: string;
   description?: string | null;
   icon?: string | null;
@@ -54,7 +56,7 @@ export interface Location {
   containerTypeId?: string | null;
   containerType?: ContainerType | null;
   roomId: string;
-  room?: Pick<Room, 'id' | 'name'>;
+  room?: Pick<Room, 'id' | 'key' | 'name'>;
   parentId?: string | null;
   parent?: Pick<Location, 'id' | 'name'> | null;
   children?: Location[];
@@ -82,7 +84,7 @@ export interface Item {
   serialNumber?: string | null;
   barcode?: string | null;
   locationId: string;
-  location?: Location & { room: Pick<Room, 'id' | 'name'> };
+  location?: Location & { room: Pick<Room, 'id' | 'key' | 'name'> };
   tags?: ItemTag[];
   lendings?: Lending[];
 }
@@ -91,7 +93,7 @@ export interface Lending {
   id: string;
   itemId: string;
   item?: Pick<Item, 'id' | 'name' | 'imageUrl'> & {
-    location: { room: Pick<Room, 'id' | 'name'> };
+    location: { room: Pick<Room, 'id' | 'key' | 'name'> };
   };
   lentTo: string;
   lentAt: string;
@@ -110,7 +112,7 @@ export interface ItemOverview {
   location: {
     id: string;
     name: string;
-    room: Pick<Room, 'id' | 'name'>;
+    room: Pick<Room, 'id' | 'key' | 'name'>;
     parent: Pick<Location, 'id' | 'name'> | null;
   };
   tags?: ItemTag[];

@@ -9,6 +9,7 @@ import {
   Ruler,
   Tag,
   Users,
+  User,
   Settings,
   LogOut,
 } from 'lucide-react';
@@ -43,6 +44,7 @@ export default function Layout() {
     { to: '/tags', icon: Tag, label: t('nav.tags'), show: isEditor },
     { to: '/users', icon: Users, label: t('nav.users'), show: isEditor },
     { to: '/admin', icon: Settings, label: t('nav.admin'), show: isEditor },
+    { to: '/profile', icon: User, label: t('nav.profile'), show: true },
   ];
 
   return (
@@ -97,6 +99,9 @@ export default function Layout() {
             <LogOut size={18} />
             {t('nav.logout')}
           </button>
+          <div className="mt-3 px-3 text-xs text-gray-600 text-center">
+            v{__APP_VERSION__}
+          </div>
         </div>
       </aside>
 

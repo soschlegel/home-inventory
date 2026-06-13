@@ -42,7 +42,7 @@ router.get('/', async (_req, res, next) => {
       include: {
         location: {
           include: {
-            room: { select: { id: true, name: true } },
+            room: { select: { id: true, key: true, name: true } },
             parent: { select: { id: true, name: true } },
           },
         },
@@ -110,7 +110,7 @@ router.get('/:id', async (req, res, next) => {
         lendings: { orderBy: { lentAt: 'desc' } },
         location: {
           include: {
-            room: { select: { id: true, name: true } },
+            room: { select: { id: true, key: true, name: true } },
             parent: { select: { id: true, name: true } },
           },
         },

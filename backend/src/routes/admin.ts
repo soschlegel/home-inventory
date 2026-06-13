@@ -46,6 +46,7 @@ const importSchema = z.object({
     containerTypes: z.array(
       z.object({
         id: z.string(),
+        key: z.string().nullable().optional(),
         name: z.string(),
         icon: z.string().nullable().optional(),
         color: z.string().nullable().optional(),
@@ -55,6 +56,7 @@ const importSchema = z.object({
     rooms: z.array(
       z.object({
         id: z.string(),
+        key: z.string().nullable().optional(),
         name: z.string(),
         description: z.string().nullable().optional(),
         icon: z.string().nullable().optional(),

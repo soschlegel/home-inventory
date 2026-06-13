@@ -63,11 +63,11 @@ async function main() {
 
   // ── Container-Typen (geteilt, ohne userId) ────────────────────────────
   const [schublade, schrank, regal, box, karton] = await Promise.all([
-    prisma.containerType.create({ data: { name: 'Schublade', icon: '🗄️' } }),
-    prisma.containerType.create({ data: { name: 'Schrank', icon: '🚪' } }),
-    prisma.containerType.create({ data: { name: 'Regal', icon: '📚' } }),
-    prisma.containerType.create({ data: { name: 'Box', icon: '📦' } }),
-    prisma.containerType.create({ data: { name: 'Karton', icon: '🗃️' } }),
+    prisma.containerType.create({ data: { key: 'drawer', name: 'Schublade', icon: '🗄️' } }),
+    prisma.containerType.create({ data: { key: 'cabinet', name: 'Schrank', icon: '🚪' } }),
+    prisma.containerType.create({ data: { key: 'shelf', name: 'Regal', icon: '📚' } }),
+    prisma.containerType.create({ data: { key: 'box', name: 'Box', icon: '📦' } }),
+    prisma.containerType.create({ data: { key: 'carton', name: 'Karton', icon: '🗃️' } }),
   ]);
 
   // ── Tags ──────────────────────────────────────────────────────────────
@@ -82,11 +82,11 @@ async function main() {
 
   // ── Räume (geteilt, ohne userId) ──────────────────────────────────────
   const [kueche, wohnzimmer, keller, bad, schlafzimmer] = await Promise.all([
-    prisma.room.create({ data: { name: 'Küche', icon: '🍳' } }),
-    prisma.room.create({ data: { name: 'Wohnzimmer', icon: '🛋️' } }),
-    prisma.room.create({ data: { name: 'Keller', icon: '🏚️' } }),
-    prisma.room.create({ data: { name: 'Badezimmer', icon: '🚿' } }),
-    prisma.room.create({ data: { name: 'Schlafzimmer', icon: '🛏️' } }),
+    prisma.room.create({ data: { key: 'kitchen', name: 'Küche', icon: '🍳' } }),
+    prisma.room.create({ data: { key: 'living_room', name: 'Wohnzimmer', icon: '🛋️' } }),
+    prisma.room.create({ data: { key: 'basement', name: 'Keller', icon: '🏚️' } }),
+    prisma.room.create({ data: { key: 'bathroom', name: 'Badezimmer', icon: '🚿' } }),
+    prisma.room.create({ data: { key: 'bedroom', name: 'Schlafzimmer', icon: '🛏️' } }),
   ]);
 
   // ── Locations ─────────────────────────────────────────────────────────

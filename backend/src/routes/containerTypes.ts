@@ -7,6 +7,7 @@ const router = Router();
 router.use(authenticate);
 
 const ContainerTypeBody = z.object({
+  key: z.string().regex(/^[a-z][a-z0-9_]*$/).optional(),
   name: z.string().min(1).max(50),
   icon: z.string().optional(),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),

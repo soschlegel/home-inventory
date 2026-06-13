@@ -34,6 +34,7 @@
     "units": "Einheiten",
     "tags": "Tags",
     "admin": "Administration",
+    "profile": "Mein Profil",
     "lang_toggle": "EN"
   },
   "login": {
@@ -64,6 +65,9 @@
     "new_title": "Neuer Raum",
     "edit_title": "Raum bearbeiten",
     "icon_placeholder": "Emoji (z.B. 🍳)",
+    "key_label": "Schlüssel",
+    "key_placeholder": "z.B. kueche, keller",
+    "key_hint": "Nur Kleinbuchstaben und Unterstriche",
     "name_placeholder": "Raumname",
     "confirm_delete": "Raum \"{{name}}\" wirklich löschen?",
     "not_found": "Raum nicht gefunden."
@@ -153,6 +157,9 @@
     "subtitle": "Definiere eigene Typen für deine Container (Schrank, Schublade, Karton…)",
     "add_btn": "Neuer Typ",
     "emoji_placeholder": "Emoji",
+    "key_label": "Schlüssel",
+    "key_placeholder": "z.B. schublade, schrank",
+    "key_hint": "Nur Kleinbuchstaben und Unterstriche",
     "name_placeholder": "Name (z.B. Schublade)",
     "no_types": "Noch keine Typen. Leg einen an!",
     "confirm_delete": "Typ \"{{name}}\" löschen? Container behalten ihren Typ nicht mehr.",
@@ -260,6 +267,38 @@
     "import_warning": "Alle vorhandenen Daten werden beim Import überschrieben. Vorher ein Backup anlegen!",
     "import_success": "Import erfolgreich. Seite neu laden, um die Änderungen zu sehen.",
     "import_error": "Import fehlgeschlagen. Bitte Dateiformat prüfen."
+  },
+  "profile": {
+    "title": "Mein Profil",
+    "subtitle": "Persönliche Daten und Passwort verwalten",
+    "section_info": "Kontodaten",
+    "section_password": "Passwort ändern",
+    "field_name": "Name (optional)",
+    "field_email": "E-Mail",
+    "field_role": "Rolle",
+    "field_current_password": "Aktuelles Passwort",
+    "field_new_password": "Neues Passwort (min. 8 Zeichen)",
+    "field_confirm_password": "Neues Passwort bestätigen",
+    "save_name": "Name speichern",
+    "save_password": "Passwort ändern",
+    "success_name": "Name aktualisiert.",
+    "success_password": "Passwort erfolgreich geändert.",
+    "error_mismatch": "Passwörter stimmen nicht überein.",
+    "error_wrong_password": "Aktuelles Passwort ist falsch."
+  },
+  "containerTypeNames": {
+    "drawer": "Schublade",
+    "cabinet": "Schrank",
+    "shelf": "Regal",
+    "box": "Box",
+    "carton": "Karton"
+  },
+  "roomNames": {
+    "kitchen": "Küche",
+    "living_room": "Wohnzimmer",
+    "basement": "Keller",
+    "bathroom": "Badezimmer",
+    "bedroom": "Schlafzimmer"
   },
   "tagNames": {
     "food": "Lebensmittel",

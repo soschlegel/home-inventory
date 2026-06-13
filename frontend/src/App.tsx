@@ -17,6 +17,7 @@ import UsersPage from './pages/UsersPage';
 import ItemsOverviewPage from './pages/ItemsOverviewPage';
 import TagsPage from './pages/TagsPage';
 import AdminPage from './pages/AdminPage';
+import ProfilePage from './pages/ProfilePage';
 
 export default function App() {
   const { isLoading } = useAuth();
@@ -41,6 +42,7 @@ export default function App() {
           <Route path="/tags" element={<TagsPage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Route>
       </Route>
     </Routes>
