@@ -15,7 +15,6 @@ services:
       retries: 5
 
   backend:
-    build: ./backend
     image: soschlegel/home-inventory-backend:latest
     restart: unless-stopped
     depends_on:
@@ -31,7 +30,6 @@ services:
       - uploads:/app/uploads
 
   frontend:
-    build: ./frontend
     image: soschlegel/home-inventory-frontend:latest
     restart: unless-stopped
     depends_on:

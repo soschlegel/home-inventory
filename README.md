@@ -179,8 +179,8 @@ cd frontend && npm test
 | Service | Image | Port (intern) | Beschreibung |
 |---------|-------|---------------|--------------|
 | `postgres` | `postgres:16-alpine` | 5432 | Datenbank |
-| `backend` | lokaler Build | 4000 | Express API + Swagger UI |
-| `frontend` | lokaler Build | 80 | React SPA |
+| `backend` | `soschlegel/home-inventory-backend` | 4000 | Express API + Swagger UI |
+| `frontend` | `soschlegel/home-inventory-frontend` | 80 | React SPA |
 | `nginx` | `nginx:alpine` | **3000** (öffentlich) | Reverse Proxy |
 
 ```bash
@@ -189,4 +189,70 @@ docker compose logs -f backend      # Logs
 docker compose restart backend      # Einzelnen Service neu starten
 docker compose down                 # Stoppen
 docker compose down -v              # Stoppen + alle Daten löschen
+```
+
+---
+
+## Backup & Wiederherstellung
+
+Die Daten liegen in zwei Docker-Volumes: `postgres_data` (Datenbank) und `uploads` (Bilder).
+
+### Backup erstellen
+
+```bash
+# Sichert Datenbank + Uploads in ./backups/<timestamp>/
+bash scripts/backup.sh
+```
+
+Das Backup enthält:
+
+- `database.sql` — vollständiger PostgreSQL-Dump (alle Items, Räume, User, Tags …)
+- `uploads.tar.gz` — alle hochgeladenen Bilder
+
+### Wiederherstellen
+
+```bash
+bash scripts/restore.sh ./backups/2026-06-13_10-00-00
+```
+
+> Vor jedem Upgrade immer zuerst ein Backup anlegen.
+
+---
+
+## Releases & Upgrades
+
+### Neues Release bauen und veröffentlichen (Entwicklungsrechner)
+
+```bash
+bash scripts/release.sh 1.1.0
+```
+
+Das Script:
+
+1. Baut beide Docker-Images neu
+2. Pusht `:latest` und `:1.1.0` auf Docker Hub
+3. Setzt Git-Tag `v1.1.0` und pusht ihn
+
+### Upgrade auf dem Server
+
+```bash
+# 1. Backup anlegen
+bash scripts/backup.sh
+
+# 2. Neue Images laden und Container neu starten
+docker compose -f docker-compose.server.yml pull
+docker compose -f docker-compose.server.yml up -d
+```
+
+`prisma db push` läuft automatisch beim Backend-Start und wendet neue Schemaänderungen an. Rein additive Änderungen (neue Tabellen, neue optionale Spalten) sind dabei immer sicher. Sobald eine Version Spalten umbenennt oder entfernt, steht das explizit in den Release-Notes.
+
+### Rollback
+
+```bash
+# Alte Version pinnen
+TAG=1.0.0 docker compose -f docker-compose.server.yml pull
+TAG=1.0.0 docker compose -f docker-compose.server.yml up -d
+
+# Falls nötig: Daten aus Backup zurückspielen
+bash scripts/restore.sh ./backups/<timestamp>
 ```
