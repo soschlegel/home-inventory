@@ -38,7 +38,8 @@ services:
       - backend
 
   nginx:
-    image: nginx:alpine
+    build: ./nginx
+    image: soschlegel/home-inventory-nginx:latest
     restart: unless-stopped
     depends_on:
       - backend
@@ -46,7 +47,6 @@ services:
     ports:
       - "${PORT:-3000}:80"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - uploads:/app/uploads:ro
 
 volumes:

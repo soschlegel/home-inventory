@@ -18,8 +18,10 @@ docker compose -f docker-compose.dev.yml push
 echo "==> Versionstag :$VERSION setzen und pushen..."
 docker tag soschlegel/home-inventory-backend:latest soschlegel/home-inventory-backend:"$VERSION"
 docker tag soschlegel/home-inventory-frontend:latest soschlegel/home-inventory-frontend:"$VERSION"
+docker tag soschlegel/home-inventory-nginx:latest soschlegel/home-inventory-nginx:"$VERSION"
 docker push soschlegel/home-inventory-backend:"$VERSION"
 docker push soschlegel/home-inventory-frontend:"$VERSION"
+docker push soschlegel/home-inventory-nginx:"$VERSION"
 
 echo "==> Git-Tag v$VERSION setzen..."
 git tag -a "v$VERSION" -m "Release v$VERSION"
