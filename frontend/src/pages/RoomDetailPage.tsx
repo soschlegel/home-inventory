@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, Plus, Folder, Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import EmojiPickerInput from '../components/EmojiPickerInput';
 import { getRoom, createLocation, updateRoom } from '../api/rooms';
 import { getContainerTypes } from '../api/containerTypes';
 import { useAuth } from '../contexts/AuthContext';
@@ -31,7 +32,7 @@ function LocationNode({ loc, depth = 0 }: { loc: Location; depth?: number }) {
             {locContainerTypeName(t, loc.containerType)}
           </span>
         )}
-        <span className="text-xs text-gray-400">{t('common.items_count', { count: loc._count?.items ?? 0 })}</span>
+        <span className="text-xs text-gray-400">{t('common.items_count', { count: loc._count?.instances ?? 0 })}</span>
         <ChevronRight size={14} className="text-gray-300 group-hover:text-gray-500" />
       </Link>
       {loc.children?.map((child) => (
@@ -105,13 +106,7 @@ export default function RoomDetailPage() {
         <div className="mb-6 bg-white border border-indigo-400 rounded-xl p-4">
           <h2 className="font-medium text-gray-800 mb-3">{t('rooms.edit_title')}</h2>
           <div className="flex gap-3 flex-wrap">
-            <input
-              aria-label={t('common.emoji_placeholder')}
-              value={editIcon}
-              onChange={(e) => setEditIcon(e.target.value)}
-              placeholder={t('rooms.icon_placeholder')}
-              className="w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+            <EmojiPickerInput value={editIcon} onChange={setEditIcon} />
             <input
               aria-label={t('common.name')}
               value={editName}
