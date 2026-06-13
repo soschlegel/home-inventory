@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// i18next before module import so the mock is in place
-const mockI18n = { language: 'de' };
+const mockI18n = vi.hoisted(() => ({ language: 'de' }));
 vi.mock('i18next', () => ({ default: mockI18n }));
 
 import { locRoomName, locContainerTypeName, locTagName, locUnitName } from '../utils/localizedName';
