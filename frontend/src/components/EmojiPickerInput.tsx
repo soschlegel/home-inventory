@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Smile, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -168,26 +168,43 @@ export default function EmojiPickerInput({ value, onChange, className = '' }: Pr
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const [alignRight, setAlignRight] = useState(false);
+  const popupPos = useRef({ top: 0, left: 0 });
   const wrapperRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (open && popupRef.current) {
+      popupRef.current.style.top = `${popupPos.current.top}px`;
+      popupRef.current.style.left = `${popupPos.current.left}px`;
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
+    const close = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setOpen(false);
         setSearch('');
       }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    const closeOnScroll = () => { setOpen(false); setSearch(''); };
+    document.addEventListener('mousedown', close);
+    window.addEventListener('scroll', closeOnScroll, true);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      window.removeEventListener('scroll', closeOnScroll, true);
+    };
   }, [open]);
 
   const handleToggle = () => {
     if (!open && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      setAlignRight(rect.left + 288 > window.innerWidth);
+      const popupWidth = 288;
+      const left = rect.left + popupWidth > window.innerWidth
+        ? Math.max(0, window.innerWidth - popupWidth - 8)
+        : rect.left;
+      popupPos.current = { top: rect.bottom + 4, left };
     }
     setOpen((o) => !o);
     if (open) setSearch('');
@@ -217,7 +234,8 @@ export default function EmojiPickerInput({ value, onChange, className = '' }: Pr
 
       {open && (
         <div
-          className={`absolute z-[200] bg-white border border-gray-200 rounded-xl shadow-xl p-3 w-72 top-full mt-1 ${alignRight ? 'right-0' : 'left-0'}`}
+          ref={popupRef}
+          className="fixed z-[200] bg-white border border-gray-200 rounded-xl shadow-xl p-3 w-72"
         >
           <input
             autoFocus

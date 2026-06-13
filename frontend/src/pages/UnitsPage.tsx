@@ -112,7 +112,6 @@ export default function UnitsPage() {
               <div key={unit.id} className="flex items-center gap-3 px-4 py-3">
                 {editId === unit.id ? (
                   <>
-                    <span className="font-mono text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded flex-shrink-0">{unit.key}</span>
                     <input
                       aria-label={t('units.name_label')}
                       value={editName}
@@ -144,7 +143,6 @@ export default function UnitsPage() {
                   </>
                 ) : (
                   <>
-                    <span className="font-mono text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded flex-shrink-0">{unit.key}</span>
                     <span className="flex-1 font-medium text-gray-800 text-sm">{unit.name}</span>
                     <button
                       type="button"
