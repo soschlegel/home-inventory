@@ -30,35 +30,36 @@ model User {
 
 // Einheitenliste – geteilt zwischen allen Nutzern, dient als Vorschlagsliste
 model Unit {
-  id        String   @id @default(cuid())
-  key       String   @unique
-  name      String   @unique
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  key          String   @unique
+  name         String   @unique
+  translations Json?
+  createdAt    DateTime @default(now())
 }
 
 // Benutzerdefinierter Container-Typ – geteilt zwischen allen Nutzern
 model ContainerType {
-  id        String     @id @default(cuid())
-  key       String?    @unique
-  name      String     @unique
-  nameDe    String?
-  nameEn    String?
-  icon      String?
-  color     String?
-  locations Location[]
-  createdAt DateTime   @default(now())
+  id           String     @id @default(cuid())
+  key          String?    @unique
+  name         String     @unique
+  translations Json?
+  icon         String?
+  color        String?
+  locations    Location[]
+  createdAt    DateTime   @default(now())
 }
 
 // Raum im Haus – geteilt zwischen allen Nutzern
 model Room {
-  id          String     @id @default(cuid())
-  key         String?    @unique
-  name        String
-  description String?
-  icon        String?
-  locations   Location[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id           String     @id @default(cuid())
+  key          String?    @unique
+  name         String
+  translations Json?
+  description  String?
+  icon         String?
+  locations    Location[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 // Aufbewahrungsort / Container (beliebig verschachtelbar)
@@ -114,11 +115,12 @@ model Lending {
 }
 
 model Tag {
-  id        String    @id @default(cuid())
-  key       String    @unique
-  name      String    @unique
-  items     ItemTag[]
-  createdAt DateTime  @default(now())
+  id           String    @id @default(cuid())
+  key          String    @unique
+  name         String    @unique
+  translations Json?
+  items        ItemTag[]
+  createdAt    DateTime  @default(now())
 }
 
 // Anwendungseinstellungen (key-value)

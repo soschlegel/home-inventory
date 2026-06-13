@@ -95,17 +95,21 @@ home-inventory/
         │   ├── RoomDetailPage.tsx
         │   ├── LocationDetailPage.tsx
         │   ├── ItemDetailPage.tsx    Tag-Picker (Chips) + Unit-Select
-        │   ├── ItemsOverviewPage.tsx Tag-Filter + übersetzte Einheiten
-        │   ├── SearchPage.tsx
+        │   ├── ItemsOverviewPage.tsx Multi-Tag-Filter (Set<string> IDs, OR-Logik)
         │   ├── LendingsPage.tsx
-        │   ├── ContainerTypesPage.tsx
-        │   ├── TagsPage.tsx      Tag-Verwaltung (EDITOR only)
+        │   ├── ContainerTypesPage.tsx  DE/EN Eingabe → translations JSON
+        │   ├── TagsPage.tsx      Tag-Verwaltung, key auto-generiert (EDITOR only)
         │   ├── UnitsPage.tsx     Einheitenverwaltung mit Key-Badge (EDITOR only)
-        │   └── UsersPage.tsx
-        └── __tests__/            3 Testdateien (12 Tests)
+        │   ├── TranslationsPage.tsx  Zentrale Übersetzungspflege (Tab-UI)
+        │   ├── UsersPage.tsx     inkl. Passwort-Reset anderer Nutzer (EDITOR only)
+        │   ├── AdminPage.tsx     Export/Import/Registrierungstoggle (EDITOR only)
+        │   └── ProfilePage.tsx   Eigenes Profil (Name + Passwort)
+        ├── utils/
+        │   └── localizedName.ts  locRoomName / locContainerTypeName / locTagName / locUnitName
+        └── __tests__/            3 Testdateien
 ```
 
-> **Tests gesamt:** 13 Backend-Testdateien (124 Tests) · 3 Frontend-Testdateien (12 Tests)
+> **Tests gesamt:** 14 Backend-Testdateien · 3 Frontend-Testdateien
 
 ---
 
@@ -165,9 +169,16 @@ Schema: [`backend/prisma/schema.prisma`](backend/prisma/schema.prisma)
 User (role: EDITOR | VIEWER)
 
 Unit  ← key (unique slug, z.B. "piece"), name (Anzeigename, z.B. "Stück")
-Tag   ← key (unique slug, z.B. "tool"), name (Anzeigename, z.B. "Werkzeug")
+        translations Json?  — z.B. { "de": "Stück", "en": "piece", "fr": "pièce" }
 
-Room  ← geteilt zwischen allen Usern
+Tag   ← key (unique slug, auto-UUID für neue Einträge), name (Anzeigename)
+        translations Json?  — beliebige Sprachcodes als Keys
+
+ContainerType ← key? (optional, z.B. "drawer"), name, icon, color
+                translations Json?
+
+Room  ← key? (optional, z.B. "kitchen"), name, icon
+        translations Json?
  └── Location (Container, beliebig tief verschachtelbar)
       ├── containerTypeId → ContainerType
       ├── parentId → Location
@@ -177,9 +188,11 @@ Room  ← geteilt zwischen allen Usern
            ├── purchaseUrl / purchasePrice / purchaseDate
            ├── warrantyUntil / serialNumber / barcode
            ├── imageUrl
-           ├── tags (ItemTag many-to-many, via tag.key)
+           ├── tags (ItemTag many-to-many)
            └── lendings (lentTo, lentAt, returnedAt, note)
 ```
+
+**`translations Json?`** speichert Übersetzungen als JSON-Objekt mit ISO-639-1-Codes als Keys: `{ "de": "Küche", "en": "Kitchen", "fr": "Cuisine" }`. Neue Sprachen erfordern keine Schema-Änderung.
 
 ### User
 
@@ -198,7 +211,9 @@ Geteilt zwischen allen Nutzern. Löschen kaskadiert zu Locations und Items.
 | Feld | Typ | |
 |------|-----|-|
 | `id` | `String` (cuid) | |
+| `key` | `String?` | optional, eindeutiger Slug (z. B. `"kitchen"`) |
 | `name` | `String` | z. B. „Küche" |
+| `translations` | `Json?` | `{ "de": "Küche", "en": "Kitchen" }` |
 | `description` | `String?` | |
 | `icon` | `String?` | Emoji |
 
@@ -243,14 +258,16 @@ Verwaltete Vorschlagsliste für `Item.unit`. Kein FK auf Item — bestehende Ite
 | `id` | `String` (cuid) | |
 | `key` | `String` | eindeutiger Slug, z. B. `"piece"`, `"kg"` |
 | `name` | `String` | eindeutiger Anzeigename, z. B. `"Stück"` |
+| `translations` | `Json?` | `{ "de": "Stück", "en": "piece" }` |
 
 ### Tag
 
 | Feld | Typ | |
 |------|-----|-|
 | `id` | `String` (cuid) | |
-| `key` | `String` | eindeutiger Slug, z. B. `"food"`, `"tool"` |
+| `key` | `String` | eindeutiger Slug — für Seed-Daten sprechend (`"food"`), für neue Einträge auto-UUID |
 | `name` | `String` | eindeutiger Anzeigename, z. B. `"Lebensmittel"` |
+| `translations` | `Json?` | `{ "de": "Lebensmittel", "en": "Food" }` |
 | `items` | `ItemTag[]` | m:n zu Item (Cascade Delete) |
 
 Beim Löschen eines Tags werden alle zugehörigen `ItemTag`-Einträge kaskadiert gelöscht. Das Frontend warnt vor dem Löschen, wenn `_count.items > 0`.
@@ -260,7 +277,9 @@ Beim Löschen eines Tags werden alle zugehörigen `ItemTag`-Einträge kaskadiert
 | Feld | Typ | |
 |------|-----|-|
 | `id` | `String` (cuid) | |
+| `key` | `String?` | optional, eindeutiger Slug (z. B. `"drawer"`) |
 | `name` | `String` | eindeutig |
+| `translations` | `Json?` | `{ "de": "Schublade", "en": "Drawer" }` |
 | `icon` | `String?` | Emoji |
 | `color` | `String?` | Hex-Farbe |
 
@@ -290,15 +309,17 @@ Alle Endpunkte außer Auth erfordern `Authorization: Bearer <accessToken>`.
 | Methode | Pfad | Auth | Beschreibung |
 |---------|------|------|--------------|
 | `GET` | `/api/health` | — | Server-Status |
-| `POST` | `/api/auth/register` | — | Account registrieren |
+| `POST` | `/api/auth/register` | — | Account registrieren (wenn aktiviert) |
 | `POST` | `/api/auth/login` | — | Login |
 | `POST` | `/api/auth/refresh` | — | Access Token erneuern |
+| `PUT` | `/api/auth/me` | ✓ | Eigenes Profil (Name + Passwort) ändern |
 | `GET` | `/api/users` | 🔒 | Alle Nutzer |
 | `POST` | `/api/users` | 🔒 | Nutzer anlegen |
 | `PUT` | `/api/users/:id/role` | 🔒 | Rolle ändern |
+| `PUT` | `/api/users/:id/password` | 🔒 | Passwort eines anderen Nutzers zurücksetzen |
 | `DELETE` | `/api/users/:id` | 🔒 | Nutzer löschen |
-| `GET` | `/api/rooms` | ✓ | Alle Räume |
-| `POST` | `/api/rooms` | 🔒 | Raum anlegen |
+| `GET` | `/api/rooms` | ✓ | Alle Räume (inkl. `translations`) |
+| `POST` | `/api/rooms` | 🔒 | Raum anlegen (`name`, `translations?`, `icon?`) |
 | `GET` | `/api/rooms/:id` | ✓ | Raum mit Locations |
 | `PUT` | `/api/rooms/:id` | 🔒 | Raum bearbeiten |
 | `DELETE` | `/api/rooms/:id` | 🔒 | Raum löschen |
@@ -313,7 +334,7 @@ Alle Endpunkte außer Auth erfordern `Authorization: Bearer <accessToken>`.
 | `GET` | `/api/items/search?q=` | ✓ | Volltextsuche (max. 50) |
 | `GET` | `/api/items/low-stock` | ✓ | Items unter Mindestbestand |
 | `GET` | `/api/items/:id` | ✓ | Item-Detail |
-| `PUT` | `/api/items/:id` | 🔒 | Item bearbeiten (inkl. `tags: string[]` Keys) |
+| `PUT` | `/api/items/:id` | 🔒 | Item bearbeiten (inkl. `tags: string[]` IDs) |
 | `DELETE` | `/api/items/:id` | 🔒 | Item löschen |
 | `POST` | `/api/items/:id/image` | 🔒 | Bild hochladen |
 | `POST` | `/api/items/:id/lend` | 🔒 | Item verleihen |
@@ -321,34 +342,38 @@ Alle Endpunkte außer Auth erfordern `Authorization: Bearer <accessToken>`.
 | `GET` | `/api/lendings/active` | ✓ | Aktive Ausleihen |
 | `GET` | `/api/lendings/:id` | ✓ | Einzelne Ausleihe |
 | `PUT` | `/api/lendings/:id/return` | 🔒 | Rückgabe eintragen |
-| `GET` | `/api/tags` | ✓ | Alle Tags (inkl. `_count.items`) |
-| `POST` | `/api/tags` | 🔒 | Tag anlegen (`key` + `name`) |
+| `GET` | `/api/tags` | ✓ | Alle Tags (inkl. `_count.items`, `translations`) |
+| `POST` | `/api/tags` | 🔒 | Tag anlegen (`name`, `translations?`) — `key` wird auto-generiert |
 | `PUT` | `/api/tags/:id` | 🔒 | Tag bearbeiten |
 | `DELETE` | `/api/tags/:id` | 🔒 | Tag löschen (kaskadiert ItemTags) |
-| `GET` | `/api/container-types` | ✓ | Alle Container-Typen |
-| `POST` | `/api/container-types` | 🔒 | Typ anlegen |
+| `GET` | `/api/container-types` | ✓ | Alle Container-Typen (inkl. `translations`) |
+| `POST` | `/api/container-types` | 🔒 | Typ anlegen (`name`, `translations?`, `icon?`, `color?`) |
 | `PUT` | `/api/container-types/:id` | 🔒 | Typ bearbeiten |
 | `DELETE` | `/api/container-types/:id` | 🔒 | Typ löschen |
-| `GET` | `/api/units` | ✓ | Alle Einheiten (inkl. `key`) |
-| `POST` | `/api/units` | 🔒 | Einheit anlegen (`key` + `name`) |
+| `GET` | `/api/units` | ✓ | Alle Einheiten (inkl. `key`, `translations`) |
+| `POST` | `/api/units` | 🔒 | Einheit anlegen (`key` + `name`, `translations?`) |
 | `PUT` | `/api/units/:id` | 🔒 | Einheit bearbeiten |
 | `DELETE` | `/api/units/:id` | 🔒 | Einheit löschen |
+| `GET` | `/api/settings` | — | Öffentliche Einstellungen (z. B. `registration_enabled`) |
+| `PUT` | `/api/settings` | 🔒 | Einstellung setzen |
+| `GET` | `/api/admin/export` | 🔒 | Vollständiger Daten-Export (JSON) |
+| `POST` | `/api/admin/import` | 🔒 | Daten-Import (überschreibt alles außer Usern) |
 
-### Tag- und Unit-Körper
+### Translations-Körper
 
 ```json
-{ "key": "food", "name": "Lebensmittel" }
+{ "name": "Küche", "translations": { "de": "Küche", "en": "Kitchen", "fr": "Cuisine" } }
+```
+
+Beim Update werden die `translations` vollständig ersetzt — das Frontend merged fehlende Sprachen selbst (Patch-Logik in `TranslationsPage`).
+
+### Unit-Körper
+
+```json
+{ "key": "piece", "name": "Stück", "translations": { "de": "Stück", "en": "piece" } }
 ```
 
 `key` muss dem Muster `/^[a-z][a-z0-9_]*$/` entsprechen (Zod-Validierung, max. 50 Zeichen). Doppelte Keys oder Namen werden mit `409 Conflict` abgelehnt.
-
-### Items PUT — Tags setzen
-
-```json
-{ "tags": ["food", "medicine"] }
-```
-
-`tags` ist ein Array von Tag-Keys. Das Backend sucht die Tags per `findTagsByKeys` — nicht vorhandene Keys werden still ignoriert (kein auto-create).
 
 ### Fehlerformat
 
@@ -387,25 +412,29 @@ frontend/src/i18n/
     en.json           Englisch
 ```
 
-**Namespaces:** `common`, `nav`, `login`, `dashboard`, `rooms`, `roomDetail`, `location`, `item`, `condition`, `search`, `lendings`, `containerTypes`, `units`, `tags`, `users`, `itemsOverview`, `tagNames`, `unitNames`
+**Namespaces:** `common`, `nav`, `login`, `dashboard`, `rooms`, `roomDetail`, `location`, `item`, `condition`, `search`, `lendings`, `containerTypes`, `units`, `tags`, `users`, `itemsOverview`, `translations`, `emojiPicker`, `admin`, `profile`, `tagNames`, `unitNames`, `containerTypeNames`, `roomNames`
 
 **Sprachumschalter:** Button in der Sidebar-Footer-Leiste. Speichert Auswahl in `localStorage('lang')`.
 
 **Pluralformen:** i18next-Konvention `key_one` / `key_other` mit `t('key', { count })` — z. B. für Container- und Item-Zähler.
 
-### Tags und Units übersetzen
+### Übersetzungsstrategie (zweistufig)
 
-Tags und Units besitzen einen technischen `key` (Slug) und einen `name` (Anzeigename/Fallback). In Templates:
+Übersetzungen für Räume, Tags, ContainerTypes und Units werden **primär in der Datenbank** als `translations Json?` gespeichert. Die i18n-JSON-Dateien (`tagNames`, `roomNames` usw.) dienen als Fallback für Seed-Daten mit sprechendem `key`.
 
-```tsx
-// Tag anzeigen
-t(`tagNames.${tag.key}`, { defaultValue: tag.name })
+Die Helper-Funktionen in `frontend/src/utils/localizedName.ts` kapseln die Priorität:
 
-// Einheit anzeigen
-t(`unitNames.${item.unit}`, { defaultValue: item.unit })
+```ts
+// Priorität: 1. DB-Übersetzung  2. i18n JSON-Fallback  3. name-Feld
+locRoomName(t, room)           // room.translations[lang] || t('roomNames.key') || name
+locContainerTypeName(t, ct)    // ct.translations[lang]   || t('containerTypeNames.key') || name
+locTagName(t, tag)             // tag.translations[lang]  || t('tagNames.key') || name
+locUnitName(t, unit)           // unit.translations[lang] || t('unitNames.key') || name
 ```
 
-Benutzerdefinierte Tags/Units, die nicht in den JSON-Dateien stehen, zeigen automatisch den Admin-Namen als Fallback.
+Benutzerdefinierte Einträge ohne `key` zeigen automatisch den DB-`name` als Fallback.
+
+Die **TranslationsPage** (`/translations`) erlaubt das zentrale Bearbeiten von DE/EN-Übersetzungen für alle vier Typen. Andere bereits gespeicherte Sprachen (z. B. `fr`) bleiben beim Speichern erhalten (Merge-Logik im Frontend).
 
 ---
 
@@ -479,7 +508,7 @@ Erstellt (löscht vorher alle Daten):
 
 ## Tests
 
-**Backend** — 13 Dateien, 124 Tests (Vitest + supertest)
+**Backend** — 14 Dateien (Vitest + supertest)
 
 | Test-Datei | Was wird getestet |
 |------------|-------------------|
@@ -487,23 +516,45 @@ Erstellt (löscht vorher alle Daten):
 | `auth.middleware.test.ts` | `authenticate` + `requireEditor` Middleware |
 | `errorHandler.test.ts` | ZodError → 400, generische Fehler → 500 |
 | `auth.routes.test.ts` | Register, Login, Refresh-Token |
-| `rooms.routes.test.ts` | CRUD Räume inkl. PUT |
+| `rooms.routes.test.ts` | CRUD Räume, `translations`-Objekt, 404 |
 | `locations.routes.test.ts` | GET, PUT (Name + Typ), DELETE, Items-Endpunkte |
 | `items.routes.test.ts` | Suche, Low-Stock, CRUD, purchaseUrl-Clearing |
-| `containerTypes.routes.test.ts` | CRUD Container-Typen, Farbvalidierung |
+| `containerTypes.routes.test.ts` | CRUD, `translations` inkl. Drittsprache, Farbvalidierung |
 | `lendings.routes.test.ts` | Verleihen, Rückgabe, Doppelrückgabe (409), Historie |
-| `tags.routes.test.ts` | Tags CRUD, Key-Validierung, 409 bei Duplikat |
-| `units.routes.test.ts` | Units CRUD mit key + name, 409 bei Duplikat |
+| `tags.routes.test.ts` | Tags CRUD, `translations`, 409 bei Duplikat |
+| `units.routes.test.ts` | Units CRUD mit key + name + `translations`, 409 |
 | `users.routes.test.ts` | CRUD Nutzer, Rollen-Management |
+| `admin.routes.test.ts` | Export/Import |
 | `openapi.test.ts` | Spec-Struktur, alle Pfade und Schemas vorhanden |
 
-**Frontend** — 3 Dateien, 12 Tests (Vitest + jsdom)
+**Frontend** — 3 Dateien (Vitest + jsdom)
 
 | Test-Datei | Was wird getestet |
 |------------|-------------------|
 | `AuthContext.test.tsx` | Login, Logout, Register, localStorage |
 | `PrivateRoute.test.tsx` | Redirect ohne Session, Inhalt mit Session |
-| `types.test.ts` | `CONDITION_LABELS` und `CONDITION_COLORS` |
+| `localizedName.test.ts` | `locRoomName`, `locContainerTypeName`, `locTagName`, `locUnitName` — translations/Fallback/Drittsprachen |
+
+---
+
+## CI/CD (GitHub Actions)
+
+Datei: `.github/workflows/release.yml`
+
+```text
+push → main
+ └── Job: test
+      ├── npm ci && npm test (Backend)
+      └── npm ci && npm test (Frontend)
+          ↓ (nur bei Erfolg)
+ └── Job: build-and-push
+      ├── Docker Build backend  → soschlegel/home-inventory-backend:latest + :<sha>
+      ├── Docker Build frontend → soschlegel/home-inventory-frontend:latest + :<sha>
+      ├── Docker Build nginx    → soschlegel/home-inventory-nginx:latest + :<sha>
+      └── Portainer Webhook     (optional, Secret PORTAINER_WEBHOOK_URL)
+```
+
+GitHub Secrets benötigt: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`. Optional: `PORTAINER_WEBHOOK_URL`.
 
 ---
 

@@ -135,12 +135,14 @@ export default function EmojiPickerInput({ value, onChange, className = '' }: Pr
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const ref = useRef<HTMLDivElement>(null);
+  const [popupPos, setPopupPos] = useState({ top: 0, left: 0 });
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setOpen(false);
         setSearch('');
       }
@@ -149,6 +151,18 @@ export default function EmojiPickerInput({ value, onChange, className = '' }: Pr
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
+  const handleToggle = () => {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPopupPos({
+        top: rect.bottom + 4,
+        left: Math.min(rect.left, window.innerWidth - 296),
+      });
+    }
+    setOpen((o) => !o);
+    if (open) setSearch('');
+  };
+
   const filtered = search.trim()
     ? EMOJIS.filter((e) =>
         e.keywords.some((k) => k.includes(search.toLowerCase().trim())),
@@ -156,10 +170,11 @@ export default function EmojiPickerInput({ value, onChange, className = '' }: Pr
     : EMOJIS;
 
   return (
-    <div ref={ref} className={`relative ${className}`}>
+    <div ref={wrapperRef} className={`relative ${className}`}>
       <button
+        ref={btnRef}
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={handleToggle}
         className="h-10 w-12 border border-gray-300 rounded-lg text-xl flex items-center justify-center hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
         title={t('emojiPicker.open')}
       >
@@ -171,7 +186,10 @@ export default function EmojiPickerInput({ value, onChange, className = '' }: Pr
       </button>
 
       {open && (
-        <div className="absolute z-50 top-12 left-0 bg-white border border-gray-200 rounded-xl shadow-xl p-3 w-72">
+        <div
+          className="fixed z-[200] bg-white border border-gray-200 rounded-xl shadow-xl p-3 w-72"
+          style={{ top: popupPos.top, left: popupPos.left }}
+        >
           <input
             autoFocus
             value={search}

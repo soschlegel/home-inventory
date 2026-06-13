@@ -29,7 +29,14 @@ app.use(express.json());
 app.use('/api/tags', tagsRouter);
 app.use(errorHandler);
 
-const mockTag = { id: 'tag-1', key: 'electronics', name: 'Elektronik', createdAt: new Date(), _count: { items: 3 } };
+const mockTag = {
+  id: 'tag-1',
+  key: 'electronics',
+  name: 'Elektronik',
+  translations: { de: 'Elektronik', en: 'Electronics' },
+  createdAt: new Date(),
+  _count: { items: 3 },
+};
 
 describe('GET /api/tags', () => {
   it('gibt alle Tags mit Item-Count zurück', async () => {
@@ -60,10 +67,21 @@ describe('POST /api/tags', () => {
 
     const res = await request(app)
       .post('/api/tags')
-      .send({ key: 'electronics', name: 'Elektronik' });
+      .send({ name: 'Elektronik' });
 
     expect(res.status).toBe(201);
-    expect(res.body.key).toBe('electronics');
+    expect(res.body.name).toBe('Elektronik');
+  });
+
+  it('erstellt einen Tag mit Übersetzungen', async () => {
+    vi.mocked(prisma.tag.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.tag.create).mockResolvedValue(mockTag as any);
+
+    const res = await request(app)
+      .post('/api/tags')
+      .send({ name: 'Elektronik', translations: { de: 'Elektronik', en: 'Electronics' } });
+
+    expect(res.status).toBe(201);
   });
 
   it('gibt 409 zurück wenn Tag bereits vorhanden', async () => {
@@ -71,15 +89,23 @@ describe('POST /api/tags', () => {
 
     const res = await request(app)
       .post('/api/tags')
-      .send({ key: 'electronics', name: 'Elektronik' });
+      .send({ name: 'Elektronik' });
 
     expect(res.status).toBe(409);
   });
 
-  it('gibt 400 zurück bei ungültigem Key-Format', async () => {
+  it('gibt 400 zurück bei fehlendem name', async () => {
     const res = await request(app)
       .post('/api/tags')
-      .send({ key: 'Elektronik!', name: 'Elektronik' });
+      .send({});
+
+    expect(res.status).toBe(400);
+  });
+
+  it('gibt 400 zurück bei Sprachcode kürzer als 2 Zeichen in translations', async () => {
+    const res = await request(app)
+      .post('/api/tags')
+      .send({ name: 'Test', translations: { x: 'Test' } });
 
     expect(res.status).toBe(400);
   });
@@ -96,6 +122,19 @@ describe('PUT /api/tags/:id', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.name).toBe('Elektronik (aktualisiert)');
+  });
+
+  it('aktualisiert Übersetzungen eines Tags', async () => {
+    const updated = { ...mockTag, translations: { de: 'Elektronik', en: 'Electronics', fr: 'Électronique' } };
+    vi.mocked(prisma.tag.findFirst).mockResolvedValue(mockTag as any);
+    vi.mocked(prisma.tag.update).mockResolvedValue(updated as any);
+
+    const res = await request(app)
+      .put('/api/tags/tag-1')
+      .send({ translations: { de: 'Elektronik', en: 'Electronics', fr: 'Électronique' } });
+
+    expect(res.status).toBe(200);
+    expect(res.body.translations.fr).toBe('Électronique');
   });
 
   it('gibt 404 zurück wenn Tag nicht gefunden', async () => {

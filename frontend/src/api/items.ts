@@ -8,6 +8,9 @@ export const getItem = (id: string) => api.get<Item>(`/items/${id}`).then((r) =>
 export const searchItems = (q: string) =>
   api.get<Item[]>('/items/search', { params: { q } }).then((r) => r.data);
 
+export const searchItemsOverview = (q: string) =>
+  api.get<ItemOverview[]>('/items/search', { params: { q } }).then((r) => r.data);
+
 export const getLowStockItems = () =>
   api.get<Item[]>('/items/low-stock').then((r) => r.data);
 

@@ -36,6 +36,7 @@ app.use(errorHandler);
 const mockType = {
   id: 'type-1',
   name: 'Schublade',
+  translations: { de: 'Schublade', en: 'Drawer' },
   icon: '🗄️',
   color: '#4F46E5',
   createdAt: new Date(),
@@ -51,6 +52,7 @@ describe('GET /api/container-types', () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
     expect(res.body[0].name).toBe('Schublade');
+    expect(res.body[0].translations).toEqual({ de: 'Schublade', en: 'Drawer' });
   });
 });
 
@@ -60,10 +62,20 @@ describe('POST /api/container-types', () => {
 
     const res = await request(app)
       .post('/api/container-types')
-      .send({ name: 'Schublade', icon: '🗄️', color: '#4F46E5' });
+      .send({ name: 'Schublade', translations: { de: 'Schublade', en: 'Drawer' }, icon: '🗄️', color: '#4F46E5' });
 
     expect(res.status).toBe(201);
     expect(res.body.name).toBe('Schublade');
+  });
+
+  it('erstellt einen Container-Typ ohne Übersetzungen', async () => {
+    vi.mocked(prisma.containerType.create).mockResolvedValue({ ...mockType, translations: null } as any);
+
+    const res = await request(app)
+      .post('/api/container-types')
+      .send({ name: 'Schublade' });
+
+    expect(res.status).toBe(201);
   });
 
   it('gibt 400 zurück bei fehlendem name', async () => {
@@ -75,6 +87,13 @@ describe('POST /api/container-types', () => {
     const res = await request(app)
       .post('/api/container-types')
       .send({ name: 'Schublade', color: 'rot' });
+    expect(res.status).toBe(400);
+  });
+
+  it('gibt 400 zurück bei Sprachcode kürzer als 2 Zeichen in translations', async () => {
+    const res = await request(app)
+      .post('/api/container-types')
+      .send({ name: 'Test', translations: { x: 'Test' } });
     expect(res.status).toBe(400);
   });
 });
@@ -90,6 +109,19 @@ describe('PUT /api/container-types/:id', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.name).toBe('Regal');
+  });
+
+  it('aktualisiert Übersetzungen eines Container-Typs', async () => {
+    const updated = { ...mockType, translations: { de: 'Regal', en: 'Shelf', fr: 'Étagère' } };
+    vi.mocked(prisma.containerType.findFirst).mockResolvedValue(mockType as any);
+    vi.mocked(prisma.containerType.update).mockResolvedValue(updated as any);
+
+    const res = await request(app)
+      .put('/api/container-types/type-1')
+      .send({ translations: { de: 'Regal', en: 'Shelf', fr: 'Étagère' } });
+
+    expect(res.status).toBe(200);
+    expect(res.body.translations.fr).toBe('Étagère');
   });
 
   it('gibt 404 zurück wenn Typ nicht gefunden', async () => {

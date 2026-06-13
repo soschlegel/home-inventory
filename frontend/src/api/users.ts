@@ -10,4 +10,7 @@ export const createUser = (data: { email: string; password: string; name?: strin
 export const updateUserRole = (id: string, role: UserRole) =>
   api.put<UserListEntry>(`/users/${id}/role`, { role }).then((r) => r.data);
 
+export const resetUserPassword = (id: string, password: string) =>
+  api.put(`/users/${id}/password`, { password });
+
 export const deleteUser = (id: string) => api.delete(`/users/${id}`);

@@ -12,13 +12,13 @@ Technische Details: [TECHNICAL.md](TECHNICAL.md)
 - **Gegenstände:** Name, Menge, Einheit, Zustand (Neu/Gut/Abgenutzt/Defekt), Foto, Tags, Mindestbestand
 - **Kaufinformationen:** Link, Preis, Datum, Garantie, Seriennummer, Barcode
 - **Verleihistorie:** An Person verleihen, Rückgabe eintragen, aktive Ausleihen auf dem Dashboard
-- **Volltextsuche** über Name, Beschreibung, Seriennummer und Barcode
 - **Einheitenverwaltung:** Verwaltbare Vorschlagsliste für Mengeneinheiten (kg, L, Stück …) — übersetzbar per technischem Schlüssel
-- **Tag-Verwaltung:** Frei definierbare Tags für Gegenstände (Werkzeug, Lebensmittel …), filterbar in der Übersicht — übersetzbar per technischem Schlüssel
+- **Tag-Verwaltung:** Frei definierbare Tags für Gegenstände (Werkzeug, Lebensmittel …), filterbar in der Übersicht (Multi-Tag-Filter)
 - **Container-Typen:** Benutzerdefinierte Typen mit Emoji (Schrank, Karton …)
-- **Gesamtübersicht:** Alle Gegenstände tabellarisch, nach Name gruppiert, mit Tag-Filter und Lagerort-Links
-- **Mehrsprachig:** Deutsch (Standard) und Englisch, Sprachwahl in der Navigation
-- **Rollen:** EDITOR (Lesen + Schreiben) und VIEWER (nur Lesen)
+- **Gesamtübersicht:** Alle Gegenstände tabellarisch, nach Name gruppiert, mit mehrfachem Tag-Filter und Lagerort-Links
+- **Übersetzungsverwaltung:** Zentrale Seite zum Pflegen von Namen in beliebig vielen Sprachen (DE/EN als Standard, erweiterbar)
+- **Mehrsprachig:** Deutsch (Standard) und Englisch, Sprachwahl in der Navigation — Übersetzungen im JSON-Format in der DB gespeichert
+- **Rollen:** EDITOR (Lesen + Schreiben + Passwort-Reset anderer Nutzer) und VIEWER (nur Lesen)
 
 ---
 
@@ -165,7 +165,7 @@ cd backend && npm test
 cd frontend && npm test
 ```
 
-124 Backend-Tests (Vitest + supertest) · 12 Frontend-Tests (Vitest + jsdom)
+14 Backend-Testdateien (Vitest + supertest) · 3 Frontend-Testdateien (Vitest + jsdom)
 
 ---
 
@@ -246,7 +246,15 @@ bash scripts/restore.sh ./backups/2026-06-13_10-00-00
 
 ## Releases & Upgrades
 
-### Neues Release bauen und veröffentlichen (Entwicklungsrechner)
+### Automatisches Release (GitHub Actions)
+
+Jeder Push auf den Branch `main` löst automatisch einen CI/CD-Workflow aus (`.github/workflows/release.yml`):
+
+1. **Tests** — Backend- und Frontend-Tests laufen zuerst; schlägt ein Test fehl, wird kein Image gebaut
+2. **Build & Push** — drei Docker-Images werden gebaut und als `:latest` + `:<sha>` auf Docker Hub gepusht
+3. **Portainer-Webhook** (optional) — falls Secret `PORTAINER_WEBHOOK_URL` gesetzt ist, wird der Stack neu deployed
+
+### Manuelles Release (Entwicklungsrechner)
 
 ```bash
 bash scripts/release.sh 1.1.0

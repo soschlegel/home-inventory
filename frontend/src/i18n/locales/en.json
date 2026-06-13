@@ -27,6 +27,7 @@
     "search": "Search",
     "lendings": "Lendings",
     "container_types": "Container Types",
+    "translations": "Translations",
     "users": "Users",
     "logout": "Sign out",
     "role_editor": "✏️ Editor",
@@ -191,11 +192,26 @@
     "me_badge": "(me)",
     "confirm_delete": "Really delete user \"{{name}}\"?",
     "error_create": "Error creating user",
-    "delete_title": "Delete user"
+    "delete_title": "Delete user",
+    "reset_password_btn": "Reset password",
+    "reset_new_password": "New password (min. 8 characters)"
+  },
+  "translations": {
+    "title": "Translations",
+    "subtitle": "Manage labels in all languages centrally",
+    "rooms": "Rooms",
+    "container_types": "Container Types",
+    "tags": "Tags",
+    "units": "Units",
+    "col_name": "Name",
+    "col_de": "German",
+    "col_en": "English",
+    "saved": "Saved"
   },
   "itemsOverview": {
     "title": "All Items",
-    "filter_placeholder": "Filter by name…",
+    "filter_placeholder": "Name, description, serial number or barcode…",
+    "filter_min_chars": "At least 2 characters for full-text search",
     "filter_tag_all": "All tags",
     "col_name": "Name",
     "col_quantity": "Quantity",
@@ -203,6 +219,8 @@
     "col_condition": "Condition",
     "no_items": "No items found.",
     "summary": "{{total}} entries · {{unique}} distinct names",
+    "search_results_one": "{{count}} result for "{{query}}"",
+    "search_results_other": "{{count}} results for "{{query}}"",
     "lent_badge": "Lent out",
     "locations_count": "×{{count}}"
   },

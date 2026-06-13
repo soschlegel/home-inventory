@@ -9,6 +9,10 @@ router.use(authenticate);
 const UnitBody = z.object({
   key: z.string().min(1).max(50).regex(/^[a-z][a-z0-9_]*$/),
   name: z.string().min(1).max(50),
+  translations: z
+    .record(z.string().min(2).max(10), z.string().min(1).max(200))
+    .nullable()
+    .optional(),
 });
 
 // GET /api/units

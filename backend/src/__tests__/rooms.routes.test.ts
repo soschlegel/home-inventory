@@ -41,9 +41,9 @@ app.use(errorHandler);
 const mockRoom = {
   id: 'room-1',
   name: 'Wohnzimmer',
+  translations: { de: 'Wohnzimmer', en: 'Living Room' },
   description: null,
   icon: null,
-  userId: 'test-user-id',
   _count: { locations: 2 },
 };
 
@@ -56,6 +56,7 @@ describe('GET /api/rooms', () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
     expect(res.body[0].name).toBe('Wohnzimmer');
+    expect(res.body[0].translations).toEqual({ de: 'Wohnzimmer', en: 'Living Room' });
   });
 });
 
@@ -72,6 +73,16 @@ describe('POST /api/rooms', () => {
     expect(prisma.room.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ name: 'Wohnzimmer' }) }),
     );
+  });
+
+  it('erstellt einen Raum mit Übersetzungen', async () => {
+    vi.mocked(prisma.room.create).mockResolvedValue(mockRoom as any);
+
+    const res = await request(app)
+      .post('/api/rooms')
+      .send({ name: 'Wohnzimmer', translations: { de: 'Wohnzimmer', en: 'Living Room' } });
+
+    expect(res.status).toBe(201);
   });
 
   it('gibt 400 zurück bei fehlendem name', async () => {
@@ -96,6 +107,19 @@ describe('PUT /api/rooms/:id', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.name).toBe('Küche');
+  });
+
+  it('aktualisiert Übersetzungen und unterstützt zusätzliche Sprachen', async () => {
+    const updated = { ...mockRoom, translations: { de: 'Wohnzimmer', en: 'Living Room', fr: 'Salon' } };
+    vi.mocked(prisma.room.findFirst).mockResolvedValue(mockRoom as any);
+    vi.mocked(prisma.room.update).mockResolvedValue(updated as any);
+
+    const res = await request(app)
+      .put('/api/rooms/room-1')
+      .send({ translations: { de: 'Wohnzimmer', en: 'Living Room', fr: 'Salon' } });
+
+    expect(res.status).toBe(200);
+    expect(res.body.translations.fr).toBe('Salon');
   });
 
   it('gibt 404 zurück wenn Raum nicht existiert', async () => {

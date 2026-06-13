@@ -21,23 +21,23 @@ export default function ContainerTypesPage() {
   });
 
   const [showForm, setShowForm] = useState(false);
-  const [newKey, setNewKey] = useState('');
   const [newNameDe, setNewNameDe] = useState('');
   const [newNameEn, setNewNameEn] = useState('');
   const [newIcon, setNewIcon] = useState('');
 
   const createMut = useMutation({
-    mutationFn: () =>
-      createContainerType({
-        key: newKey || undefined,
+    mutationFn: () => {
+      const translations: Record<string, string> = {};
+      if (newNameDe) translations.de = newNameDe;
+      if (newNameEn) translations.en = newNameEn;
+      return createContainerType({
         name: newNameDe,
-        nameDe: newNameDe || undefined,
-        nameEn: newNameEn || undefined,
+        translations: Object.keys(translations).length > 0 ? translations : undefined,
         icon: newIcon || undefined,
-      }),
+      });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['container-types'] });
-      setNewKey('');
       setNewNameDe('');
       setNewNameEn('');
       setNewIcon('');
@@ -51,20 +51,21 @@ export default function ContainerTypesPage() {
   });
 
   const [editId, setEditId] = useState<string | null>(null);
-  const [editKey, setEditKey] = useState('');
   const [editNameDe, setEditNameDe] = useState('');
   const [editNameEn, setEditNameEn] = useState('');
   const [editIcon, setEditIcon] = useState('');
 
   const updateMut = useMutation({
-    mutationFn: () =>
-      updateContainerType(editId!, {
-        key: editKey || undefined,
-        name: editNameDe,
-        nameDe: editNameDe || undefined,
-        nameEn: editNameEn || undefined,
+    mutationFn: () => {
+      const translations: Record<string, string> = {};
+      if (editNameDe) translations.de = editNameDe;
+      if (editNameEn) translations.en = editNameEn;
+      return updateContainerType(editId!, {
+        name: editNameDe || undefined,
+        translations: Object.keys(translations).length > 0 ? translations : null,
         icon: editIcon || undefined,
-      }),
+      });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['container-types'] });
       setEditId(null);
@@ -93,13 +94,6 @@ export default function ContainerTypesPage() {
         <div className="mb-6 bg-white border border-gray-200 rounded-xl p-4">
           <div className="flex gap-3 flex-wrap">
             <EmojiPickerInput value={newIcon} onChange={setNewIcon} />
-            <input
-              aria-label={t('containerTypes.key_label')}
-              value={newKey}
-              onChange={(e) => setNewKey(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-              placeholder={t('containerTypes.key_placeholder')}
-              className="w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
-            />
             <div className="relative flex-1 min-w-32">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm">🇩🇪</span>
               <input
@@ -129,7 +123,6 @@ export default function ContainerTypesPage() {
               {t('common.save')}
             </button>
           </div>
-          <p className="text-xs text-gray-400 mt-1.5 ml-1">{t('containerTypes.key_hint')}</p>
         </div>
       )}
 
@@ -147,15 +140,6 @@ export default function ContainerTypesPage() {
                 {editId === ct.id ? (
                   <>
                     <EmojiPickerInput value={editIcon} onChange={setEditIcon} />
-                    <input
-                      aria-label={t('containerTypes.key_label')}
-                      value={editKey}
-                      onChange={(e) =>
-                        setEditKey(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
-                      }
-                      placeholder={t('containerTypes.key_placeholder')}
-                      className="w-28 border border-gray-300 rounded-lg px-3 py-1 text-sm font-mono"
-                    />
                     <div className="relative flex-1 min-w-28">
                       <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm">🇩🇪</span>
                       <input
@@ -197,15 +181,10 @@ export default function ContainerTypesPage() {
                     <span className="text-xl w-8">{ct.icon ?? '📦'}</span>
                     <span className="flex-1 font-medium text-gray-800 text-sm">
                       {locContainerTypeName(t, ct)}
-                      {ct.key && (
-                        <span className="ml-2 text-xs text-gray-400 font-mono font-normal">
-                          {ct.key}
-                        </span>
-                      )}
                     </span>
-                    {(ct.nameDe || ct.nameEn) && (
+                    {ct.translations && Object.keys(ct.translations).length > 0 && (
                       <span className="text-xs text-gray-400">
-                        {ct.nameDe && '🇩🇪'}{ct.nameEn && ' 🇬🇧'}
+                        {ct.translations.de && '🇩🇪'}{ct.translations.en && ' 🇬🇧'}
                       </span>
                     )}
                     <span className="text-xs text-gray-400">
@@ -216,9 +195,8 @@ export default function ContainerTypesPage() {
                       aria-label={t('containerTypes.edit_label')}
                       onClick={() => {
                         setEditId(ct.id);
-                        setEditKey(ct.key ?? '');
-                        setEditNameDe(ct.nameDe ?? ct.name);
-                        setEditNameEn(ct.nameEn ?? '');
+                        setEditNameDe(ct.translations?.de ?? ct.name);
+                        setEditNameEn(ct.translations?.en ?? '');
                         setEditIcon(ct.icon ?? '');
                       }}
                       className="p-1.5 text-gray-400 hover:text-indigo-600"

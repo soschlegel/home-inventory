@@ -73,8 +73,16 @@ router.get('/search', async (req, res, next) => {
         ],
       },
       include: {
+        location: {
+          include: {
+            room: { select: { id: true, key: true, name: true } },
+            parent: { select: { id: true, name: true } },
+          },
+        },
         tags: { include: { tag: true } },
-        location: { include: { room: { select: { id: true, name: true } } } },
+        _count: {
+          select: { lendings: { where: { returnedAt: null } } },
+        },
       },
       orderBy: { name: 'asc' },
       take: 50,

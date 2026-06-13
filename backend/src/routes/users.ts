@@ -63,6 +63,20 @@ router.put('/:id/role', requireEditor, async (req, res, next) => {
   }
 });
 
+// PUT /api/users/:id/password — Passwort zurücksetzen (nur EDITOR)
+router.put('/:id/password', requireEditor, async (req, res, next) => {
+  try {
+    const { password } = z.object({ password: z.string().min(8) }).parse(req.body);
+    const existing = await prisma.user.findFirst({ where: { id: req.params.id } });
+    if (!existing) { res.status(404).json({ error: 'Nutzer nicht gefunden' }); return; }
+    const passwordHash = await bcrypt.hash(password, 12);
+    await prisma.user.update({ where: { id: req.params.id }, data: { passwordHash } });
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
 // DELETE /api/users/:id — Nutzer löschen (nur EDITOR, nicht sich selbst)
 router.delete('/:id', requireEditor, async (req, res, next) => {
   try {

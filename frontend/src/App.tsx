@@ -9,7 +9,6 @@ import RoomsPage from './pages/RoomsPage';
 import RoomDetailPage from './pages/RoomDetailPage';
 import LocationDetailPage from './pages/LocationDetailPage';
 import ItemDetailPage from './pages/ItemDetailPage';
-import SearchPage from './pages/SearchPage';
 import ContainerTypesPage from './pages/ContainerTypesPage';
 import UnitsPage from './pages/UnitsPage';
 import LendingsPage from './pages/LendingsPage';
@@ -18,6 +17,7 @@ import ItemsOverviewPage from './pages/ItemsOverviewPage';
 import TagsPage from './pages/TagsPage';
 import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
+import TranslationsPage from './pages/TranslationsPage';
 
 export default function App() {
   const { isLoading } = useAuth();
@@ -35,11 +35,11 @@ export default function App() {
           <Route path="/locations/:id" element={<LocationDetailPage />} />
           <Route path="/items/:id" element={<ItemDetailPage />} />
           <Route path="/items-overview" element={<ItemsOverviewPage />} />
-          <Route path="/search" element={<SearchPage />} />
           <Route path="/lendings" element={<LendingsPage />} />
           <Route path="/container-types" element={<ContainerTypesPage />} />
           <Route path="/units" element={<UnitsPage />} />
           <Route path="/tags" element={<TagsPage />} />
+          <Route path="/translations" element={<TranslationsPage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/profile" element={<ProfilePage />} />

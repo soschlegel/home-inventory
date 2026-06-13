@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { randomUUID } from 'crypto';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { authenticate, requireEditor } from '../middleware/auth';
@@ -6,11 +7,21 @@ import { authenticate, requireEditor } from '../middleware/auth';
 const router = Router();
 router.use(authenticate);
 
-const ContainerTypeBody = z.object({
-  key: z.string().regex(/^[a-z][a-z0-9_]*$/).optional(),
+const translationsSchema = z
+  .record(z.string().min(2).max(10), z.string().min(1).max(200))
+  .nullable()
+  .optional();
+
+const ContainerTypeCreateBody = z.object({
   name: z.string().min(1).max(50),
-  nameDe: z.string().min(1).max(50).optional(),
-  nameEn: z.string().min(1).max(50).optional(),
+  translations: translationsSchema,
+  icon: z.string().optional(),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+});
+
+const ContainerTypeUpdateBody = z.object({
+  name: z.string().min(1).max(50).optional(),
+  translations: translationsSchema,
   icon: z.string().optional(),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
 });
@@ -31,8 +42,8 @@ router.get('/', async (_req, res, next) => {
 // POST /api/container-types
 router.post('/', requireEditor, async (req, res, next) => {
   try {
-    const data = ContainerTypeBody.parse(req.body);
-    const type = await prisma.containerType.create({ data });
+    const data = ContainerTypeCreateBody.parse(req.body);
+    const type = await prisma.containerType.create({ data: { ...data, key: randomUUID() } });
     res.status(201).json(type);
   } catch (err) {
     next(err);
@@ -44,7 +55,7 @@ router.put('/:id', requireEditor, async (req, res, next) => {
   try {
     const existing = await prisma.containerType.findFirst({ where: { id: req.params.id } });
     if (!existing) { res.status(404).json({ error: 'Container-Typ nicht gefunden' }); return; }
-    const data = ContainerTypeBody.partial().parse(req.body);
+    const data = ContainerTypeUpdateBody.parse(req.body);
     const type = await prisma.containerType.update({ where: { id: req.params.id }, data });
     res.json(type);
   } catch (err) {

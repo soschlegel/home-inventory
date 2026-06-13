@@ -27,6 +27,7 @@
     "search": "Suche",
     "lendings": "Ausleihen",
     "container_types": "Container-Typen",
+    "translations": "Übersetzungen",
     "users": "Nutzer",
     "logout": "Abmelden",
     "role_editor": "✏️ Editor",
@@ -191,11 +192,26 @@
     "me_badge": "(ich)",
     "confirm_delete": "Nutzer \"{{name}}\" wirklich löschen?",
     "error_create": "Fehler beim Anlegen",
-    "delete_title": "Nutzer löschen"
+    "delete_title": "Nutzer löschen",
+    "reset_password_btn": "Passwort zurücksetzen",
+    "reset_new_password": "Neues Passwort (min. 8 Zeichen)"
+  },
+  "translations": {
+    "title": "Übersetzungen",
+    "subtitle": "Bezeichnungen zentral in allen Sprachen pflegen",
+    "rooms": "Räume",
+    "container_types": "Container-Typen",
+    "tags": "Tags",
+    "units": "Einheiten",
+    "col_name": "Name",
+    "col_de": "Deutsch",
+    "col_en": "Englisch",
+    "saved": "Gespeichert"
   },
   "itemsOverview": {
     "title": "Alle Gegenstände",
-    "filter_placeholder": "Name filtern…",
+    "filter_placeholder": "Name, Beschreibung, Seriennummer oder Barcode…",
+    "filter_min_chars": "Mindestens 2 Zeichen für Volltextsuche",
     "filter_tag_all": "Alle Tags",
     "col_name": "Name",
     "col_quantity": "Menge",
@@ -203,6 +219,8 @@
     "col_condition": "Zustand",
     "no_items": "Keine Gegenstände gefunden.",
     "summary": "{{total}} Einträge · {{unique}} unterschiedliche Bezeichnungen",
+    "search_results_one": "{{count}} Treffer für „{{query}}"",
+    "search_results_other": "{{count}} Treffer für „{{query}}"",
     "lent_badge": "Ausgeliehen",
     "locations_count": "{{count}}× vorhanden"
   },

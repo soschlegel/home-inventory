@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRight, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { getAllItems } from '../api/items';
+import { getAllItems, searchItemsOverview } from '../api/items';
 import { getTags } from '../api/tags';
+import { locTagName } from '../utils/localizedName';
 import type { ItemOverview, ItemCondition } from '../types';
 import { CONDITION_COLORS } from '../types';
 import Spinner from '../components/Spinner';
@@ -36,23 +37,49 @@ function LocationPath({ item }: { item: ItemOverview }) {
 export default function ItemsOverviewPage() {
   const { t } = useTranslation();
   const [filter, setFilter] = useState('');
-  const [selectedTagKey, setSelectedTagKey] = useState('');
+  const [debouncedFilter, setDebouncedFilter] = useState('');
+  const [selectedTagIds, setSelectedTagIds] = useState<Set<string>>(new Set());
 
-  const { data: items, isLoading } = useQuery({
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedFilter(filter), 300);
+    return () => clearTimeout(timer);
+  }, [filter]);
+
+  const isSearchMode = debouncedFilter.length >= 2;
+
+  const { data: allItems, isLoading: allLoading } = useQuery({
     queryKey: ['items-overview'],
     queryFn: getAllItems,
+    enabled: !isSearchMode,
   });
+
+  const { data: searchResults, isLoading: searchLoading } = useQuery({
+    queryKey: ['items-search', debouncedFilter],
+    queryFn: () => searchItemsOverview(debouncedFilter),
+    enabled: isSearchMode,
+  });
+
   const { data: allTags } = useQuery({ queryKey: ['tags'], queryFn: getTags });
+
+  const items = isSearchMode ? searchResults : allItems;
+  const isLoading = isSearchMode ? searchLoading : allLoading;
+
+  const toggleTag = (id: string) => {
+    setSelectedTagIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const groups = useMemo<ItemGroup[]>(() => {
     if (!items) return [];
-    const q = filter.trim().toLowerCase();
 
-    let filtered = q ? items.filter((i) => i.name.toLowerCase().includes(q)) : items;
-
-    if (selectedTagKey) {
+    let filtered = items;
+    if (selectedTagIds.size > 0) {
       filtered = filtered.filter((i) =>
-        i.tags?.some(({ tag }) => tag.key === selectedTagKey)
+        i.tags?.some(({ tag }) => selectedTagIds.has(tag.id))
       );
     }
 
@@ -66,52 +93,70 @@ export default function ItemsOverviewPage() {
       }
     }
     return result;
-  }, [items, filter, selectedTagKey]);
+  }, [items, selectedTagIds]);
 
   const totalEntries = groups.reduce((s, g) => s + g.items.length, 0);
 
-  if (isLoading) return <Spinner />;
+  if (isLoading && !items) return <Spinner />;
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('itemsOverview.title')}</h1>
 
       <div className="mb-4 space-y-2">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              aria-label={t('itemsOverview.filter_placeholder')}
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              placeholder={t('itemsOverview.filter_placeholder')}
-              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          {allTags && allTags.length > 0 && (
-            <select
-              value={selectedTagKey}
-              onChange={(e) => setSelectedTagKey(e.target.value)}
-              aria-label={t('itemsOverview.filter_tag_all')}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">{t('itemsOverview.filter_tag_all')}</option>
-              {allTags.map((tag) => (
-                <option key={tag.key} value={tag.key}>
-                  {t(`tagNames.${tag.key}`, { defaultValue: tag.name })}
-                </option>
-              ))}
-            </select>
+        <div className="relative">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            aria-label={t('itemsOverview.filter_placeholder')}
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder={t('itemsOverview.filter_placeholder')}
+            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          {isLoading && items && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            </div>
           )}
         </div>
+
+        {filter.length === 1 && (
+          <p className="text-xs text-gray-400 px-1">{t('itemsOverview.filter_min_chars')}</p>
+        )}
+
+        {allTags && allTags.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {allTags.map((tag) => {
+              const active = selectedTagIds.has(tag.id);
+              return (
+                <button
+                  key={tag.id}
+                  type="button"
+                  onClick={() => toggleTag(tag.id)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    active
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {locTagName(t, tag)}
+                  {active && ' ✕'}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {items && (
           <p className="text-xs text-gray-500">
-            {t('itemsOverview.summary', { total: totalEntries, unique: groups.length })}
+            {isSearchMode
+              ? t('itemsOverview.search_results', { count: totalEntries, query: debouncedFilter })
+              : t('itemsOverview.summary', { total: totalEntries, unique: groups.length })}
           </p>
         )}
       </div>
 
-      {groups.length === 0 ? (
+      {groups.length === 0 && !isLoading ? (
         <div className="bg-white border border-gray-200 rounded-xl py-10 text-center text-gray-400 text-sm">
           {t('itemsOverview.no_items')}
         </div>

@@ -4,12 +4,14 @@ export interface Unit {
   id: string;
   key: string;
   name: string;
+  translations?: Record<string, string> | null;
 }
 
 export interface Tag {
   id: string;
   key: string;
   name: string;
+  translations?: Record<string, string> | null;
   _count?: { items: number };
   createdAt?: string;
 }
@@ -33,8 +35,7 @@ export interface ContainerType {
   id: string;
   key?: string | null;
   name: string;
-  nameDe?: string | null;
-  nameEn?: string | null;
+  translations?: Record<string, string> | null;
   icon?: string | null;
   color?: string | null;
   _count?: { locations: number };
@@ -44,6 +45,7 @@ export interface Room {
   id: string;
   key?: string | null;
   name: string;
+  translations?: Record<string, string> | null;
   description?: string | null;
   icon?: string | null;
   _count?: { locations: number };

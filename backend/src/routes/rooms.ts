@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { randomUUID } from 'crypto';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { authenticate, requireEditor } from '../middleware/auth';
@@ -6,9 +7,21 @@ import { authenticate, requireEditor } from '../middleware/auth';
 const router = Router();
 router.use(authenticate);
 
-const RoomBody = z.object({
-  key: z.string().regex(/^[a-z][a-z0-9_]*$/).optional(),
+const translationsSchema = z
+  .record(z.string().min(2).max(10), z.string().min(1).max(200))
+  .nullable()
+  .optional();
+
+const RoomCreateBody = z.object({
   name: z.string().min(1).max(100),
+  translations: translationsSchema,
+  description: z.string().optional(),
+  icon: z.string().optional(),
+});
+
+const RoomUpdateBody = z.object({
+  name: z.string().min(1).max(100).optional(),
+  translations: translationsSchema,
   description: z.string().optional(),
   icon: z.string().optional(),
 });
@@ -36,8 +49,8 @@ router.get('/', async (_req, res, next) => {
 // POST /api/rooms
 router.post('/', requireEditor, async (req, res, next) => {
   try {
-    const data = RoomBody.parse(req.body);
-    const room = await prisma.room.create({ data });
+    const data = RoomCreateBody.parse(req.body);
+    const room = await prisma.room.create({ data: { ...data, key: randomUUID() } });
     res.status(201).json(room);
   } catch (err) {
     next(err);
@@ -78,7 +91,7 @@ router.put('/:id', requireEditor, async (req, res, next) => {
   try {
     const existing = await prisma.room.findFirst({ where: { id: req.params.id } });
     if (!existing) { res.status(404).json({ error: 'Raum nicht gefunden' }); return; }
-    const data = RoomBody.partial().parse(req.body);
+    const data = RoomUpdateBody.parse(req.body);
     const room = await prisma.room.update({ where: { id: req.params.id }, data });
     res.json(room);
   } catch (err) {
