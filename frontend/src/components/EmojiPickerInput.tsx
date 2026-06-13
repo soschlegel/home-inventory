@@ -3,42 +3,48 @@ import { Smile, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const EMOJIS: { emoji: string; keywords: string[] }[] = [
-  // Räume & Möbel
-  { emoji: '🏠', keywords: ['haus', 'home', 'house', 'wohnung'] },
-  { emoji: '🏡', keywords: ['haus', 'garten', 'home', 'garden'] },
-  { emoji: '🛏', keywords: ['bett', 'schlafzimmer', 'bedroom', 'bed'] },
-  { emoji: '🛁', keywords: ['bad', 'badewanne', 'bathroom', 'bath'] },
-  { emoji: '🚿', keywords: ['dusche', 'bad', 'shower', 'bathroom'] },
-  { emoji: '🪑', keywords: ['stuhl', 'sitz', 'chair', 'seat'] },
-  { emoji: '🛋', keywords: ['sofa', 'couch', 'wohnzimmer', 'living'] },
-  { emoji: '🚪', keywords: ['tür', 'door', 'eingang', 'entrance'] },
-  { emoji: '🪟', keywords: ['fenster', 'window'] },
-  { emoji: '🪞', keywords: ['spiegel', 'mirror'] },
-  { emoji: '🪴', keywords: ['pflanze', 'plant', 'blume', 'flower'] },
-  { emoji: '🌡', keywords: ['thermometer', 'temperatur', 'temperature'] },
-  // Küche
+  // Räume
+  { emoji: '🏠', keywords: ['haus', 'home', 'house', 'wohnung', 'gebäude'] },
+  { emoji: '🏡', keywords: ['haus', 'garten', 'home', 'garden', 'draußen'] },
+  { emoji: '🛋', keywords: ['sofa', 'couch', 'wohnzimmer', 'living', 'lounge'] },
+  { emoji: '🛏', keywords: ['bett', 'schlafzimmer', 'bedroom', 'bed', 'schlafen'] },
+  { emoji: '🛁', keywords: ['bad', 'badewanne', 'badezimmer', 'bathroom', 'bath'] },
+  { emoji: '🚿', keywords: ['dusche', 'bad', 'badezimmer', 'shower', 'bathroom'] },
   { emoji: '🍳', keywords: ['küche', 'kitchen', 'pfanne', 'kochen', 'pan', 'cook'] },
-  { emoji: '🧊', keywords: ['eis', 'kühlschrank', 'fridge', 'ice', 'kühlen'] },
-  { emoji: '🍽', keywords: ['teller', 'plate', 'geschirr', 'dishes', 'küche'] },
-  { emoji: '☕', keywords: ['kaffee', 'coffee', 'tee', 'tea', 'becher'] },
-  { emoji: '🫖', keywords: ['kanne', 'tee', 'tea', 'pot', 'teekanne'] },
-  { emoji: '🥄', keywords: ['löffel', 'spoon', 'besteck', 'cutlery'] },
-  { emoji: '🔪', keywords: ['messer', 'knife', 'küche', 'kitchen'] },
-  { emoji: '🥢', keywords: ['stäbchen', 'chopsticks', 'küche'] },
-  { emoji: '🧂', keywords: ['salz', 'salt', 'gewürz', 'spice'] },
-  { emoji: '🍾', keywords: ['flasche', 'bottle', 'wein', 'wine'] },
-  { emoji: '🥂', keywords: ['glas', 'glass', 'wein', 'wine', 'trinken'] },
+  { emoji: '🏢', keywords: ['büro', 'office', 'arbeit', 'work', 'gebäude', 'building'] },
+  { emoji: '💼', keywords: ['büro', 'office', 'arbeit', 'work', 'aktenkoffer'] },
+  { emoji: '🚗', keywords: ['garage', 'auto', 'car', 'fahrzeug', 'pkw'] },
+  { emoji: '🌳', keywords: ['garten', 'garden', 'baum', 'tree', 'draußen', 'outdoor', 'terrasse'] },
+  { emoji: '🌿', keywords: ['garten', 'terrasse', 'balkon', 'pflanze', 'plant', 'grün', 'natur'] },
+  { emoji: '🚪', keywords: ['flur', 'korridor', 'eingang', 'tür', 'door', 'hallway', 'diele'] },
+  { emoji: '🪜', keywords: ['keller', 'dachboden', 'basement', 'attic', 'leiter', 'ladder'] },
+  { emoji: '🧹', keywords: ['hauswirtschaft', 'abstellraum', 'keller', 'besen', 'broom', 'clean'] },
+  { emoji: '🪑', keywords: ['stuhl', 'sitz', 'chair', 'seat', 'esszimmer', 'dining'] },
+  { emoji: '🪟', keywords: ['fenster', 'window', 'wohnzimmer', 'zimmer'] },
+  { emoji: '🪞', keywords: ['spiegel', 'mirror', 'schlafzimmer', 'bad', 'flur'] },
+  { emoji: '🌡', keywords: ['thermometer', 'temperatur', 'temperature', 'heizung'] },
+  { emoji: '🪴', keywords: ['pflanze', 'plant', 'blume', 'flower', 'wohnzimmer', 'balkon'] },
   // Aufbewahrung & Container
-  { emoji: '📦', keywords: ['box', 'karton', 'paket', 'package', 'kiste'] },
-  { emoji: '🗃', keywords: ['ordner', 'ablage', 'archiv', 'file', 'box'] },
-  { emoji: '🗄', keywords: ['schrank', 'ablage', 'cabinet', 'storage'] },
-  { emoji: '📂', keywords: ['ordner', 'folder', 'ablage', 'file'] },
-  { emoji: '🧺', keywords: ['korb', 'wäsche', 'basket', 'laundry'] },
-  { emoji: '🪣', keywords: ['eimer', 'bucket', 'behälter'] },
-  { emoji: '🏺', keywords: ['vase', 'krug', 'vase', 'pot', 'jar'] },
-  { emoji: '🧴', keywords: ['flasche', 'creme', 'lotion', 'bottle'] },
-  { emoji: '🧹', keywords: ['besen', 'reinigung', 'broom', 'clean'] },
-  { emoji: '🧻', keywords: ['papier', 'rolle', 'paper', 'roll', 'klo'] },
+  { emoji: '📦', keywords: ['box', 'karton', 'paket', 'kiste', 'package', 'container'] },
+  { emoji: '🗃', keywords: ['schublade', 'drawer', 'ablage', 'archiv', 'ordner', 'file'] },
+  { emoji: '🗄', keywords: ['schrank', 'aktenschrank', 'cabinet', 'storage', 'regal'] },
+  { emoji: '🧳', keywords: ['koffer', 'suitcase', 'reise', 'travel', 'gepäck', 'abstellraum'] },
+  { emoji: '🧺', keywords: ['korb', 'wäschekorb', 'basket', 'laundry', 'wäsche'] },
+  { emoji: '🪣', keywords: ['eimer', 'bucket', 'behälter', 'keller'] },
+  { emoji: '🏺', keywords: ['krug', 'vase', 'pot', 'jar', 'vorratsglas'] },
+  { emoji: '📂', keywords: ['ordner', 'folder', 'ablage', 'büro', 'file'] },
+  { emoji: '🧊', keywords: ['kühlschrank', 'fridge', 'tiefkühler', 'freezer', 'eis', 'ice'] },
+  { emoji: '🧴', keywords: ['flasche', 'creme', 'lotion', 'bad', 'bottle'] },
+  { emoji: '🧻', keywords: ['papier', 'rolle', 'paper', 'roll', 'bad', 'klo'] },
+  // Küche
+  { emoji: '🍽', keywords: ['teller', 'plate', 'geschirr', 'dishes', 'küche', 'esszimmer'] },
+  { emoji: '☕', keywords: ['kaffee', 'coffee', 'tee', 'tea', 'becher', 'küche'] },
+  { emoji: '🫖', keywords: ['kanne', 'tee', 'tea', 'teekanne', 'küche'] },
+  { emoji: '🥄', keywords: ['löffel', 'spoon', 'besteck', 'cutlery', 'küche'] },
+  { emoji: '🔪', keywords: ['messer', 'knife', 'küche', 'kitchen', 'besteck'] },
+  { emoji: '🧂', keywords: ['salz', 'salt', 'gewürz', 'spice', 'vorrat'] },
+  { emoji: '🍾', keywords: ['flasche', 'bottle', 'wein', 'wine', 'keller'] },
+  { emoji: '🥂', keywords: ['glas', 'glass', 'wein', 'wine', 'trinken', 'küche'] },
   // Werkzeug
   { emoji: '🔧', keywords: ['schraubenschlüssel', 'werkzeug', 'wrench', 'tool', 'reparatur'] },
   { emoji: '🔨', keywords: ['hammer', 'werkzeug', 'tool', 'hämmern'] },
@@ -135,7 +141,7 @@ export default function EmojiPickerInput({ value, onChange, className = '' }: Pr
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const [popupPos, setPopupPos] = useState({ top: 0, left: 0 });
+  const [alignRight, setAlignRight] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
 
@@ -154,10 +160,7 @@ export default function EmojiPickerInput({ value, onChange, className = '' }: Pr
   const handleToggle = () => {
     if (!open && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      setPopupPos({
-        top: rect.bottom + 4,
-        left: Math.min(rect.left, window.innerWidth - 296),
-      });
+      setAlignRight(rect.left + 288 > window.innerWidth);
     }
     setOpen((o) => !o);
     if (open) setSearch('');
@@ -187,8 +190,7 @@ export default function EmojiPickerInput({ value, onChange, className = '' }: Pr
 
       {open && (
         <div
-          className="fixed z-[200] bg-white border border-gray-200 rounded-xl shadow-xl p-3 w-72"
-          style={{ top: popupPos.top, left: popupPos.left }}
+          className={`absolute z-[200] bg-white border border-gray-200 rounded-xl shadow-xl p-3 w-72 top-full mt-1 ${alignRight ? 'right-0' : 'left-0'}`}
         >
           <input
             autoFocus

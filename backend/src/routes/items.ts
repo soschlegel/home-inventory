@@ -22,6 +22,7 @@ const ItemBody = z.object({
   warrantyUntil: z.coerce.date().optional(),
   serialNumber: z.string().optional(),
   barcode: z.string().optional(),
+  locationId: z.string().optional(),
   tags: z.array(z.string()).optional(),
 });
 

@@ -1,16 +1,28 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, ExternalLink, Trash2, Upload, ArrowRightLeft, Pencil, X, Check } from 'lucide-react';
+import { ChevronRight, ExternalLink, Trash2, Upload, ArrowRightLeft, Pencil, X, Check, MoveRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getItem, updateItem, deleteItem, uploadItemImage } from '../api/items';
 import { lendItem, returnItem } from '../api/lendings';
 import { getUnits } from '../api/units';
 import { getTags } from '../api/tags';
+import { getRooms, getRoom } from '../api/rooms';
 import { useAuth } from '../contexts/AuthContext';
-import type { ItemCondition } from '../types';
+import type { ItemCondition, Location } from '../types';
 import { CONDITION_COLORS } from '../types';
 import Spinner from '../components/Spinner';
+
+function flattenLocations(locations: Location[], prefix = ''): { id: string; label: string }[] {
+  const result: { id: string; label: string }[] = [];
+  for (const loc of locations) {
+    result.push({ id: loc.id, label: prefix + loc.name });
+    if (loc.children?.length) {
+      result.push(...flattenLocations(loc.children, prefix + loc.name + ' › '));
+    }
+  }
+  return result;
+}
 
 export default function ItemDetailPage() {
   const { t, i18n } = useTranslation();
@@ -88,6 +100,42 @@ export default function ItemDetailPage() {
       setIsEditing(false);
     },
   });
+
+  // ── Move state ──────────────────────────────────────────────────────
+  const [showMove, setShowMove] = useState(false);
+  const [moveRoomId, setMoveRoomId] = useState('');
+  const [moveLocationId, setMoveLocationId] = useState('');
+
+  const { data: allRooms } = useQuery({
+    queryKey: ['rooms'],
+    queryFn: getRooms,
+    enabled: showMove,
+  });
+
+  const { data: moveRoom } = useQuery({
+    queryKey: ['room', moveRoomId],
+    queryFn: () => getRoom(moveRoomId),
+    enabled: !!moveRoomId,
+  });
+
+  const moveLocations = moveRoom ? flattenLocations(moveRoom.locations ?? []) : [];
+
+  const moveMut = useMutation({
+    mutationFn: () => updateItem(id!, { locationId: moveLocationId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['items', id] });
+      qc.invalidateQueries({ queryKey: ['items-overview'] });
+      setShowMove(false);
+      setMoveRoomId('');
+      setMoveLocationId('');
+    },
+  });
+
+  function openMove() {
+    setMoveRoomId(item?.location?.room?.id ?? '');
+    setMoveLocationId(item?.locationId ?? '');
+    setShowMove(true);
+  }
 
   // ── Lending state ───────────────────────────────────────────────────
   const [showLendForm, setShowLendForm] = useState(false);
@@ -313,9 +361,19 @@ export default function ItemDetailPage() {
                     </span>
                   )}
                   {isEditor && (
-                    <button type="button" onClick={startEditing} className="p-1.5 text-gray-400 hover:text-indigo-600 rounded transition-colors" title={t('item.edit_btn_title')}>
-                      <Pencil size={15} />
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={openMove}
+                        className="p-1.5 text-gray-400 hover:text-indigo-600 rounded transition-colors"
+                        title={t('item.move_btn')}
+                      >
+                        <MoveRight size={15} />
+                      </button>
+                      <button type="button" onClick={startEditing} className="p-1.5 text-gray-400 hover:text-indigo-600 rounded transition-colors" title={t('item.edit_btn_title')}>
+                        <Pencil size={15} />
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -344,6 +402,66 @@ export default function ItemDetailPage() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ── Umhängen-Dialog ───────────────────────────────────────── */}
+          {showMove && isEditor && (
+            <div className="bg-white border border-indigo-200 rounded-xl p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <MoveRight size={16} className="text-indigo-500" />
+                  {t('item.move_title')}
+                </h2>
+                <button type="button" onClick={() => setShowMove(false)} aria-label={t('common.cancel')} className="text-gray-400 hover:text-gray-600">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="label-wrap">
+                  <span className="label">{t('item.move_room_label')}</span>
+                  <select
+                    value={moveRoomId}
+                    onChange={(e) => { setMoveRoomId(e.target.value); setMoveLocationId(''); }}
+                    className="input"
+                  >
+                    <option value="">{t('item.move_select_room')}</option>
+                    {allRooms?.map((r) => (
+                      <option key={r.id} value={r.id}>{r.icon ? `${r.icon} ` : ''}{r.name}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="label-wrap">
+                  <span className="label">{t('item.move_container_label')}</span>
+                  <select
+                    value={moveLocationId}
+                    onChange={(e) => setMoveLocationId(e.target.value)}
+                    className="input"
+                    disabled={!moveRoomId}
+                  >
+                    <option value="">{t('item.move_select_container')}</option>
+                    {moveLocations.map((loc) => (
+                      <option key={loc.id} value={loc.id}>{loc.label}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => moveMut.mutate()}
+                  disabled={!moveLocationId || moveLocationId === item.locationId || moveMut.isPending}
+                  className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  <Check size={15} /> {moveMut.isPending ? t('common.saving') : t('common.save')}
+                </button>
+                <button type="button" onClick={() => setShowMove(false)} className="px-4 py-2 rounded-lg text-sm border border-gray-300 hover:bg-gray-50">
+                  {t('common.cancel')}
+                </button>
+              </div>
             </div>
           )}
 

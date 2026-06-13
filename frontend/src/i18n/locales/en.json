@@ -131,7 +131,14 @@
     "delete_btn": "Delete item",
     "confirm_delete": "Really delete \"{{name}}\"?",
     "purchase_link": "Open purchase link",
-    "edit_btn_title": "Edit"
+    "edit_btn_title": "Edit",
+    "move_btn": "Move",
+    "move_title": "Change container",
+    "move_room_label": "Room",
+    "move_container_label": "Container",
+    "move_select_room": "Select room…",
+    "move_select_container": "Select container…",
+    "move_location_label": "Current location"
   },
   "condition": {
     "NEW": "New",

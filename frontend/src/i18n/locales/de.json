@@ -131,7 +131,14 @@
     "delete_btn": "Gegenstand löschen",
     "confirm_delete": "\"{{name}}\" wirklich löschen?",
     "purchase_link": "Kauflink öffnen",
-    "edit_btn_title": "Bearbeiten"
+    "edit_btn_title": "Bearbeiten",
+    "move_btn": "Umhängen",
+    "move_title": "Container wechseln",
+    "move_room_label": "Raum",
+    "move_container_label": "Container",
+    "move_select_room": "Raum wählen…",
+    "move_select_container": "Container wählen…",
+    "move_location_label": "Aktueller Standort"
   },
   "condition": {
     "NEW": "Neu",
