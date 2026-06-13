@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { getProduct, updateProduct, deleteProduct, uploadProductImage, uploadProductDocument, deleteProductDocument } from '../api/products';
 import { getTags } from '../api/tags';
 import { getRooms, getRoom } from '../api/rooms';
-import { createInstance } from '../api/locations';
+import { createInstance } from '../api/instances';
 import { getUnits } from '../api/units';
 import { useAuth } from '../contexts/AuthContext';
 import { CONDITION_COLORS } from '../types';
@@ -60,8 +60,9 @@ export default function ProductDetailPage() {
 
   const addInstanceMut = useMutation({
     mutationFn: () =>
-      createInstance(addLocationId, {
+      createInstance({
         productId: id!,
+        locationId: addLocationId || null,
         quantity: parseFloat(addQty) || 1,
         unit: addUnit || undefined,
       }),
@@ -392,7 +393,7 @@ export default function ProductDetailPage() {
                   <button
                     type="button"
                     onClick={() => addInstanceMut.mutate()}
-                    disabled={!addLocationId || addInstanceMut.isPending}
+                    disabled={addInstanceMut.isPending}
                     className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
                   >
                     <Check size={14} /> {addInstanceMut.isPending ? t('common.saving') : t('common.save')}

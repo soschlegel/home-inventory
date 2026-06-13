@@ -101,7 +101,7 @@ export default function InstanceDetailPage() {
   const moveLocations = moveRoom ? flattenLocations(moveRoom.locations ?? []) : [];
 
   const moveMut = useMutation({
-    mutationFn: () => updateInstance(id!, { locationId: moveLocationId }),
+    mutationFn: () => updateInstance(id!, { locationId: moveLocationId || null }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['instances', id] });
       setShowMove(false);
@@ -398,7 +398,7 @@ export default function InstanceDetailPage() {
                 <button
                   type="button"
                   onClick={() => moveMut.mutate()}
-                  disabled={!moveLocationId || moveLocationId === instance.locationId || moveMut.isPending}
+                  disabled={(moveLocationId === (instance.locationId ?? '')) || moveMut.isPending}
                   className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
                 >
                   <Check size={15} /> {moveMut.isPending ? t('common.saving') : t('common.save')}

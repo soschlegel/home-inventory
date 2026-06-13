@@ -39,6 +39,27 @@ const productSelect = {
   tags: { include: { tag: true } },
 } as const;
 
+const InstanceCreateBody = z.object({
+  productId: z.string().min(1),
+  locationId: z.string().nullable().optional(),
+  quantity: z.coerce.number().positive().default(1),
+  unit: z.string().optional(),
+});
+
+// POST /api/instances
+router.post('/', requireEditor, async (req, res, next) => {
+  try {
+    const data = InstanceCreateBody.parse(req.body);
+    const product = await prisma.product.findFirst({ where: { id: data.productId } });
+    if (!product) { res.status(404).json({ error: 'Produkt nicht gefunden' }); return; }
+    const instance = await prisma.instance.create({
+      data,
+      include: { product: { select: productSelect } },
+    });
+    res.status(201).json(instance);
+  } catch (err) { next(err); }
+});
+
 // GET /api/instances
 router.get('/', async (_req, res, next) => {
   try {

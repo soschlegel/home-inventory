@@ -6,9 +6,13 @@ import { errorHandler } from '../middleware/errorHandler';
 
 vi.mock('../lib/prisma', () => ({
   prisma: {
+    product: {
+      findFirst: vi.fn(),
+    },
     instance: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
+      create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
     },
@@ -65,6 +69,49 @@ const mockInstance = {
   createdAt: new Date(),
   updatedAt: new Date(),
 };
+
+describe('POST /api/instances', () => {
+  it('erstellt ein Exemplar ohne Standort und antwortet 201', async () => {
+    mockPrisma.product.findFirst.mockResolvedValue({ id: 'prod-1', name: 'Hammer' });
+    mockPrisma.instance.create.mockResolvedValue(mockInstance);
+
+    const res = await request(app)
+      .post('/api/instances')
+      .send({ productId: 'prod-1', quantity: 1 });
+
+    expect(res.status).toBe(201);
+    expect(res.body.productId).toBe('prod-1');
+  });
+
+  it('erstellt ein Exemplar mit Standort und antwortet 201', async () => {
+    mockPrisma.product.findFirst.mockResolvedValue({ id: 'prod-1', name: 'Hammer' });
+    mockPrisma.instance.create.mockResolvedValue({ ...mockInstance, locationId: 'loc-1' });
+
+    const res = await request(app)
+      .post('/api/instances')
+      .send({ productId: 'prod-1', locationId: 'loc-1', quantity: 1 });
+
+    expect(res.status).toBe(201);
+  });
+
+  it('gibt 404 zurück wenn Produkt nicht existiert', async () => {
+    mockPrisma.product.findFirst.mockResolvedValue(null);
+
+    const res = await request(app)
+      .post('/api/instances')
+      .send({ productId: 'nonexistent' });
+
+    expect(res.status).toBe(404);
+  });
+
+  it('gibt 400 zurück wenn productId fehlt', async () => {
+    const res = await request(app)
+      .post('/api/instances')
+      .send({ quantity: 1 });
+
+    expect(res.status).toBe(400);
+  });
+});
 
 describe('GET /api/instances', () => {
   it('gibt alle Instanzen zurück', async () => {
