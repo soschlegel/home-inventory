@@ -39,6 +39,7 @@
     "profile": "Mein Profil",
     "products": "Produkte",
     "scan": "QR-Scanner",
+    "product_groups": "Artikel-Gruppen",
     "lang_toggle": "EN"
   },
   "login": {
@@ -365,7 +366,23 @@
     "add_instance_title": "Neues Exemplar anlegen",
     "field_min_quantity": "Mindestbestand",
     "field_expiry_warning_days": "Ablaufwarnung (Tage vorher)",
-    "field_purchase_url": "Kauflink (URL)"
+    "field_purchase_url": "Kauflink (URL)",
+    "field_unit": "Einheit",
+    "field_product_url": "Produktlink (Hersteller-URL)",
+    "field_product_group": "Artikel-Gruppe",
+    "no_group": "Keine Gruppe"
+  },
+  "productGroups": {
+    "title": "Artikel-Gruppen",
+    "subtitle": "Gruppen für die Mindestbestand-Überprüfung",
+    "add_btn": "Gruppe hinzufügen",
+    "new_title": "Neue Gruppe",
+    "name_placeholder": "z.B. Milch (alle Sorten)",
+    "field_min_quantity": "Mindestbestand (gesamt)",
+    "no_groups": "Noch keine Gruppen. Leg eine an!",
+    "confirm_delete": "Gruppe \"{{name}}\" wirklich löschen?",
+    "products_count_one": "{{count}} Produkt",
+    "products_count_other": "{{count}} Produkte"
   },
   "qrscanner": {
     "title": "QR / Barcode-Scanner",
@@ -414,7 +431,10 @@
     "move_select_room": "Raum wählen…",
     "move_select_container": "Container wählen…",
     "breadcrumb": "Exemplar",
-    "view_product": "zum Produkt"
+    "view_product": "zum Produkt",
+    "assign_container": "Container zuweisen",
+    "assign_person": "Person zuweisen",
+    "select_person": "Person wählen…"
   },
   "containerTypeNames": {
     "drawer": "Schublade",

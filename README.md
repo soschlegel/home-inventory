@@ -9,14 +9,15 @@ Technische Details: [TECHNICAL.md](TECHNICAL.md)
 ## Features
 
 - **Hierarchische Struktur:** Raum → Container (beliebig tief verschachtelbar) → Exemplar
-- **Produkt / Exemplar-Trennung:** Stammdaten (Produkt: Name, Bild, Barcode, Mindestbestand, Ablaufwarnung, Kauflink, Tags, Dokumente) getrennt von physischen Exemplaren (Menge, Einheit, Zustand, Kaufpreis, Seriennummer, Ablaufdatum, Lagerort oder Nutzer)
-- **Standort optional:** Ein Exemplar kann einem Container ODER einem Nutzer zugewiesen werden — auch ohne Standort
+- **Produkt / Exemplar-Trennung:** Stammdaten (Produkt: Name, Bild, Barcode, Einheit, Mindestbestand, Ablaufwarnung, Produktlink, Artikelgruppe, Tags, Dokumente) getrennt von physischen Exemplaren (Menge, Zustand, Kaufpreis, Kauflink, Seriennummer, Ablaufdatum, Lagerort oder Nutzer)
+- **Standort & Personen-Zuweisung:** Ein Exemplar kann einem Container ODER einem Nutzer direkt zugewiesen werden — auch ohne Standort
+- **Artikelgruppen:** Produkte zu einer Gruppe zusammenfassen (z. B. „Milch (alle Sorten)"); der Mindestbestand einer Gruppe wird über alle zugeordneten Produkte aufsummiert
 - **Ablaufdatum-Warnung:** Konfigurierbare Warnfrist (in Tagen) auf Produktebene; abgelaufene und bald ablaufende Exemplare auf dem Dashboard
-- **Mindestbestand:** Schwellwert auf Produktebene — Dashboard warnt, wenn die Summe aller Exemplare eines Produkts den Schwellwert unterschreitet
+- **Mindestbestand:** Schwellwert auf Produkt- oder Gruppenebene — Dashboard warnt, wenn die Gesamtmenge unter den Schwellwert fällt
 - **QR- / Barcode-Scanner:** Kamera-Scanner zum Abrufen von Produkten über Barcode; direkt in der App
-- **Kaufinformationen:** Kauflink, Preis, Datum, Garantie, Seriennummer
+- **Kaufinformationen:** Exemplarspezifischer Kauflink, Preis, Datum, Garantie, Seriennummer; separater Produktlink (Hersteller-URL) auf Produktebene
 - **Dokumente:** PDFs und Bilder (Anleitungen, Rechnungen) pro Produkt und pro Exemplar hochladbar
-- **Umhängen:** Exemplare zwischen Containern verschieben oder Standort entfernen
+- **Umhängen:** Exemplare zwischen Containern verschieben, einem Nutzer zuweisen oder Standort entfernen
 - **Verleihistorie:** An Person verleihen, Rückgabe eintragen, aktive Ausleihen auf dem Dashboard
 - **Einheitenverwaltung:** Verwaltbare Vorschlagsliste für Mengeneinheiten (kg, L, Stück …) — Key wird automatisch aus dem Namen generiert
 - **Tag-Verwaltung:** Frei definierbare Tags für Produkte (Werkzeug, Lebensmittel …), filterbar in der Übersicht (Multi-Tag-Filter)
@@ -54,6 +55,32 @@ docker compose up -d
 # 4. App öffnen
 open http://localhost:3000
 ```
+
+### Option C — Schnellstart ohne Docker (SQLite, kein PostgreSQL nötig)
+
+```bash
+# 1. Repository klonen
+git clone https://github.com/soschlegel/home-inventory.git
+cd home-inventory
+
+# 2. Abhängigkeiten installieren
+cd backend && npm install
+cd ../frontend && npm install
+cd ..
+
+# 3. Lokale Testumgebung starten (SQLite wird automatisch eingerichtet)
+npm run dev:local
+```
+
+Beim ersten Start werden automatisch:
+
+- `backend/.env.local` angelegt (`DATABASE_URL=file:./dev.db`)
+- SQLite-Schema erstellt (`backend/dev.db`)
+- Testdaten eingespielt
+
+Dann: **<http://localhost:5173>** öffnen.
+
+> Die SQLite-Datenbank (`dev.db`) und `.env.local` sind gitignored und werden nur lokal erzeugt.
 
 ### Option B — Lokale Entwicklung (mit Build aus Quellcode)
 
@@ -172,7 +199,7 @@ cd backend && npm test
 cd frontend && npm test
 ```
 
-15 Backend-Testdateien · 158 Tests (Vitest + supertest) · 4 Frontend-Testdateien · 30 Tests (Vitest + jsdom)
+16 Backend-Testdateien · 169 Tests (Vitest + supertest) · 4 Frontend-Testdateien · 30 Tests (Vitest + jsdom)
 
 ---
 

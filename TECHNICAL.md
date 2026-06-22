@@ -29,6 +29,7 @@ home-inventory/
 ├── nginx/
 │   └── nginx.conf
 ├── scripts/
+│   ├── dev-local.js              Lokaler Schnellstart (SQLite-Setup + Backend + Frontend)
 │   ├── test.sh                   Backend + Frontend Tests kombiniert
 │   ├── backup.sh                 Datenbank + Uploads sichern
 │   ├── restore.sh                Wiederherstellung aus Backup
@@ -36,14 +37,16 @@ home-inventory/
 │
 ├── backend/
 │   ├── Dockerfile                Multi-Stage Build
-│   ├── prisma.config.ts          Prisma 7 CLI-Datasource-Config (DATABASE_URL)
+│   ├── prisma.config.ts          Prisma 7 CLI-Datasource-Config (DATABASE_URL + .env.local)
+│   ├── .env.local.example        Vorlage für SQLite-Lokalbetrieb
 │   ├── prisma/
-│   │   ├── schema.prisma
-│   │   └── seed.ts               Demo-Daten (EDITOR + VIEWER + Units + Tags)
+│   │   ├── schema.prisma         PostgreSQL-Schema (Produktion)
+│   │   ├── schema.sqlite.prisma  SQLite-Schema (lokale Entwicklung)
+│   │   └── seed.ts               Demo-Daten (EDITOR + VIEWER + Units + Tags + Artikelgruppen)
 │   └── src/
 │       ├── index.ts              Express-App, Router-Registrierung, Swagger UI
 │       ├── openapi.ts            OpenAPI 3.0.3-Spezifikation
-│       ├── lib/prisma.ts         PrismaClient mit PrismaPg-Adapter (pg.Pool)
+│       ├── lib/prisma.ts         PrismaClient: PrismaPg (PostgreSQL) oder PrismaLibSql (SQLite, via .env.local)
 │       ├── middleware/
 │       │   ├── auth.ts           JWT-Verifikation + requireEditor
 │       │   └── errorHandler.ts
@@ -52,6 +55,7 @@ home-inventory/
 │       │   ├── rooms.ts          CRUD + /tree Endpunkt (Baumstruktur)
 │       │   ├── locations.ts      CRUD + Sub-Instances-Endpunkte
 │       │   ├── products.ts       CRUD + Bildupload + Dokumentupload + Suche
+│       │   ├── product-groups.ts Artikelgruppen-CRUD
 │       │   ├── instances.ts      CRUD + Dokumentupload + Suche + Low-Stock + Expiring-Soon
 │       │   ├── lendings.ts       Verleihen + Rückgabe
 │       │   ├── tags.ts           Tag-CRUD (key + name)
@@ -63,7 +67,7 @@ home-inventory/
 │       ├── utils/
 │       │   ├── jwt.ts
 │       │   └── upload.ts         Multer: upload (Bilder 10 MB) + uploadDocument (PDF/Bild 20 MB)
-│       └── __tests__/            15 Testdateien (158 Tests)
+│       └── __tests__/            16 Testdateien (169 Tests)
 │
 └── frontend/
     └── src/
@@ -97,14 +101,15 @@ home-inventory/
         │   └── Spinner.tsx
         ├── pages/
         │   ├── LoginPage.tsx
-        │   ├── DashboardPage.tsx         Low-Stock (Produktsumme) + Ablaufdaten + Ausleihen
+        │   ├── DashboardPage.tsx         Low-Stock (Produkt- und Gruppensumme) + Ablaufdaten + Ausleihen
         │   ├── RoomsPage.tsx
         │   ├── RoomDetailPage.tsx
         │   ├── LocationDetailPage.tsx    Produkt-Combobox beim Hinzufügen von Exemplaren
         │   ├── ContainersPage.tsx        Baumansicht aller Räume → Container
         │   ├── ProductsPage.tsx          Alle Produkte mit Suche
         │   ├── ProductDetailPage.tsx     Stammdaten + Exemplar anlegen
-        │   ├── InstanceDetailPage.tsx    Exemplar-Details + Verleihen + Umhängen
+        │   ├── ProductGroupsPage.tsx     Artikelgruppen-CRUD
+        │   ├── InstanceDetailPage.tsx    Exemplar-Details + Verleihen + Umhängen (Container oder Person)
         │   ├── ItemsOverviewPage.tsx     Alle Exemplare, Multi-Tag-Filter
         │   ├── QRScannerPage.tsx         Kamera-Scanner für Barcodes
         │   ├── SearchPage.tsx
@@ -197,16 +202,21 @@ Room  ← key?, name, icon, translations Json?
       ├── parentId? → Location
       └── instances → Instance[]
 
+ProductGroup (Artikelgruppe — für produktübergreifenden Mindestbestand)
+  ├── name / minQuantity?
+  └── products → Product[]
+
 Product (Stammdaten — was ist dieser Gegenstand?)
   ├── name / description / imageUrl / barcode
-  ├── purchaseUrl / minQuantity / expiryWarningDays
+  ├── productUrl? / unit? / minQuantity / expiryWarningDays
+  ├── productGroupId? → ProductGroup
   ├── tags → ProductTag[] (m:n mit Tag)
   ├── documents → ProductDocument[]
   └── instances → Instance[]
 
 Instance (Exemplar — ein konkretes physisches Objekt)
   ├── productId → Product
-  ├── quantity / unit / condition / serialNumber
+  ├── quantity / purchaseUrl? / condition / serialNumber
   ├── purchasePrice / purchaseDate / warrantyUntil / expiryDate
   ├── locationId? → Location   (oder null)
   ├── assignedUserId? → User   (oder null)
@@ -252,6 +262,16 @@ Geteilt zwischen allen Nutzern. Löschen kaskadiert zu Locations → Instances.
 | `roomId` | `String` | → Room (`onDelete: Cascade`) |
 | `parentId` | `String?` | → Location (Eltern) |
 
+### ProductGroup
+
+Artikelgruppe — fasst mehrere Produkte zu einer logischen Einheit zusammen (z. B. „Milch (alle Sorten)"). Der Mindestbestand der Gruppe wird über alle zugeordneten Produkte aufsummiert.
+
+| Feld | Typ | |
+|------|-----|-|
+| `id` | `String` (cuid) | |
+| `name` | `String` | |
+| `minQuantity` | `Float?` | Schwellwert für Dashboard-Warnung (Summe aller Exemplare aller Gruppenprodukte) |
+
 ### Product
 
 Stammdaten — beschreibt, was ein Gegenstand ist.
@@ -263,9 +283,13 @@ Stammdaten — beschreibt, was ein Gegenstand ist.
 | `description` | `String?` | |
 | `imageUrl` | `String?` | |
 | `barcode` | `String?` | |
-| `purchaseUrl` | `String?` | Link zum Produkt |
+| `productUrl` | `String?` | Hersteller- oder Produktseiten-URL |
+| `unit` | `String?` | Key einer Unit (z. B. `"piece"`, `"kg"`) — geerbt von Exemplaren |
 | `minQuantity` | `Float?` | Schwellwert für Dashboard-Warnung (Summe aller Exemplare) |
 | `expiryWarningDays` | `Int?` | Warnvorlauf in Tagen vor Ablaufdatum |
+| `productGroupId` | `String?` | → ProductGroup (`onDelete: SetNull`) — optional |
+
+`Product.unit` speichert den **Key** der Unit-Tabelle (kein FK). Anzeige: `t('unitNames.${unit}', { defaultValue: unit })`.
 
 ### Instance
 
@@ -276,7 +300,7 @@ Exemplar — ein konkretes physisches Objekt eines Produkts.
 | `id` | `String` (cuid) | |
 | `productId` | `String` | → Product (`onDelete: Cascade`) |
 | `quantity` | `Float` | Standard: 1 |
-| `unit` | `String?` | Key einer Unit (z. B. `"piece"`, `"kg"`) |
+| `purchaseUrl` | `String?` | Exemplarspezifischer Kauflink (Shop, Händler) |
 | `condition` | `ItemCondition?` | NEW / GOOD / WORN / BROKEN |
 | `serialNumber` | `String?` | |
 | `purchasePrice` | `Float?` | |
@@ -286,11 +310,9 @@ Exemplar — ein konkretes physisches Objekt eines Produkts.
 | `locationId` | `String?` | → Location (`onDelete: SetNull`) — optional |
 | `assignedUserId` | `String?` | → User (`onDelete: SetNull`) — optional |
 
-`Instance.unit` speichert den **Key** der Unit-Tabelle (kein FK). Anzeige: `t('unitNames.${unit}', { defaultValue: unit })`.
-
 ### Unit
 
-Verwaltete Vorschlagsliste für `Instance.unit`. Kein FK — bestehende Exemplare sind von Änderungen unberührt.
+Verwaltete Vorschlagsliste für `Product.unit`. Kein FK — bestehende Produkte sind von Änderungen unberührt.
 
 | Feld | Typ | |
 |------|-----|-|
@@ -382,6 +404,11 @@ Alle Endpunkte außer Auth erfordern `Authorization: Bearer <accessToken>`.
 | `DELETE` | `/api/locations/:id` | 🔒 | Location löschen |
 | `GET` | `/api/locations/:id/instances` | ✓ | Exemplare einer Location |
 | `POST` | `/api/locations/:id/instances` | 🔒 | Exemplar in Location anlegen (mit Produkt-Combobox) |
+| `GET` | `/api/product-groups` | ✓ | Alle Artikelgruppen |
+| `POST` | `/api/product-groups` | 🔒 | Artikelgruppe anlegen (`name`, `minQuantity?`) |
+| `GET` | `/api/product-groups/:id` | ✓ | Artikelgruppe mit Produkten |
+| `PUT` | `/api/product-groups/:id` | 🔒 | Artikelgruppe bearbeiten |
+| `DELETE` | `/api/product-groups/:id` | 🔒 | Artikelgruppe löschen |
 | `GET` | `/api/products` | ✓ | Alle Produkte |
 | `GET` | `/api/products/search?q=` | ✓ | Produktsuche (max. 50) |
 | `POST` | `/api/products` | 🔒 | Produkt anlegen |
@@ -393,7 +420,7 @@ Alle Endpunkte außer Auth erfordern `Authorization: Bearer <accessToken>`.
 | `DELETE` | `/api/products/:id/documents/:docId` | 🔒 | Produktdokument löschen |
 | `GET` | `/api/instances` | ✓ | Alle Exemplare (Übersicht) |
 | `GET` | `/api/instances/search?q=` | ✓ | Exemplarsuche (max. 50) |
-| `GET` | `/api/instances/low-stock` | ✓ | Produkte unter Mindestbestand (Summe aller Exemplare) |
+| `GET` | `/api/instances/low-stock` | ✓ | Produkte und Gruppen unter Mindestbestand — gibt `LowStockItem[]` zurück (type: `'product'` oder `'group'`) |
 | `GET` | `/api/instances/expiring-soon` | ✓ | Exemplare, die innerhalb des Warnfensters ablaufen |
 | `POST` | `/api/instances` | 🔒 | Exemplar anlegen (locationId optional) |
 | `GET` | `/api/instances/:id` | ✓ | Exemplar-Detail |
@@ -540,34 +567,46 @@ Eigenschaften für beide:
 
 Prisma 7 hat gegenüber Prisma 5 Breaking Changes:
 
-1. `datasource.url` steht nicht mehr in `schema.prisma`, sondern in [`backend/prisma.config.ts`](backend/prisma.config.ts):
+1. `datasource.url` steht nicht mehr in `schema.prisma`, sondern in [`backend/prisma.config.ts`](backend/prisma.config.ts). Die Datei lädt zusätzlich `.env.local` (falls vorhanden) als Override:
 
 ```ts
 import { defineConfig } from 'prisma/config';
-import 'dotenv/config';
+import { config } from 'dotenv';
+import { existsSync } from 'fs';
+
+config({ path: '.env' });
+if (existsSync('.env.local')) config({ path: '.env.local', override: true });
 
 export default defineConfig({
   datasource: { url: process.env.DATABASE_URL ?? '' },
 });
 ```
 
-1. `PrismaClient` benötigt einen Driver-Adapter. [`backend/src/lib/prisma.ts`](backend/src/lib/prisma.ts) verwendet `@prisma/adapter-pg`:
+1. `PrismaClient` benötigt einen Driver-Adapter. [`backend/src/lib/prisma.ts`](backend/src/lib/prisma.ts) erkennt automatisch, ob PostgreSQL oder SQLite verwendet wird:
 
 ```ts
-import { PrismaPg } from '@prisma/adapter-pg';
-import pg from 'pg';
-
-const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-export const prisma = new PrismaClient({ adapter });
+// DATABASE_URL=file:./dev.db  → LibSQL-Adapter (SQLite, lokale Entwicklung)
+// DATABASE_URL=postgresql://… → PrismaPg-Adapter (PostgreSQL, Produktion)
+function createPrismaClient() {
+  const url = process.env.DATABASE_URL ?? '';
+  if (url.startsWith('file:')) {
+    return new PrismaClient({ adapter: new PrismaLibSql({ url }) });
+  }
+  const pool = new pg.Pool({ connectionString: url });
+  return new PrismaClient({ adapter: new PrismaPg(pool) });
+}
 ```
 
-```bash
-# Schema auf DB anwenden (kein Migrations-File — direkt pushen)
-npx prisma db push
+**Duales Schema:** `schema.prisma` (PostgreSQL, Produktion) und `schema.sqlite.prisma` (SQLite, lokale Entwicklung) haben identischen Inhalt — nur der `provider` unterscheidet sich.
 
-# Nach Schema-Änderung Client regenerieren
+```bash
+# PostgreSQL (Standard)
+npx prisma db push
 npx prisma generate
+
+# SQLite (lokal, ohne Docker)
+npm run db:setup:sqlite   # generate + db push mit schema.sqlite.prisma
+npx tsx prisma/seed.ts    # Testdaten einspielen
 
 # DB interaktiv anschauen
 npx prisma studio
@@ -592,7 +631,7 @@ Erstellt (löscht vorher alle Daten):
 
 ## Tests
 
-**Backend** — 15 Dateien · 158 Tests (Vitest + supertest)
+**Backend** — 16 Dateien · 169 Tests (Vitest + supertest)
 
 | Test-Datei | Was wird getestet |
 |------------|-------------------|
@@ -602,14 +641,15 @@ Erstellt (löscht vorher alle Daten):
 | `auth.routes.test.ts` | Register, Login, Refresh-Token |
 | `rooms.routes.test.ts` | CRUD Räume, `/tree`-Endpunkt, `translations`-Objekt, 404 |
 | `locations.routes.test.ts` | GET, PUT (Name + Typ), DELETE, Instances-Endpunkte |
-| `products.routes.test.ts` | CRUD Produkte, Suche, Bildupload, Dokumentupload, purchaseUrl-Clearing |
-| `instances.routes.test.ts` | CRUD Exemplare, Low-Stock (Produktsumme), Expiring-Soon, POST ohne Standort |
+| `products.routes.test.ts` | CRUD Produkte, Suche, Bildupload, Dokumentupload, productUrl-Clearing |
+| `product-groups.routes.test.ts` | CRUD Artikelgruppen, Produkt-Zuweisung, Low-Stock-Aggregation |
+| `instances.routes.test.ts` | CRUD Exemplare, Low-Stock (Produkt- und Gruppenebene), Expiring-Soon, POST ohne Standort |
 | `containerTypes.routes.test.ts` | CRUD, `translations` inkl. Drittsprache, Farbvalidierung |
 | `lendings.routes.test.ts` | Verleihen, Rückgabe, Doppelrückgabe (409), Historie |
 | `tags.routes.test.ts` | Tags CRUD, `translations`, 409 bei Duplikat |
 | `units.routes.test.ts` | Units CRUD mit key + name + `translations`, 409 |
 | `users.routes.test.ts` | CRUD Nutzer, Rollen-Management |
-| `admin.routes.test.ts` | Export/Import |
+| `admin.routes.test.ts` | Export/Import inkl. Artikelgruppen |
 | `openapi.test.ts` | Spec-Struktur, alle Pfade und Schemas vorhanden |
 
 **Frontend** — 4 Dateien · ~30 Tests (Vitest + jsdom)

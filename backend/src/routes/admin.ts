@@ -9,13 +9,14 @@ router.use(authenticate, requireEditor);
 // GET /api/admin/export
 router.get('/export', async (_req, res, next) => {
   try {
-    const [units, tags, containerTypes, rooms, locations, products, productTags, instances, lendings] =
+    const [units, tags, containerTypes, rooms, locations, productGroups, products, productTags, instances, lendings] =
       await Promise.all([
         prisma.unit.findMany({ orderBy: { createdAt: 'asc' } }),
         prisma.tag.findMany({ orderBy: { createdAt: 'asc' } }),
         prisma.containerType.findMany({ orderBy: { createdAt: 'asc' } }),
         prisma.room.findMany({ orderBy: { createdAt: 'asc' } }),
         prisma.location.findMany({ orderBy: { createdAt: 'asc' } }),
+        prisma.productGroup.findMany({ orderBy: { createdAt: 'asc' } }),
         prisma.product.findMany({ orderBy: { createdAt: 'asc' } }),
         prisma.productTag.findMany(),
         prisma.instance.findMany({ orderBy: { createdAt: 'asc' } }),
@@ -25,9 +26,9 @@ router.get('/export', async (_req, res, next) => {
     const filename = `home-inventory-backup-${new Date().toISOString().split('T')[0]}.json`;
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.json({
-      version: '2.0',
+      version: '3.0',
       exportedAt: new Date().toISOString(),
-      data: { units, tags, containerTypes, rooms, locations, products, productTags, instances, lendings },
+      data: { units, tags, containerTypes, rooms, locations, productGroups, products, productTags, instances, lendings },
     });
   } catch (err) {
     next(err);
@@ -77,6 +78,15 @@ const importSchema = z.object({
         updatedAt: z.string(),
       }),
     ),
+    productGroups: z.array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        minQuantity: z.number().nullable().optional(),
+        createdAt: z.string(),
+        updatedAt: z.string(),
+      }),
+    ).optional(),
     products: z.array(
       z.object({
         id: z.string(),
@@ -84,6 +94,11 @@ const importSchema = z.object({
         description: z.string().nullable().optional(),
         imageUrl: z.string().nullable().optional(),
         barcode: z.string().nullable().optional(),
+        productUrl: z.string().nullable().optional(),
+        unit: z.string().nullable().optional(),
+        minQuantity: z.number().nullable().optional(),
+        expiryWarningDays: z.number().nullable().optional(),
+        productGroupId: z.string().nullable().optional(),
         createdAt: z.string(),
         updatedAt: z.string(),
       }),
@@ -94,16 +109,13 @@ const importSchema = z.object({
         id: z.string(),
         productId: z.string(),
         quantity: z.number().optional(),
-        unit: z.string().nullable().optional(),
-        minQuantity: z.number().nullable().optional(),
+        purchaseUrl: z.string().nullable().optional(),
         condition: z.enum(['NEW', 'GOOD', 'WORN', 'BROKEN']).nullable().optional(),
         serialNumber: z.string().nullable().optional(),
-        purchaseUrl: z.string().nullable().optional(),
         purchasePrice: z.number().nullable().optional(),
         purchaseDate: z.string().nullable().optional(),
         warrantyUntil: z.string().nullable().optional(),
         expiryDate: z.string().nullable().optional(),
-        expiryWarningDays: z.number().nullable().optional(),
         locationId: z.string().nullable().optional(),
         assignedUserId: z.string().nullable().optional(),
         createdAt: z.string(),
@@ -156,6 +168,7 @@ router.post('/import', async (req, res, next) => {
       await tx.productDocument.deleteMany();
       await tx.productTag.deleteMany();
       await tx.product.deleteMany();
+      await tx.productGroup.deleteMany();
       await tx.location.updateMany({ data: { parentId: null } });
       await tx.location.deleteMany();
       await tx.room.deleteMany();
@@ -201,6 +214,14 @@ router.post('/import', async (req, res, next) => {
           },
         });
       }
+      if (data.productGroups?.length) {
+        await tx.productGroup.createMany({
+          data: data.productGroups.map((g) => ({
+            id: g.id, name: g.name, minQuantity: g.minQuantity ?? null,
+            createdAt: new Date(g.createdAt), updatedAt: new Date(g.updatedAt),
+          })),
+        });
+      }
       if (data.products.length) {
         await tx.product.createMany({
           data: data.products.map((p) => ({
@@ -209,6 +230,11 @@ router.post('/import', async (req, res, next) => {
             description: p.description ?? null,
             imageUrl: p.imageUrl ?? null,
             barcode: p.barcode ?? null,
+            productUrl: p.productUrl ?? null,
+            unit: p.unit ?? null,
+            minQuantity: p.minQuantity ?? null,
+            expiryWarningDays: p.expiryWarningDays ?? null,
+            productGroupId: p.productGroupId ?? null,
             createdAt: new Date(p.createdAt),
             updatedAt: new Date(p.updatedAt),
           })),
@@ -223,16 +249,13 @@ router.post('/import', async (req, res, next) => {
             id: i.id,
             productId: i.productId,
             quantity: i.quantity ?? 1,
-            unit: i.unit ?? null,
-            minQuantity: i.minQuantity ?? null,
+            purchaseUrl: i.purchaseUrl ?? null,
             condition: i.condition ?? null,
             serialNumber: i.serialNumber ?? null,
-            purchaseUrl: i.purchaseUrl ?? null,
             purchasePrice: i.purchasePrice ?? null,
             purchaseDate: i.purchaseDate ? new Date(i.purchaseDate) : null,
             warrantyUntil: i.warrantyUntil ? new Date(i.warrantyUntil) : null,
             expiryDate: i.expiryDate ? new Date(i.expiryDate) : null,
-            expiryWarningDays: i.expiryWarningDays ?? null,
             locationId: i.locationId ?? null,
             assignedUserId: i.assignedUserId ?? null,
             createdAt: new Date(i.createdAt),

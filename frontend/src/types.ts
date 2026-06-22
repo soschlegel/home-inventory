@@ -82,15 +82,28 @@ export interface ProductDocument {
   createdAt: string;
 }
 
+export interface ProductGroup {
+  id: string;
+  name: string;
+  minQuantity?: number | null;
+  products?: Pick<Product, 'id' | 'name' | 'imageUrl' | 'unit'>[];
+  _count?: { products: number };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
   description?: string | null;
   imageUrl?: string | null;
   barcode?: string | null;
-  purchaseUrl?: string | null;
+  productUrl?: string | null;
+  unit?: string | null;
   minQuantity?: number | null;
   expiryWarningDays?: number | null;
+  productGroupId?: string | null;
+  productGroup?: Pick<ProductGroup, 'id' | 'name' | 'minQuantity'> | null;
   tags?: ProductTag[];
   documents?: ProductDocument[];
   instances?: Instance[];
@@ -110,9 +123,9 @@ export interface InstanceDocument {
 export interface Instance {
   id: string;
   productId: string;
-  product: Pick<Product, 'id' | 'name' | 'imageUrl' | 'description' | 'barcode' | 'minQuantity' | 'expiryWarningDays' | 'tags'>;
+  product: Pick<Product, 'id' | 'name' | 'imageUrl' | 'description' | 'barcode' | 'unit' | 'productUrl' | 'minQuantity' | 'expiryWarningDays' | 'productGroupId' | 'productGroup' | 'tags'>;
   quantity: number;
-  unit?: string | null;
+  purchaseUrl?: string | null;
   condition?: ItemCondition | null;
   serialNumber?: string | null;
   purchasePrice?: number | null;
@@ -145,9 +158,8 @@ export interface Lending {
 export interface InstanceOverview {
   id: string;
   productId: string;
-  product: Pick<Product, 'id' | 'name' | 'imageUrl' | 'description' | 'barcode' | 'minQuantity' | 'expiryWarningDays' | 'tags'>;
+  product: Pick<Product, 'id' | 'name' | 'imageUrl' | 'description' | 'barcode' | 'unit' | 'minQuantity' | 'expiryWarningDays' | 'tags'>;
   quantity: number;
-  unit?: string | null;
   condition?: ItemCondition | null;
   locationId?: string | null;
   location: {
@@ -160,7 +172,11 @@ export interface InstanceOverview {
 }
 
 export interface LowStockItem {
-  product: Pick<Product, 'id' | 'name' | 'imageUrl' | 'minQuantity'>;
+  type: 'product' | 'group';
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  minQuantity: number;
   totalQuantity: number;
 }
 

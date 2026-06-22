@@ -2,6 +2,7 @@ node_modules/
 dist/
 .env
 *.local
+*.db
 
 # Uploads (nicht ins Repo)
 backend/uploads/*

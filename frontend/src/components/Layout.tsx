@@ -18,6 +18,7 @@ import {
   Menu,
   X,
   ScanLine,
+  PackageSearch,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -47,6 +48,7 @@ export default function Layout() {
     { to: '/rooms', icon: Home, label: t('nav.rooms'), show: true },
     { to: '/containers', icon: Layers, label: t('nav.containers'), show: true },
     { to: '/products', icon: Package, label: t('nav.products'), show: true },
+    { to: '/product-groups', icon: PackageSearch, label: t('nav.product_groups'), show: true },
     { to: '/scan', icon: ScanLine, label: t('nav.scan'), show: true },
     { to: '/items-overview', icon: Table2, label: t('nav.items_overview'), show: true },
     { to: '/lendings', icon: ArrowRightLeft, label: t('nav.lendings'), show: true },

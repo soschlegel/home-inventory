@@ -11,7 +11,7 @@ router.use(authenticate);
 
 const InstanceBody = z.object({
   quantity: z.coerce.number().positive().default(1),
-  unit: z.string().optional(),
+  purchaseUrl: z.string().url().optional().or(z.literal('')),
   condition: z.enum(['NEW', 'GOOD', 'WORN', 'BROKEN']).optional(),
   serialNumber: z.string().optional(),
   purchasePrice: z.coerce.number().nonnegative().optional(),
@@ -34,16 +34,21 @@ const productSelect = {
   description: true,
   imageUrl: true,
   barcode: true,
+  unit: true,
+  productUrl: true,
   minQuantity: true,
   expiryWarningDays: true,
+  productGroupId: true,
+  productGroup: { select: { id: true, name: true, minQuantity: true } },
   tags: { include: { tag: true } },
 } as const;
 
 const InstanceCreateBody = z.object({
   productId: z.string().min(1),
   locationId: z.string().nullable().optional(),
+  assignedUserId: z.string().nullable().optional(),
   quantity: z.coerce.number().positive().default(1),
-  unit: z.string().optional(),
+  purchaseUrl: z.string().url().optional().or(z.literal('')),
 });
 
 // POST /api/instances
@@ -114,16 +119,51 @@ router.get('/search', async (req, res, next) => {
 router.get('/low-stock', async (_req, res, next) => {
   try {
     const instances = await prisma.instance.findMany({
-      where: { product: { minQuantity: { not: null } } },
-      select: { productId: true, quantity: true, product: { select: { id: true, name: true, imageUrl: true, minQuantity: true } } },
+      where: {
+        OR: [
+          { product: { minQuantity: { not: null } } },
+          { product: { productGroup: { minQuantity: { not: null } } } },
+        ],
+      },
+      select: {
+        productId: true,
+        quantity: true,
+        product: {
+          select: {
+            id: true, name: true, imageUrl: true, minQuantity: true,
+            productGroupId: true,
+            productGroup: { select: { id: true, name: true, minQuantity: true } },
+          },
+        },
+      },
     });
-    const byProduct = new Map<string, { product: (typeof instances)[0]['product']; totalQuantity: number }>();
+
+    type LowStockEntry = {
+      type: 'product' | 'group';
+      id: string;
+      name: string;
+      imageUrl: string | null;
+      minQuantity: number;
+      totalQuantity: number;
+    };
+    const byKey = new Map<string, LowStockEntry>();
+
     for (const inst of instances) {
-      const entry = byProduct.get(inst.productId);
-      if (entry) { entry.totalQuantity += inst.quantity; }
-      else { byProduct.set(inst.productId, { product: inst.product, totalQuantity: inst.quantity }); }
+      const p = inst.product;
+      if (p.productGroup && p.productGroup.minQuantity != null) {
+        const key = 'group_' + p.productGroup.id;
+        const entry = byKey.get(key);
+        if (entry) { entry.totalQuantity += inst.quantity; }
+        else { byKey.set(key, { type: 'group', id: p.productGroup.id, name: p.productGroup.name, imageUrl: null, minQuantity: p.productGroup.minQuantity, totalQuantity: inst.quantity }); }
+      } else if (p.minQuantity != null) {
+        const key = 'product_' + p.id;
+        const entry = byKey.get(key);
+        if (entry) { entry.totalQuantity += inst.quantity; }
+        else { byKey.set(key, { type: 'product', id: p.id, name: p.name, imageUrl: p.imageUrl, minQuantity: p.minQuantity, totalQuantity: inst.quantity }); }
+      }
     }
-    res.json([...byProduct.values()].filter((e) => e.product.minQuantity !== null && e.totalQuantity < (e.product.minQuantity ?? Infinity)));
+
+    res.json([...byKey.values()].filter((e) => e.totalQuantity < e.minQuantity));
   } catch (err) { next(err); }
 });
 

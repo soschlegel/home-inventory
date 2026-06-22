@@ -144,17 +144,17 @@ describe('PUT /api/products/:id', () => {
     expect(res.body.name).toBe('Schraubenzieher');
   });
 
-  it('wandelt leere purchaseUrl in null um', async () => {
+  it('wandelt leere productUrl in null um', async () => {
     mockPrisma.product.findFirst.mockResolvedValue(mockProduct);
     mockPrisma.tag.findMany.mockResolvedValue([]);
     mockPrisma.product.update.mockResolvedValue(mockProduct);
 
     await request(app)
       .put('/api/products/prod-1')
-      .send({ purchaseUrl: '' });
+      .send({ productUrl: '' });
 
     expect(mockPrisma.product.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ purchaseUrl: null }) }),
+      expect.objectContaining({ data: expect.objectContaining({ productUrl: null }) }),
     );
   });
 

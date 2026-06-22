@@ -79,11 +79,13 @@ export default function DashboardPage() {
           </h2>
           <ul className="space-y-1">
             {lowStock.data?.map((item) => (
-              <li key={item.product.id} className="text-sm text-red-700">
-                <Link to={`/products/${item.product.id}`} className="hover:underline font-medium">
-                  {item.product.name}
-                </Link>{' '}
-                — {item.totalQuantity} {t('common.piece')} (min. {item.product.minQuantity})
+              <li key={`${item.type}-${item.id}`} className="text-sm text-red-700">
+                {item.type === 'group' ? (
+                  <Link to="/product-groups" className="hover:underline font-medium">{item.name}</Link>
+                ) : (
+                  <Link to={`/products/${item.id}`} className="hover:underline font-medium">{item.name}</Link>
+                )}
+                {' '}— {item.totalQuantity} / {item.minQuantity}
               </li>
             ))}
           </ul>

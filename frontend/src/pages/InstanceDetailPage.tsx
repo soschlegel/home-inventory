@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Trash2, Upload, ArrowRightLeft, Pencil, X, Check, MoveRight, FileText } from 'lucide-react';
+import { ChevronRight, Trash2, Upload, ArrowRightLeft, Pencil, X, Check, MoveRight, FileText, ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getInstance, updateInstance, deleteInstance, uploadInstanceDocument, deleteInstanceDocument } from '../api/instances';
 import { lendInstance, returnItem } from '../api/lendings';
-import { getUnits } from '../api/units';
 import { getRooms, getRoom } from '../api/rooms';
+import { getUsers } from '../api/users';
 import { useAuth } from '../contexts/AuthContext';
 import type { ItemCondition, Location } from '../types';
 import { CONDITION_COLORS } from '../types';
@@ -35,12 +35,11 @@ export default function InstanceDetailPage() {
     queryKey: ['instances', id],
     queryFn: () => getInstance(id!),
   });
-  const { data: units } = useQuery({ queryKey: ['units'], queryFn: getUnits });
 
   // ── Edit state ──────────────────────────────────────────────────────
   const [isEditing, setIsEditing] = useState(false);
   const [editQuantity, setEditQuantity] = useState('');
-  const [editUnit, setEditUnit] = useState('');
+  const [editPurchaseUrl, setEditPurchaseUrl] = useState('');
   const [editCondition, setEditCondition] = useState('');
   const [editSerialNumber, setEditSerialNumber] = useState('');
   const [editPurchasePrice, setEditPurchasePrice] = useState('');
@@ -51,7 +50,7 @@ export default function InstanceDetailPage() {
   function startEditing() {
     if (!instance) return;
     setEditQuantity(String(instance.quantity));
-    setEditUnit(instance.unit ?? '');
+    setEditPurchaseUrl(instance.purchaseUrl ?? '');
     setEditCondition(instance.condition ?? '');
     setEditSerialNumber(instance.serialNumber ?? '');
     setEditPurchasePrice(instance.purchasePrice != null ? String(instance.purchasePrice) : '');
@@ -64,7 +63,7 @@ export default function InstanceDetailPage() {
   const updateMut = useMutation({
     mutationFn: () => updateInstance(id!, {
       quantity: parseFloat(editQuantity) || 1,
-      unit: editUnit || undefined,
+      purchaseUrl: editPurchaseUrl || undefined,
       condition: (editCondition as ItemCondition) || undefined,
       serialNumber: editSerialNumber || undefined,
       purchasePrice: editPurchasePrice ? parseFloat(editPurchasePrice) : undefined,
@@ -80,36 +79,51 @@ export default function InstanceDetailPage() {
 
   // ── Move state ──────────────────────────────────────────────────────
   const [showMove, setShowMove] = useState(false);
+  const [moveMode, setMoveMode] = useState<'container' | 'person'>('container');
   const [moveRoomId, setMoveRoomId] = useState('');
   const [moveLocationId, setMoveLocationId] = useState('');
+  const [moveUserId, setMoveUserId] = useState('');
 
   const { data: allRooms } = useQuery({
     queryKey: ['rooms'],
     queryFn: getRooms,
     enabled: showMove,
   });
-
   const { data: moveRoom } = useQuery({
     queryKey: ['room', moveRoomId],
     queryFn: () => getRoom(moveRoomId),
     enabled: !!moveRoomId,
   });
-
+  const { data: allUsers } = useQuery({
+    queryKey: ['users'],
+    queryFn: getUsers,
+    enabled: showMove && moveMode === 'person',
+  });
   const moveLocations = moveRoom ? flattenLocations(moveRoom.locations ?? []) : [];
 
   const moveMut = useMutation({
-    mutationFn: () => updateInstance(id!, { locationId: moveLocationId || null }),
+    mutationFn: () => {
+      if (moveMode === 'person') {
+        return updateInstance(id!, { assignedUserId: moveUserId || null, locationId: null });
+      }
+      return updateInstance(id!, { locationId: moveLocationId || null, assignedUserId: null });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['instances', id] });
       setShowMove(false);
-      setMoveRoomId('');
-      setMoveLocationId('');
+      setMoveRoomId(''); setMoveLocationId(''); setMoveUserId('');
     },
   });
 
   function openMove() {
-    setMoveRoomId(instance?.location?.room?.id ?? '');
-    setMoveLocationId(instance?.locationId ?? '');
+    if (instance?.assignedUserId) {
+      setMoveMode('person');
+      setMoveUserId(instance.assignedUserId);
+    } else {
+      setMoveMode('container');
+      setMoveRoomId(instance?.location?.room?.id ?? '');
+      setMoveLocationId(instance?.locationId ?? '');
+    }
     setShowMove(true);
   }
 
@@ -225,15 +239,6 @@ export default function InstanceDetailPage() {
                   <input type="number" min="0" step="0.1" value={editQuantity} onChange={(e) => setEditQuantity(e.target.value)} className="input" />
                 </label>
                 <label className="label-wrap">
-                  <span className="label">{t('item.field_unit')}</span>
-                  <select value={editUnit} onChange={(e) => setEditUnit(e.target.value)} className="input" aria-label={t('item.field_unit')}>
-                    <option value="">{t('item.tags_none')}</option>
-                    {units?.map((u) => (
-                      <option key={u.id} value={u.key}>{t(`unitNames.${u.key}`, { defaultValue: u.name })}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="label-wrap">
                   <span className="label">{t('item.field_condition')}</span>
                   <select value={editCondition} onChange={(e) => setEditCondition(e.target.value)} className="input">
                     <option value="">–</option>
@@ -251,6 +256,10 @@ export default function InstanceDetailPage() {
               <hr className="border-gray-100" />
               <h3 className="text-sm font-medium text-gray-700">{t('item.purchase_section')}</h3>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="sm:col-span-2 label-wrap">
+                  <span className="label">{t('instance.field_purchase_url')}</span>
+                  <input type="url" value={editPurchaseUrl} onChange={(e) => setEditPurchaseUrl(e.target.value)} placeholder="https://…" className="input" />
+                </label>
                 <label className="label-wrap">
                   <span className="label">{t('item.field_purchase_price')}</span>
                   <input type="number" min="0" step="0.01" value={editPurchasePrice} onChange={(e) => setEditPurchasePrice(e.target.value)} placeholder="0.00" className="input" />
@@ -332,12 +341,12 @@ export default function InstanceDetailPage() {
 
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                 <Field label={t('item.field_quantity')}>
-                  {instance.quantity}{unitLabel(instance.unit) ? ` ${unitLabel(instance.unit)}` : ''}
+                  {instance.quantity}{instance.product.unit ? ` ${unitLabel(instance.product.unit)}` : ''}
                 </Field>
                 {instance.product.minQuantity != null && (
                   <Field label={t('products.field_min_quantity')}>
                     <span className={instance.quantity < (instance.product.minQuantity ?? Infinity) ? 'text-red-600 font-medium' : ''}>
-                      {instance.product.minQuantity}{unitLabel(instance.unit) ? ` ${unitLabel(instance.unit)}` : ''}
+                      {instance.product.minQuantity}{instance.product.unit ? ` ${unitLabel(instance.product.unit)}` : ''}
                     </span>
                   </Field>
                 )}
@@ -363,35 +372,67 @@ export default function InstanceDetailPage() {
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold text-gray-900 flex items-center gap-2">
                   <MoveRight size={16} className="text-indigo-500" />
-                  {t('item.move_title')}
+                  {t('instance.move_title')}
                 </h2>
                 <button type="button" onClick={() => setShowMove(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
               </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <label className="label-wrap">
-                  <span className="label">{t('item.move_room_label')}</span>
-                  <select value={moveRoomId} onChange={(e) => { setMoveRoomId(e.target.value); setMoveLocationId(''); }} className="input">
-                    <option value="">{t('item.move_select_room')}</option>
-                    {allRooms?.map((r) => (
-                      <option key={r.id} value={r.id}>{r.icon ? `${r.icon} ` : ''}{r.name}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="label-wrap">
-                  <span className="label">{t('item.move_container_label')}</span>
-                  <select value={moveLocationId} onChange={(e) => setMoveLocationId(e.target.value)} className="input" disabled={!moveRoomId}>
-                    <option value="">{t('item.move_select_container')}</option>
-                    {moveLocations.map((loc) => (
-                      <option key={loc.id} value={loc.id}>{loc.label}</option>
-                    ))}
-                  </select>
-                </label>
+
+              {/* Mode toggle */}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setMoveMode('container'); setMoveUserId(''); }}
+                  className={`flex-1 py-1.5 rounded-lg text-sm font-medium border transition-colors ${moveMode === 'container' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'}`}
+                >
+                  📦 {t('instance.assign_container')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMoveMode('person'); setMoveRoomId(''); setMoveLocationId(''); }}
+                  className={`flex-1 py-1.5 rounded-lg text-sm font-medium border transition-colors ${moveMode === 'person' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'}`}
+                >
+                  👤 {t('instance.assign_person')}
+                </button>
               </div>
+
+              {moveMode === 'container' ? (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label className="label-wrap">
+                    <span className="label">{t('instance.move_room_label')}</span>
+                    <select value={moveRoomId} onChange={(e) => { setMoveRoomId(e.target.value); setMoveLocationId(''); }} className="input">
+                      <option value="">{t('instance.move_select_room')}</option>
+                      {allRooms?.map((r) => (
+                        <option key={r.id} value={r.id}>{r.icon ? `${r.icon} ` : ''}{r.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="label-wrap">
+                    <span className="label">{t('instance.move_container_label')}</span>
+                    <select value={moveLocationId} onChange={(e) => setMoveLocationId(e.target.value)} className="input" disabled={!moveRoomId}>
+                      <option value="">{t('instance.move_select_container')}</option>
+                      {moveLocations.map((loc) => (
+                        <option key={loc.id} value={loc.id}>{loc.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              ) : (
+                <label className="label-wrap">
+                  <span className="label">{t('instance.assign_person')}</span>
+                  <select value={moveUserId} onChange={(e) => setMoveUserId(e.target.value)} className="input" aria-label={t('instance.assign_person')}>
+                    <option value="">{t('instance.select_person')}</option>
+                    {allUsers?.map((u) => (
+                      <option key={u.id} value={u.id}>{u.name ?? u.email}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+
               <div className="flex gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => moveMut.mutate()}
-                  disabled={(moveLocationId === (instance.locationId ?? '')) || moveMut.isPending}
+                  disabled={moveMut.isPending}
                   className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
                 >
                   <Check size={15} /> {moveMut.isPending ? t('common.saving') : t('common.save')}
@@ -416,10 +457,17 @@ export default function InstanceDetailPage() {
           })()}
 
           {/* Kaufinfos */}
-          {!isEditing && (instance.purchasePrice || instance.purchaseDate || instance.warrantyUntil || instance.expiryDate) && (
+          {!isEditing && (instance.purchaseUrl || instance.purchasePrice || instance.purchaseDate || instance.warrantyUntil || instance.expiryDate) && (
             <div className="bg-white border border-gray-200 rounded-xl p-5">
               <h2 className="font-medium text-gray-800 mb-3">{t('item.purchase_section')}</h2>
               <div className="grid grid-cols-2 gap-3 text-sm">
+                {instance.purchaseUrl && (
+                  <div className="col-span-2">
+                    <a href={instance.purchaseUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-indigo-600 hover:underline">
+                      <ExternalLink size={13} /> {t('instance.field_purchase_url')}
+                    </a>
+                  </div>
+                )}
                 {instance.purchasePrice && <Field label={t('item.field_purchase_price')}>{instance.purchasePrice.toFixed(2)} €</Field>}
                 {instance.purchaseDate && <Field label={t('item.field_purchase_date')}>{fmt(instance.purchaseDate)}</Field>}
                 {instance.warrantyUntil && (
@@ -507,7 +555,7 @@ export default function InstanceDetailPage() {
                 )}
               </div>
               {!instance.documents?.length ? (
-                <p className="text-sm text-gray-400">{t('item.documents_empty')}</p>
+                <p className="text-sm text-gray-400">{t('instance.documents_empty')}</p>
               ) : (
                 <div className="space-y-2">
                   {instance.documents.map((doc) => (

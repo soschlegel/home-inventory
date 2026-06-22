@@ -428,7 +428,7 @@ export default function LocationDetailPage() {
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-gray-900 text-sm">{instance.product.name}</div>
                 <div className="text-xs text-gray-500">
-                  {instance.quantity}{instance.unit ? ` ${t(`unitNames.${instance.unit}`, { defaultValue: instance.unit })}` : ''}
+                  {instance.quantity}{instance.product.unit ? ` ${t(`unitNames.${instance.product.unit}`, { defaultValue: instance.product.unit })}` : ''}
                 </div>
               </div>
               {instance.condition && (

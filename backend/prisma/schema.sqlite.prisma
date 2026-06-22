@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 enum ItemCondition {
@@ -29,7 +29,6 @@ model User {
   updatedAt         DateTime   @updatedAt
 }
 
-// Einheitenliste – geteilt zwischen allen Nutzern, dient als Vorschlagsliste
 model Unit {
   id           String   @id @default(cuid())
   key          String   @unique
@@ -38,7 +37,6 @@ model Unit {
   createdAt    DateTime @default(now())
 }
 
-// Benutzerdefinierter Container-Typ – geteilt zwischen allen Nutzern
 model ContainerType {
   id           String     @id @default(cuid())
   key          String?    @unique
@@ -50,7 +48,6 @@ model ContainerType {
   createdAt    DateTime   @default(now())
 }
 
-// Raum im Haus – geteilt zwischen allen Nutzern
 model Room {
   id           String     @id @default(cuid())
   key          String?    @unique
@@ -63,7 +60,6 @@ model Room {
   updatedAt    DateTime   @updatedAt
 }
 
-// Aufbewahrungsort / Container (beliebig verschachtelbar)
 model Location {
   id              String         @id @default(cuid())
   name            String
@@ -80,7 +76,6 @@ model Location {
   updatedAt       DateTime       @updatedAt
 }
 
-// Artikel-Gruppe – für produktübergreifende Mindestbestand-Prüfung
 model ProductGroup {
   id          String    @id @default(cuid())
   name        String
@@ -90,7 +85,6 @@ model ProductGroup {
   updatedAt   DateTime  @updatedAt
 }
 
-// Produkt = Stammdaten (was ist dieser Gegenstand?)
 model Product {
   id                String            @id @default(cuid())
   name              String
@@ -130,7 +124,6 @@ model ProductDocument {
   createdAt    DateTime @default(now())
 }
 
-// Exemplar = ein konkretes physisches Objekt
 model Instance {
   id                String             @id @default(cuid())
   productId         String
@@ -184,7 +177,6 @@ model Tag {
   createdAt    DateTime     @default(now())
 }
 
-// Anwendungseinstellungen (key-value)
 model Setting {
   key       String   @id
   value     String

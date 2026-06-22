@@ -39,6 +39,7 @@
     "profile": "My Profile",
     "products": "Products",
     "scan": "QR Scanner",
+    "product_groups": "Product Groups",
     "lang_toggle": "DE"
   },
   "login": {
@@ -365,7 +366,23 @@
     "add_instance_title": "Add new instance",
     "field_min_quantity": "Min. stock",
     "field_expiry_warning_days": "Expiry warning (days)",
-    "field_purchase_url": "Purchase link (URL)"
+    "field_purchase_url": "Purchase link (URL)",
+    "field_unit": "Unit",
+    "field_product_url": "Product link (manufacturer URL)",
+    "field_product_group": "Product group",
+    "no_group": "No group"
+  },
+  "productGroups": {
+    "title": "Product Groups",
+    "subtitle": "Groups for minimum stock checking",
+    "add_btn": "Add group",
+    "new_title": "New group",
+    "name_placeholder": "e.g. Milk (all kinds)",
+    "field_min_quantity": "Min. stock (total)",
+    "no_groups": "No groups yet. Create one!",
+    "confirm_delete": "Really delete group \"{{name}}\"?",
+    "products_count_one": "{{count}} product",
+    "products_count_other": "{{count}} products"
   },
   "qrscanner": {
     "title": "QR / Barcode Scanner",
@@ -414,7 +431,10 @@
     "move_select_room": "Select room…",
     "move_select_container": "Select container…",
     "breadcrumb": "Instance",
-    "view_product": "To product"
+    "view_product": "To product",
+    "assign_container": "Assign container",
+    "assign_person": "Assign person",
+    "select_person": "Select person…"
   },
   "containerTypeNames": {
     "drawer": "Drawer",

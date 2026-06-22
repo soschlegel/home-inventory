@@ -16,6 +16,7 @@ vi.mock('../lib/prisma', () => ({
       deleteMany: vi.fn(),
       updateMany: vi.fn(),
     },
+    productGroup: { findMany: vi.fn(), createMany: vi.fn(), deleteMany: vi.fn() },
     product: { findMany: vi.fn(), createMany: vi.fn(), deleteMany: vi.fn() },
     productTag: { findMany: vi.fn(), createMany: vi.fn(), deleteMany: vi.fn() },
     productDocument: { deleteMany: vi.fn() },
@@ -50,6 +51,7 @@ const mockExportData = {
   containerTypes: [],
   rooms: [{ id: 'r1', name: 'Wohnzimmer', description: null, icon: null, createdAt: new Date(), updatedAt: new Date() }],
   locations: [{ id: 'l1', name: 'Schrank', description: null, containerTypeId: null, roomId: 'r1', parentId: null, createdAt: new Date(), updatedAt: new Date() }],
+  productGroups: [],
   products: [],
   productTags: [],
   instances: [],
@@ -67,6 +69,7 @@ describe('GET /api/admin/export', () => {
     mockPrisma.containerType.findMany.mockResolvedValue([]);
     mockPrisma.room.findMany.mockResolvedValue(mockExportData.rooms);
     mockPrisma.location.findMany.mockResolvedValue(mockExportData.locations);
+    mockPrisma.productGroup.findMany.mockResolvedValue([]);
     mockPrisma.product.findMany.mockResolvedValue([]);
     mockPrisma.productTag.findMany.mockResolvedValue([]);
     mockPrisma.instance.findMany.mockResolvedValue([]);
@@ -75,9 +78,10 @@ describe('GET /api/admin/export', () => {
     const res = await request(app).get('/api/admin/export');
 
     expect(res.status).toBe(200);
-    expect(res.body.version).toBe('2.0');
+    expect(res.body.version).toBe('3.0');
     expect(res.body.data.units).toHaveLength(1);
     expect(res.body.data.products).toHaveLength(0);
+    expect(res.body.data.productGroups).toHaveLength(0);
   });
 });
 
@@ -91,6 +95,7 @@ describe('POST /api/admin/import', () => {
         productDocument: { deleteMany: vi.fn() },
         productTag: { deleteMany: vi.fn() },
         product: { deleteMany: vi.fn() },
+        productGroup: { deleteMany: vi.fn(), createMany: vi.fn() },
         location: { updateMany: vi.fn(), deleteMany: vi.fn(), create: vi.fn() },
         room: { deleteMany: vi.fn(), createMany: vi.fn() },
         containerType: { deleteMany: vi.fn(), createMany: vi.fn() },
@@ -100,13 +105,14 @@ describe('POST /api/admin/import', () => {
     });
 
     const importPayload = {
-      version: '2.0',
+      version: '3.0',
       data: {
         units: [{ id: 'u1', key: 'piece', name: 'Stück', createdAt: new Date().toISOString() }],
         tags: [],
         containerTypes: [],
         rooms: [],
         locations: [],
+        productGroups: [],
         products: [],
         productTags: [],
         instances: [],
@@ -125,7 +131,7 @@ describe('POST /api/admin/import', () => {
   it('gibt 400 zurück bei ungültigem Format', async () => {
     const res = await request(app)
       .post('/api/admin/import')
-      .send({ version: '2.0', data: {} });
+      .send({ version: '3.0', data: {} });
 
     expect(res.status).toBe(400);
   });

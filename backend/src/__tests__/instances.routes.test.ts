@@ -54,9 +54,9 @@ app.use(errorHandler);
 const mockInstance = {
   id: 'inst-1',
   productId: 'prod-1',
-  product: { id: 'prod-1', name: 'Hammer', imageUrl: null, description: null, barcode: null, minQuantity: null, expiryWarningDays: null, tags: [] },
+  product: { id: 'prod-1', name: 'Hammer', imageUrl: null, description: null, barcode: null, unit: null, minQuantity: null, expiryWarningDays: null, productGroupId: null, productGroup: null, tags: [] },
   quantity: 1,
-  unit: null,
+  purchaseUrl: null,
   condition: null,
   serialNumber: null,
   purchasePrice: null,
@@ -141,22 +141,50 @@ describe('GET /api/instances/search', () => {
 });
 
 describe('GET /api/instances/low-stock', () => {
-  it('gibt Produkte zurück bei denen Gesamtmenge < product.minQuantity', async () => {
-    const inst1 = { productId: 'prod-1', quantity: 1, product: { id: 'prod-1', name: 'Hammer', imageUrl: null, minQuantity: 3 } };
-    const inst2 = { productId: 'prod-1', quantity: 1, product: { id: 'prod-1', name: 'Hammer', imageUrl: null, minQuantity: 3 } };
+  it('gibt Produkt zurück wenn Gesamtmenge < product.minQuantity', async () => {
+    const inst1 = { productId: 'prod-1', quantity: 1, product: { id: 'prod-1', name: 'Hammer', imageUrl: null, minQuantity: 3, productGroupId: null, productGroup: null } };
+    const inst2 = { productId: 'prod-1', quantity: 1, product: { id: 'prod-1', name: 'Hammer', imageUrl: null, minQuantity: 3, productGroupId: null, productGroup: null } };
     mockPrisma.instance.findMany.mockResolvedValue([inst1, inst2]);
 
     const res = await request(app).get('/api/instances/low-stock');
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
+    expect(res.body[0].type).toBe('product');
+    expect(res.body[0].id).toBe('prod-1');
     expect(res.body[0].totalQuantity).toBe(2);
-    expect(res.body[0].product.id).toBe('prod-1');
   });
 
-  it('gibt kein Produkt zurück wenn Gesamtmenge >= minQuantity', async () => {
-    const inst1 = { productId: 'prod-1', quantity: 2, product: { id: 'prod-1', name: 'Hammer', imageUrl: null, minQuantity: 3 } };
-    const inst2 = { productId: 'prod-1', quantity: 2, product: { id: 'prod-1', name: 'Hammer', imageUrl: null, minQuantity: 3 } };
+  it('gibt kein Eintrag zurück wenn Gesamtmenge >= minQuantity', async () => {
+    const inst1 = { productId: 'prod-1', quantity: 2, product: { id: 'prod-1', name: 'Hammer', imageUrl: null, minQuantity: 3, productGroupId: null, productGroup: null } };
+    const inst2 = { productId: 'prod-1', quantity: 2, product: { id: 'prod-1', name: 'Hammer', imageUrl: null, minQuantity: 3, productGroupId: null, productGroup: null } };
+    mockPrisma.instance.findMany.mockResolvedValue([inst1, inst2]);
+
+    const res = await request(app).get('/api/instances/low-stock');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(0);
+  });
+
+  it('aggregiert mehrere Produkte einer Gruppe über alle Instanzen', async () => {
+    const group = { id: 'grp-1', name: 'Milch', minQuantity: 3 };
+    const inst1 = { productId: 'prod-a', quantity: 1, product: { id: 'prod-a', name: 'Vollmilch', imageUrl: null, minQuantity: null, productGroupId: 'grp-1', productGroup: group } };
+    const inst2 = { productId: 'prod-b', quantity: 1, product: { id: 'prod-b', name: 'Laktosefrei', imageUrl: null, minQuantity: null, productGroupId: 'grp-1', productGroup: group } };
+    mockPrisma.instance.findMany.mockResolvedValue([inst1, inst2]);
+
+    const res = await request(app).get('/api/instances/low-stock');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].type).toBe('group');
+    expect(res.body[0].id).toBe('grp-1');
+    expect(res.body[0].totalQuantity).toBe(2);
+  });
+
+  it('gibt keine Gruppe zurück wenn Gruppengesamtmenge >= group.minQuantity', async () => {
+    const group = { id: 'grp-1', name: 'Milch', minQuantity: 2 };
+    const inst1 = { productId: 'prod-a', quantity: 1, product: { id: 'prod-a', name: 'Vollmilch', imageUrl: null, minQuantity: null, productGroupId: 'grp-1', productGroup: group } };
+    const inst2 = { productId: 'prod-b', quantity: 1, product: { id: 'prod-b', name: 'Laktosefrei', imageUrl: null, minQuantity: null, productGroupId: 'grp-1', productGroup: group } };
     mockPrisma.instance.findMany.mockResolvedValue([inst1, inst2]);
 
     const res = await request(app).get('/api/instances/low-stock');

@@ -3,7 +3,7 @@ import type { Instance, InstanceDocument, InstanceOverview, LowStockItem } from 
 
 export const getAllInstances = () => api.get<InstanceOverview[]>('/instances').then((r) => r.data);
 
-export const createInstance = (data: { productId: string; locationId?: string | null; quantity?: number; unit?: string }) =>
+export const createInstance = (data: { productId: string; locationId?: string | null; assignedUserId?: string | null; quantity?: number; purchaseUrl?: string }) =>
   api.post<Instance>('/instances', data).then((r) => r.data);
 
 export const getInstance = (id: string) => api.get<Instance>(`/instances/${id}`).then((r) => r.data);

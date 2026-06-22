@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Upload, Pencil, X, Check, FileText, Trash2, Package, Plus, ExternalLink } from 'lucide-react';
+import { ChevronRight, Upload, Pencil, X, Check, FileText, Trash2, Package, Plus, ExternalLink, Layers } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getProduct, updateProduct, deleteProduct, uploadProductImage, uploadProductDocument, deleteProductDocument } from '../api/products';
 import { getTags } from '../api/tags';
 import { getRooms, getRoom } from '../api/rooms';
 import { createInstance } from '../api/instances';
 import { getUnits } from '../api/units';
+import { getAllProductGroups } from '../api/product-groups';
+import { getUsers } from '../api/users';
 import { useAuth } from '../contexts/AuthContext';
 import { CONDITION_COLORS } from '../types';
 import type { ItemCondition, Location } from '../types';
@@ -37,14 +39,15 @@ export default function ProductDetailPage() {
     queryFn: () => getProduct(id!),
   });
   const { data: allTags } = useQuery({ queryKey: ['tags'], queryFn: getTags });
-  const { data: units } = useQuery({ queryKey: ['units'], queryFn: getUnits });
+  const { data: allProductGroups } = useQuery({ queryKey: ['product-groups'], queryFn: getAllProductGroups });
 
   // ── Add Instance form ────────────────────────────────────────────────
   const [showAddInstance, setShowAddInstance] = useState(false);
+  const [addMode, setAddMode] = useState<'container' | 'person'>('container');
   const [addRoomId, setAddRoomId] = useState('');
   const [addLocationId, setAddLocationId] = useState('');
+  const [addUserId, setAddUserId] = useState('');
   const [addQty, setAddQty] = useState('1');
-  const [addUnit, setAddUnit] = useState('');
 
   const { data: allRooms } = useQuery({
     queryKey: ['rooms'],
@@ -56,43 +59,53 @@ export default function ProductDetailPage() {
     queryFn: () => getRoom(addRoomId),
     enabled: !!addRoomId,
   });
+  const { data: allUsers } = useQuery({
+    queryKey: ['users'],
+    queryFn: getUsers,
+    enabled: showAddInstance && addMode === 'person',
+  });
   const addLocations = addRoom ? flattenLocations(addRoom.locations ?? []) : [];
 
   const addInstanceMut = useMutation({
     mutationFn: () =>
       createInstance({
         productId: id!,
-        locationId: addLocationId || null,
+        locationId: addMode === 'container' ? (addLocationId || null) : null,
+        assignedUserId: addMode === 'person' ? (addUserId || null) : null,
         quantity: parseFloat(addQty) || 1,
-        unit: addUnit || undefined,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['products', id] });
       setShowAddInstance(false);
-      setAddRoomId('');
-      setAddLocationId('');
-      setAddQty('1');
-      setAddUnit('');
+      setAddRoomId(''); setAddLocationId(''); setAddUserId('');
+      setAddQty('1'); setAddMode('container');
     },
   });
 
+  // ── Product edit state ───────────────────────────────────────────────
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editBarcode, setEditBarcode] = useState('');
-  const [editPurchaseUrl, setEditPurchaseUrl] = useState('');
+  const [editProductUrl, setEditProductUrl] = useState('');
+  const [editUnit, setEditUnit] = useState('');
   const [editMinQty, setEditMinQty] = useState('');
   const [editExpiryWarningDays, setEditExpiryWarningDays] = useState('');
+  const [editProductGroupId, setEditProductGroupId] = useState<string>('');
   const [editTagKeys, setEditTagKeys] = useState<string[]>([]);
+
+  const { data: units } = useQuery({ queryKey: ['units'], queryFn: getUnits });
 
   function startEditing() {
     if (!product) return;
     setEditName(product.name);
     setEditDescription(product.description ?? '');
     setEditBarcode(product.barcode ?? '');
-    setEditPurchaseUrl(product.purchaseUrl ?? '');
+    setEditProductUrl(product.productUrl ?? '');
+    setEditUnit(product.unit ?? '');
     setEditMinQty(product.minQuantity != null ? String(product.minQuantity) : '');
     setEditExpiryWarningDays(product.expiryWarningDays != null ? String(product.expiryWarningDays) : '');
+    setEditProductGroupId(product.productGroupId ?? '');
     setEditTagKeys(product.tags?.map(({ tag }) => tag.key) ?? []);
     setIsEditing(true);
   }
@@ -102,9 +115,11 @@ export default function ProductDetailPage() {
       name: editName,
       description: editDescription || undefined,
       barcode: editBarcode || undefined,
-      purchaseUrl: editPurchaseUrl || '',
+      productUrl: editProductUrl || '',
+      unit: editUnit || undefined,
       minQuantity: editMinQty ? parseFloat(editMinQty) : null,
       expiryWarningDays: editExpiryWarningDays ? parseInt(editExpiryWarningDays) : null,
+      productGroupId: editProductGroupId || null,
       tags: editTagKeys,
     }),
     onSuccess: () => {
@@ -135,6 +150,9 @@ export default function ProductDetailPage() {
 
   if (isLoading) return <Spinner />;
   if (!product) return <p className="text-gray-500">{t('products.not_found')}</p>;
+
+  const unitLabel = (key?: string | null) =>
+    key ? t(`unitNames.${key}`, { defaultValue: key }) : '';
 
   return (
     <div>
@@ -193,6 +211,15 @@ export default function ProductDetailPage() {
                   <input value={editBarcode} onChange={(e) => setEditBarcode(e.target.value)} className="input" placeholder="EAN / ISBN …" />
                 </label>
                 <label className="label-wrap">
+                  <span className="label">{t('products.field_unit')}</span>
+                  <select value={editUnit} onChange={(e) => setEditUnit(e.target.value)} className="input" aria-label={t('products.field_unit')}>
+                    <option value="">{t('location.unit_placeholder')}</option>
+                    {units?.map((u) => (
+                      <option key={u.id} value={u.key}>{t(`unitNames.${u.key}`, { defaultValue: u.name })}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="label-wrap">
                   <span className="label">{t('products.field_min_quantity')}</span>
                   <input type="number" min="0" step="0.1" value={editMinQty} onChange={(e) => setEditMinQty(e.target.value)} placeholder="–" className="input" />
                 </label>
@@ -200,9 +227,18 @@ export default function ProductDetailPage() {
                   <span className="label">{t('products.field_expiry_warning_days')}</span>
                   <input type="number" min="1" step="1" value={editExpiryWarningDays} onChange={(e) => setEditExpiryWarningDays(e.target.value)} placeholder="30" className="input" />
                 </label>
+                <label className="label-wrap">
+                  <span className="label">{t('products.field_product_group')}</span>
+                  <select value={editProductGroupId} onChange={(e) => setEditProductGroupId(e.target.value)} className="input" aria-label={t('products.field_product_group')}>
+                    <option value="">{t('products.no_group')}</option>
+                    {allProductGroups?.map((g) => (
+                      <option key={g.id} value={g.id}>{g.name}</option>
+                    ))}
+                  </select>
+                </label>
                 <label className="sm:col-span-2 label-wrap">
-                  <span className="label">{t('products.field_purchase_url')}</span>
-                  <input type="url" value={editPurchaseUrl} onChange={(e) => setEditPurchaseUrl(e.target.value)} placeholder="https://…" className="input" />
+                  <span className="label">{t('products.field_product_url')}</span>
+                  <input type="url" value={editProductUrl} onChange={(e) => setEditProductUrl(e.target.value)} placeholder="https://…" className="input" />
                 </label>
               </div>
               {allTags && allTags.length > 0 && (
@@ -242,21 +278,35 @@ export default function ProductDetailPage() {
           ) : (
             <div className="bg-white border border-gray-200 rounded-xl p-5">
               <div className="flex items-start justify-between gap-3">
-                <div>
+                <div className="flex-1 min-w-0">
                   <h1 className="text-xl font-bold text-gray-900">{product.name}</h1>
                   {product.description && <p className="text-gray-600 text-sm mt-1">{product.description}</p>}
                   {product.barcode && (
                     <p className="text-xs text-gray-400 font-mono mt-1">EAN: {product.barcode}</p>
                   )}
-                  {product.minQuantity != null && (
-                    <p className="text-xs text-gray-500 mt-1">{t('products.field_min_quantity')}: {product.minQuantity}</p>
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                    {product.unit && (
+                      <span>{t('products.field_unit')}: {unitLabel(product.unit)}</span>
+                    )}
+                    {product.minQuantity != null && (
+                      <span>{t('products.field_min_quantity')}: {product.minQuantity}</span>
+                    )}
+                    {product.expiryWarningDays != null && (
+                      <span>{t('products.field_expiry_warning_days')}: {product.expiryWarningDays} d</span>
+                    )}
+                  </div>
+                  {product.productGroup && (
+                    <Link
+                      to="/product-groups"
+                      className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline mt-1"
+                    >
+                      <Layers size={11} /> {product.productGroup.name}
+                      {product.productGroup.minQuantity != null && ` (min. ${product.productGroup.minQuantity})`}
+                    </Link>
                   )}
-                  {product.expiryWarningDays != null && (
-                    <p className="text-xs text-gray-500 mt-1">{t('products.field_expiry_warning_days')}: {product.expiryWarningDays} d</p>
-                  )}
-                  {product.purchaseUrl && (
-                    <a href={product.purchaseUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline mt-1">
-                      <ExternalLink size={11} /> {t('products.field_purchase_url')}
+                  {product.productUrl && (
+                    <a href={product.productUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline mt-1 ml-3">
+                      <ExternalLink size={11} /> {t('products.field_product_url')}
                     </a>
                   )}
                 </div>
@@ -350,36 +400,74 @@ export default function ProductDetailPage() {
             {isEditor && showAddInstance && (
               <div className="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-3">
                 <h3 className="text-sm font-medium text-indigo-900">{t('products.add_instance_title')}</h3>
+
+                {/* Mode toggle */}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAddMode('container')}
+                    className={`flex-1 py-1.5 rounded-lg text-sm font-medium border transition-colors ${addMode === 'container' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'}`}
+                  >
+                    📦 {t('instance.assign_container')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAddMode('person')}
+                    className={`flex-1 py-1.5 rounded-lg text-sm font-medium border transition-colors ${addMode === 'person' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'}`}
+                  >
+                    👤 {t('instance.assign_person')}
+                  </button>
+                </div>
+
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <label className="label-wrap">
-                    <span className="label">{t('instance.move_room_label')}</span>
-                    <select
-                      value={addRoomId}
-                      onChange={(e) => { setAddRoomId(e.target.value); setAddLocationId(''); }}
-                      className="input"
-                      aria-label={t('instance.move_room_label')}
-                    >
-                      <option value="">{t('instance.move_select_room')}</option>
-                      {allRooms?.map((r) => (
-                        <option key={r.id} value={r.id}>{r.icon} {r.name}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="label-wrap">
-                    <span className="label">{t('instance.move_container_label')}</span>
-                    <select
-                      value={addLocationId}
-                      onChange={(e) => setAddLocationId(e.target.value)}
-                      disabled={!addRoomId}
-                      className="input disabled:opacity-50"
-                      aria-label={t('instance.move_container_label')}
-                    >
-                      <option value="">{t('instance.move_select_container')}</option>
-                      {addLocations.map((l) => (
-                        <option key={l.id} value={l.id}>{l.label}</option>
-                      ))}
-                    </select>
-                  </label>
+                  {addMode === 'container' ? (
+                    <>
+                      <label className="label-wrap">
+                        <span className="label">{t('instance.move_room_label')}</span>
+                        <select
+                          value={addRoomId}
+                          onChange={(e) => { setAddRoomId(e.target.value); setAddLocationId(''); }}
+                          className="input"
+                          aria-label={t('instance.move_room_label')}
+                        >
+                          <option value="">{t('instance.move_select_room')}</option>
+                          {allRooms?.map((r) => (
+                            <option key={r.id} value={r.id}>{r.icon} {r.name}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="label-wrap">
+                        <span className="label">{t('instance.move_container_label')}</span>
+                        <select
+                          value={addLocationId}
+                          onChange={(e) => setAddLocationId(e.target.value)}
+                          disabled={!addRoomId}
+                          className="input disabled:opacity-50"
+                          aria-label={t('instance.move_container_label')}
+                        >
+                          <option value="">{t('instance.move_select_container')}</option>
+                          {addLocations.map((l) => (
+                            <option key={l.id} value={l.id}>{l.label}</option>
+                          ))}
+                        </select>
+                      </label>
+                    </>
+                  ) : (
+                    <label className="sm:col-span-2 label-wrap">
+                      <span className="label">{t('instance.assign_person')}</span>
+                      <select
+                        value={addUserId}
+                        onChange={(e) => setAddUserId(e.target.value)}
+                        className="input"
+                        aria-label={t('instance.assign_person')}
+                      >
+                        <option value="">{t('instance.select_person')}</option>
+                        {allUsers?.map((u) => (
+                          <option key={u.id} value={u.id}>{u.name ?? u.email}</option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
                   <label className="label-wrap">
                     <span className="label">{t('instance.field_quantity')}</span>
                     <input
@@ -388,15 +476,6 @@ export default function ProductDetailPage() {
                       onChange={(e) => setAddQty(e.target.value)}
                       className="input"
                     />
-                  </label>
-                  <label className="label-wrap">
-                    <span className="label">{t('instance.field_unit')}</span>
-                    <select value={addUnit} onChange={(e) => setAddUnit(e.target.value)} className="input" aria-label={t('instance.field_unit')}>
-                      <option value="">{t('location.unit_placeholder')}</option>
-                      {units?.map((u) => (
-                        <option key={u.id} value={u.key}>{t(`unitNames.${u.key}`, { defaultValue: u.name })}</option>
-                      ))}
-                    </select>
                   </label>
                 </div>
                 <div className="flex gap-2">
@@ -436,7 +515,7 @@ export default function ProductDetailPage() {
                             : t('products.instance_no_location')}
                         </div>
                         <div className="text-xs text-gray-500">
-                          {inst.quantity}{inst.unit ? ` ${inst.unit}` : ''}
+                          {inst.quantity}{product.unit ? ` ${unitLabel(product.unit)}` : ''}
                           {inst.serialNumber && ` · SN: ${inst.serialNumber}`}
                           {isLent && ` · 🔄 ${t('location.lent_badge')}`}
                         </div>

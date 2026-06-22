@@ -22,6 +22,7 @@ import ProfilePage from './pages/ProfilePage';
 import TranslationsPage from './pages/TranslationsPage';
 import ContainersPage from './pages/ContainersPage';
 import QRScannerPage from './pages/QRScannerPage';
+import ProductGroupsPage from './pages/ProductGroupsPage';
 
 export default function App() {
   const { isLoading } = useAuth();
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="/locations/:id" element={<LocationDetailPage />} />
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/products/:id" element={<ProductDetailPage />} />
+          <Route path="/product-groups" element={<ProductGroupsPage />} />
           <Route path="/instances/:id" element={<InstanceDetailPage />} />
           <Route path="/scan" element={<QRScannerPage />} />
           <Route path="/items-overview" element={<ItemsOverviewPage />} />

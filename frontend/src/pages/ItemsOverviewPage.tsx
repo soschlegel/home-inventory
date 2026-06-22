@@ -215,9 +215,9 @@ export default function ItemsOverviewPage() {
                       <td className="px-4 py-3 text-gray-700 tabular-nums">
                         <Link to={`/instances/${instance.id}`} className="hover:text-indigo-600">
                           {instance.quantity}
-                          {instance.unit && (
+                          {instance.product.unit && (
                             <span className="ml-1 text-gray-400">
-                              {t(`unitNames.${instance.unit}`, { defaultValue: instance.unit })}
+                              {t(`unitNames.${instance.product.unit}`, { defaultValue: instance.product.unit })}
                             </span>
                           )}
                         </Link>

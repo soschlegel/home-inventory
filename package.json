@@ -1,0 +1,8 @@
+{
+  "name": "home-inventory",
+  "version": "1.0.9",
+  "private": true,
+  "scripts": {
+    "dev:local": "node scripts/dev-local.js"
+  }
+}

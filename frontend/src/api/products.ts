@@ -11,7 +11,7 @@ export const searchProducts = (q: string) =>
 export const createProduct = (data: { name: string; description?: string; barcode?: string; tags?: string[] }) =>
   api.post<Product>('/products', data).then((r) => r.data);
 
-export const updateProduct = (id: string, data: Partial<{ name: string; description: string; barcode: string; purchaseUrl: string; minQuantity: number | null; expiryWarningDays: number | null; tags: string[] }>) =>
+export const updateProduct = (id: string, data: Partial<{ name: string; description: string; barcode: string; productUrl: string; unit: string; minQuantity: number | null; expiryWarningDays: number | null; productGroupId: string | null; tags: string[] }>) =>
   api.put<Product>(`/products/${id}`, data).then((r) => r.data);
 
 export const deleteProduct = (id: string) => api.delete(`/products/${id}`);
